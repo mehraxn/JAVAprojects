@@ -2,34 +2,41 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class StreamFilteringOnly {
+public class SeparateStreamFiltering {
 
     public static void main(String[] args) {
-        // Initial list with duplicates
-        List<Integer> data = Arrays.asList(5, 1, 3, 5, 2, 1, 4, 6, 7);
-        System.out.println("Original Data: " + data);
+        // Initial Data for all demonstrations
+        List<String> planets = Arrays.asList(
+            "Mercury", "Venus", "Earth", "Mars", "Jupiter", "Venus", "Earth", "Saturn");
+        System.out.println("Original List: " + planets);
         
-        // Apply the three methods
-        List<Integer> result = data.stream()
-            
-            // 1. distinct()
-            // Stream becomes: [5, 1, 3, 2, 4, 6, 7] (Duplicates 5 and 1 removed)
-            .distinct() 
-            
-            // 2. skip(int n)
-            // Skip the first 3 elements (5, 1, 3)
-            // Stream becomes: [2, 4, 6, 7]
-            .skip(3)     
-            
-            // 3. limit(int n)
-            // Retain only the next 2 elements (2, 4)
-            // Stream becomes: [2, 4]
-            .limit(2)    
-            
-            // Terminal Operation: Collect the final result into a List
+        // --- 1. Distinct Operation ---
+        // Creates a new stream from 'planets' and applies only distinct()
+        List<String> resultDistinct = planets.stream()
+            .distinct() // Removes duplicate "Venus" and "Earth"
             .collect(Collectors.toList()); 
 
-        System.out.println("Final Result: " + result);
-        // Output: Final Result: [2, 4]
+        System.out.println("\n1. Result of distinct(): " + resultDistinct);
+        // Output: [Mercury, Venus, Earth, Mars, Jupiter, Saturn]
+
+        // --- 2. Limit Operation ---
+        // Creates a new stream from 'planets' and applies only limit(n)
+        int limitN = 4;
+        List<String> resultLimit = planets.stream()
+            .limit(limitN) // Keeps only the first 4 elements
+            .collect(Collectors.toList()); 
+
+        System.out.println("\n2. Result of limit(" + limitN + "): " + resultLimit);
+        // Output: [Mercury, Venus, Earth, Mars]
+
+        // --- 3. Skip Operation ---
+        // Creates a new stream from 'planets' and applies only skip(n)
+        int skipN = 5;
+        List<String> resultSkip = planets.stream()
+            .skip(skipN) // Discards the first 5 elements
+            .collect(Collectors.toList());
+
+        System.out.println("\n3. Result of skip(" + skipN + "): " + resultSkip);
+        // Output: [Venus, Earth, Saturn]
     }
 }

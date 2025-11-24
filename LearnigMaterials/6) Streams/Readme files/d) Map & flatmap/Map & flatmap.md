@@ -1,399 +1,526 @@
-# Java Stream Intermediate Operations - Complete Guide
+# Java Stream Mapping Operations: Complete Guide
 
-## Overview
-Intermediate operations are operations that transform a stream into another stream. They are **lazy**, meaning they don't execute until a terminal operation is called. These operations can be chained together to form a pipeline.
+## Table of Contents
+1. [Basic map() Operation](#1-basic-map-operation)
+2. [Primitive Stream Mapping](#2-primitive-stream-mapping)
+3. [flatMap() Operation](#3-flatmap-operation)
+4. [map() vs flatMap() Comparison](#4-map-vs-flatmap-comparison)
+5. [Real-World Examples](#5-real-world-examples)
 
 ---
 
-## 1. filter()
+## 1. Basic map() Operation
 
-**Purpose:** Selects elements from a stream that match a given condition (predicate).
+### Definition
+`map()` transforms each element of a stream using a mapper function. It's a **one-to-one** transformation.
 
-**Signature:** `Stream<T> filter(Predicate<T> predicate)`
+**Signature:** `<R> Stream<R> map(Function<T, R> mapper)`
 
-**How it works:** 
-- Takes a `Predicate<T>` (a function that returns true/false)
-- Only elements where the predicate returns `true` pass through
-- Returns a new stream with filtered elements
-
-**Example:**
+### Example 1: Transform Strings to Uppercase
 ```java
-import java.util.List;
-import java.util.stream.Collectors;
+List<String> names = Arrays.asList("alice", "bob", "charlie");
 
-public class FilterExample {
-    public static void main(String[] args) {
-        List<Integer> numbers = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-        
-        // Filter even numbers only
-        List<Integer> evenNumbers = numbers.stream()
-            .filter(n -> n % 2 == 0)
-            .collect(Collectors.toList());
-        
-        System.out.println("Original: " + numbers);
-        System.out.println("Even numbers: " + evenNumbers);
-        
-        // Filter numbers greater than 5
-        List<Integer> greaterThanFive = numbers.stream()
-            .filter(n -> n > 5)
-            .collect(Collectors.toList());
-        
-        System.out.println("Greater than 5: " + greaterThanFive);
-    }
-}
+List<String> upperNames = names.stream()
+    .map(String::toUpperCase)
+    .collect(Collectors.toList());
+
+System.out.println(upperNames);
+// Output: [ALICE, BOB, CHARLIE]
 ```
 
-**Output:**
-```
-Original: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-Even numbers: [2, 4, 6, 8, 10]
-Greater than 5: [6, 7, 8, 9, 10]
-```
-
----
-
-## 2. limit()
-
-**Purpose:** Truncates the stream to contain at most the specified number of elements.
-
-**Signature:** `Stream<T> limit(int maxSize)`
-
-**How it works:**
-- Takes an integer specifying maximum elements
-- Returns a stream with at most that many elements
-- Useful for pagination or getting first N elements
-
-**Example:**
+### Example 2: Extract Object Properties
 ```java
-import java.util.List;
-import java.util.stream.Collectors;
-
-public class LimitExample {
-    public static void main(String[] args) {
-        List<String> fruits = List.of("Apple", "Banana", "Cherry", 
-                                      "Date", "Elderberry", "Fig");
-        
-        // Get first 3 fruits
-        List<String> firstThree = fruits.stream()
-            .limit(3)
-            .collect(Collectors.toList());
-        
-        System.out.println("All fruits: " + fruits);
-        System.out.println("First 3: " + firstThree);
-        
-        // Combine with filter
-        List<String> firstTwoLongNames = fruits.stream()
-            .filter(f -> f.length() > 5)
-            .limit(2)
-            .collect(Collectors.toList());
-        
-        System.out.println("First 2 long names: " + firstTwoLongNames);
+class Student {
+    private String name;
+    private int age;
+    
+    public Student(String name, int age) {
+        this.name = name;
+        this.age = age;
     }
+    
+    public String getName() { return name; }
+    public int getAge() { return age; }
 }
+
+List<Student> students = Arrays.asList(
+    new Student("John", 20),
+    new Student("Emma", 22),
+    new Student("Mike", 19)
+);
+
+List<String> studentNames = students.stream()
+    .map(Student::getName)
+    .collect(Collectors.toList());
+
+System.out.println(studentNames);
+// Output: [John, Emma, Mike]
 ```
 
-**Output:**
-```
-All fruits: [Apple, Banana, Cherry, Date, Elderberry, Fig]
-First 3: [Apple, Banana, Cherry]
-First 2 long names: [Banana, Cherry]
-```
-
----
-
-## 3. skip()
-
-**Purpose:** Skips the first N elements of the stream.
-
-**Signature:** `Stream<T> skip(int n)`
-
-**How it works:**
-- Takes an integer specifying how many elements to skip
-- Returns a stream without the first N elements
-- Useful for pagination (skip items already shown)
-
-**Example:**
+### Example 3: Complex Transformation
 ```java
-import java.util.List;
-import java.util.stream.Collectors;
+List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5);
 
-public class SkipExample {
-    public static void main(String[] args) {
-        List<Integer> numbers = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-        
-        // Skip first 5 numbers
-        List<Integer> afterSkip = numbers.stream()
-            .skip(5)
-            .collect(Collectors.toList());
-        
-        System.out.println("Original: " + numbers);
-        System.out.println("After skip(5): " + afterSkip);
-        
-        // Pagination: skip 3, take 3 (page 2 with size 3)
-        List<Integer> page2 = numbers.stream()
-            .skip(3)
-            .limit(3)
-            .collect(Collectors.toList());
-        
-        System.out.println("Page 2 (skip 3, limit 3): " + page2);
-    }
-}
-```
+List<String> result = numbers.stream()
+    .map(n -> "Number: " + (n * n))
+    .collect(Collectors.toList());
 
-**Output:**
-```
-Original: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-After skip(5): [6, 7, 8, 9, 10]
-Page 2 (skip 3, limit 3): [4, 5, 6]
+System.out.println(result);
+// Output: [Number: 1, Number: 4, Number: 9, Number: 16, Number: 25]
 ```
 
 ---
 
-## 4. sorted()
+## 2. Primitive Stream Mapping
 
-**Purpose:** Sorts the elements of the stream.
+### Why Primitive Streams?
+Primitive streams (`IntStream`, `LongStream`, `DoubleStream`) avoid boxing/unboxing overhead, improving performance.
 
-**Signature:** 
-- `Stream<T> sorted()` - natural order
-- `Stream<T> sorted(Comparator<T> comparator)` - custom order
-
-**How it works:**
-- Without arguments: uses natural ordering (elements must implement Comparable)
-- With Comparator: uses custom comparison logic
-- Returns a new stream with sorted elements
-
-**Example:**
+### mapToInt() Example
 ```java
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
+List<String> words = Arrays.asList("Java", "Python", "C++", "JavaScript");
 
-public class SortedExample {
-    public static void main(String[] args) {
-        List<Integer> numbers = List.of(5, 2, 8, 1, 9, 3);
-        
-        // Natural order (ascending)
-        List<Integer> ascending = numbers.stream()
-            .sorted()
-            .collect(Collectors.toList());
-        
-        System.out.println("Original: " + numbers);
-        System.out.println("Ascending: " + ascending);
-        
-        // Descending order using Comparator
-        List<Integer> descending = numbers.stream()
-            .sorted(Comparator.reverseOrder())
-            .collect(Collectors.toList());
-        
-        System.out.println("Descending: " + descending);
-        
-        // Custom comparator: sort by absolute distance from 5
-        List<Integer> byDistance = numbers.stream()
-            .sorted(Comparator.comparingInt(n -> Math.abs(n - 5)))
-            .collect(Collectors.toList());
-        
-        System.out.println("By distance from 5: " + byDistance);
-    }
-}
+IntStream lengths = words.stream()
+    .mapToInt(String::length);
+
+lengths.forEach(System.out::println);
+// Output: 4, 6, 3, 10
 ```
 
-**Output:**
-```
-Original: [5, 2, 8, 1, 9, 3]
-Ascending: [1, 2, 3, 5, 8, 9]
-Descending: [9, 8, 5, 3, 2, 1]
-By distance from 5: [5, 3, 8, 2, 9, 1]
-```
-
----
-
-## 5. distinct()
-
-**Purpose:** Removes duplicate elements from the stream.
-
-**Signature:** `Stream<T> distinct()`
-
-**How it works:**
-- Uses `equals()` method to determine duplicates
-- Returns a stream with only unique elements
-- Order of first occurrence is preserved
-
-**Example:**
+### mapToLong() Example
 ```java
-import java.util.List;
-import java.util.stream.Collectors;
+List<Integer> numbers = Arrays.asList(100, 200, 300);
 
-public class DistinctExample {
-    public static void main(String[] args) {
-        List<Integer> numbersWithDuplicates = 
-            List.of(1, 2, 2, 3, 4, 4, 4, 5, 1, 3);
-        
-        // Remove duplicates
-        List<Integer> unique = numbersWithDuplicates.stream()
-            .distinct()
-            .collect(Collectors.toList());
-        
-        System.out.println("With duplicates: " + numbersWithDuplicates);
-        System.out.println("Unique: " + unique);
-        
-        // Combine with sorted
-        List<Integer> uniqueSorted = numbersWithDuplicates.stream()
-            .distinct()
-            .sorted()
-            .collect(Collectors.toList());
-        
-        System.out.println("Unique and sorted: " + uniqueSorted);
-        
-        // String example
-        List<String> words = List.of("hello", "world", "hello", "java");
-        List<String> uniqueWords = words.stream()
-            .distinct()
-            .collect(Collectors.toList());
-        
-        System.out.println("Unique words: " + uniqueWords);
-    }
-}
+long sum = numbers.stream()
+    .mapToLong(n -> n * 1000L)
+    .sum();
+
+System.out.println(sum);
+// Output: 600000
 ```
 
-**Output:**
-```
-With duplicates: [1, 2, 2, 3, 4, 4, 4, 5, 1, 3]
-Unique: [1, 2, 3, 4, 5]
-Unique and sorted: [1, 2, 3, 4, 5]
-Unique words: [hello, world, java]
-```
-
----
-
-## 6. map()
-
-**Purpose:** Transforms each element of the stream using a given function.
-
-**Signature:** `Stream<R> map(Function<T, R> mapper)`
-
-**How it works:**
-- Takes a `Function<T, R>` that converts type T to type R
-- Applies the function to each element
-- Returns a new stream with transformed elements
-
-**Example:**
+### mapToDouble() Example
 ```java
-import java.util.List;
-import java.util.stream.Collectors;
-
-public class MapExample {
-    public static void main(String[] args) {
-        List<String> names = List.of("alice", "bob", "charlie");
-        
-        // Convert to uppercase
-        List<String> uppercase = names.stream()
-            .map(String::toUpperCase)
-            .collect(Collectors.toList());
-        
-        System.out.println("Original: " + names);
-        System.out.println("Uppercase: " + uppercase);
-        
-        // Get string lengths
-        List<Integer> lengths = names.stream()
-            .map(String::length)
-            .collect(Collectors.toList());
-        
-        System.out.println("Lengths: " + lengths);
-        
-        // Square numbers
-        List<Integer> numbers = List.of(1, 2, 3, 4, 5);
-        List<Integer> squared = numbers.stream()
-            .map(n -> n * n)
-            .collect(Collectors.toList());
-        
-        System.out.println("Numbers: " + numbers);
-        System.out.println("Squared: " + squared);
+class Product {
+    private String name;
+    private double price;
+    
+    public Product(String name, double price) {
+        this.name = name;
+        this.price = price;
     }
+    
+    public double getPrice() { return price; }
 }
-```
 
-**Output:**
-```
-Original: [alice, bob, charlie]
-Uppercase: [ALICE, BOB, CHARLIE]
-Lengths: [5, 3, 7]
-Numbers: [1, 2, 3, 4, 5]
-Squared: [1, 4, 9, 16, 25]
+List<Product> products = Arrays.asList(
+    new Product("Laptop", 999.99),
+    new Product("Mouse", 29.99),
+    new Product("Keyboard", 79.99)
+);
+
+double avgPrice = products.stream()
+    .mapToDouble(Product::getPrice)
+    .average()
+    .orElse(0.0);
+
+System.out.println("Average: $" + avgPrice);
+// Output: Average: $369.99
 ```
 
 ---
 
-## Complete Pipeline Example
+## 3. flatMap() Operation
 
-Combining multiple operations:
+### Definition
+`flatMap()` transforms each element into a **stream** and then flattens all streams into a single stream. It's a **one-to-many** transformation.
+
+**Signature:** `<R> Stream<R> flatMap(Function<T, Stream<R>> mapper)`
+
+### Example 1: Flattening Lists
+```java
+List<List<String>> listOfLists = Arrays.asList(
+    Arrays.asList("a", "b"),
+    Arrays.asList("c", "d", "e"),
+    Arrays.asList("f")
+);
+
+List<String> flatList = listOfLists.stream()
+    .flatMap(Collection::stream)
+    .collect(Collectors.toList());
+
+System.out.println(flatList);
+// Output: [a, b, c, d, e, f]
+```
+
+### Example 2: Split Strings into Words
+```java
+List<String> sentences = Arrays.asList(
+    "Hello World",
+    "Java Streams",
+    "FlatMap Example"
+);
+
+List<String> words = sentences.stream()
+    .flatMap(sentence -> Arrays.stream(sentence.split(" ")))
+    .collect(Collectors.toList());
+
+System.out.println(words);
+// Output: [Hello, World, Java, Streams, FlatMap, Example]
+```
+
+### Example 3: Nested Objects
+```java
+class Department {
+    private String name;
+    private List<String> employees;
+    
+    public Department(String name, List<String> employees) {
+        this.name = name;
+        this.employees = employees;
+    }
+    
+    public List<String> getEmployees() { return employees; }
+}
+
+List<Department> departments = Arrays.asList(
+    new Department("IT", Arrays.asList("Alice", "Bob")),
+    new Department("HR", Arrays.asList("Charlie", "Diana", "Eve")),
+    new Department("Sales", Arrays.asList("Frank"))
+);
+
+List<String> allEmployees = departments.stream()
+    .flatMap(dept -> dept.getEmployees().stream())
+    .collect(Collectors.toList());
+
+System.out.println(allEmployees);
+// Output: [Alice, Bob, Charlie, Diana, Eve, Frank]
+```
+
+### Example 4: Multiple Courses per Student
+```java
+class Student {
+    private String name;
+    private List<String> courses;
+    
+    public Student(String name, List<String> courses) {
+        this.name = name;
+        this.courses = courses;
+    }
+    
+    public List<String> getCourses() { return courses; }
+}
+
+List<Student> students = Arrays.asList(
+    new Student("John", Arrays.asList("Math", "Physics")),
+    new Student("Emma", Arrays.asList("Chemistry", "Biology", "Math")),
+    new Student("Mike", Arrays.asList("Physics"))
+);
+
+List<String> allCourses = students.stream()
+    .flatMap(student -> student.getCourses().stream())
+    .distinct()
+    .collect(Collectors.toList());
+
+System.out.println(allCourses);
+// Output: [Math, Physics, Chemistry, Biology]
+```
+
+### Example 5: Optional Values
+```java
+List<Optional<String>> optionals = Arrays.asList(
+    Optional.of("Apple"),
+    Optional.empty(),
+    Optional.of("Banana"),
+    Optional.empty(),
+    Optional.of("Cherry")
+);
+
+List<String> values = optionals.stream()
+    .flatMap(Optional::stream)  // Java 9+
+    .collect(Collectors.toList());
+
+System.out.println(values);
+// Output: [Apple, Banana, Cherry]
+```
+
+### Example 6: Character Stream from String
+```java
+List<String> words = Arrays.asList("Java", "Stream");
+
+List<Character> chars = words.stream()
+    .flatMap(word -> word.chars()
+        .mapToObj(c -> (char) c))
+    .collect(Collectors.toList());
+
+System.out.println(chars);
+// Output: [J, a, v, a, S, t, r, e, a, m]
+```
+
+---
+
+## 4. map() vs flatMap() Comparison
+
+### Key Differences
+
+| Aspect | map() | flatMap() |
+|--------|-------|-----------|
+| **Transformation** | One-to-one | One-to-many |
+| **Input** | Takes a Function | Takes a Function that returns Stream |
+| **Output** | Stream of transformed elements | Flattened stream |
+| **Use Case** | Simple transformations | Nested structures, collections |
+
+### Visual Comparison Example
 
 ```java
-import java.util.List;
-import java.util.stream.Collectors;
-
-public class CombinedExample {
-    public static void main(String[] args) {
-        List<String> words = List.of("apple", "banana", "apricot", 
-                                     "cherry", "avocado", "blueberry");
-        
-        // Complex pipeline: 
-        // 1. Filter words starting with 'a'
-        // 2. Map to uppercase
-        // 3. Sort alphabetically
-        // 4. Limit to 2
-        List<String> result = words.stream()
-            .filter(w -> w.startsWith("a"))
-            .map(String::toUpperCase)
-            .sorted()
-            .limit(2)
-            .collect(Collectors.toList());
-        
-        System.out.println("Original: " + words);
-        System.out.println("Processed: " + result);
+// Dataset: Students with enrolled courses
+class Student {
+    private String name;
+    private List<String> courses;
+    
+    public Student(String name, List<String> courses) {
+        this.name = name;
+        this.courses = courses;
     }
+    
+    public List<String> getCourses() { return courses; }
 }
+
+List<Student> students = Arrays.asList(
+    new Student("Alice", Arrays.asList("Math", "Physics")),
+    new Student("Bob", Arrays.asList("Chemistry"))
+);
+
+// Using map() - Returns Stream<List<String>>
+List<List<String>> withMap = students.stream()
+    .map(Student::getCourses)
+    .collect(Collectors.toList());
+
+System.out.println("With map(): " + withMap);
+// Output: With map(): [[Math, Physics], [Chemistry]]
+// Note: We get nested lists!
+
+// Using flatMap() - Returns Stream<String>
+List<String> withFlatMap = students.stream()
+    .flatMap(student -> student.getCourses().stream())
+    .collect(Collectors.toList());
+
+System.out.println("With flatMap(): " + withFlatMap);
+// Output: With flatMap(): [Math, Physics, Chemistry]
+// Note: We get a flat list!
 ```
 
-**Output:**
+### When to Use Which?
+
+**Use `map()` when:**
+- You need one-to-one transformation
+- Each element maps to exactly one result
+- You're extracting properties or converting types
+
+**Use `flatMap()` when:**
+- You have nested collections/streams
+- Each element can produce multiple results
+- You need to flatten hierarchical data
+- Working with Optional, arrays, or collections within elements
+
+---
+
+## 5. Real-World Examples
+
+### Example 1: E-commerce Order Processing
+```java
+class Order {
+    private String orderId;
+    private List<String> items;
+    
+    public Order(String orderId, List<String> items) {
+        this.orderId = orderId;
+        this.items = items;
+    }
+    
+    public List<String> getItems() { return items; }
+}
+
+List<Order> orders = Arrays.asList(
+    new Order("ORD1", Arrays.asList("Laptop", "Mouse")),
+    new Order("ORD2", Arrays.asList("Keyboard")),
+    new Order("ORD3", Arrays.asList("Monitor", "Cable", "Laptop"))
+);
+
+// Get all unique items ordered
+Set<String> allItems = orders.stream()
+    .flatMap(order -> order.getItems().stream())
+    .collect(Collectors.toSet());
+
+System.out.println("All items: " + allItems);
+// Output: All items: [Laptop, Mouse, Keyboard, Monitor, Cable]
+
+// Count how many times "Laptop" was ordered
+long laptopCount = orders.stream()
+    .flatMap(order -> order.getItems().stream())
+    .filter(item -> item.equals("Laptop"))
+    .count();
+
+System.out.println("Laptops ordered: " + laptopCount);
+// Output: Laptops ordered: 2
 ```
-Original: [apple, banana, apricot, cherry, avocado, blueberry]
-Processed: [APPLE, APRICOT]
+
+### Example 2: Social Network Analysis
+```java
+class Person {
+    private String name;
+    private List<String> friends;
+    
+    public Person(String name, List<String> friends) {
+        this.name = name;
+        this.friends = friends;
+    }
+    
+    public String getName() { return name; }
+    public List<String> getFriends() { return friends; }
+}
+
+List<Person> people = Arrays.asList(
+    new Person("Alice", Arrays.asList("Bob", "Charlie")),
+    new Person("Bob", Arrays.asList("Alice", "Diana")),
+    new Person("Charlie", Arrays.asList("Eve"))
+);
+
+// Find all unique people in the network (including friends)
+Set<String> allPeople = people.stream()
+    .flatMap(person -> Stream.concat(
+        Stream.of(person.getName()),
+        person.getFriends().stream()
+    ))
+    .collect(Collectors.toSet());
+
+System.out.println("Network size: " + allPeople);
+// Output: Network size: [Alice, Bob, Charlie, Diana, Eve]
+```
+
+### Example 3: File Processing
+```java
+List<String> filePaths = Arrays.asList(
+    "data1.txt:100,200,300",
+    "data2.txt:400,500",
+    "data3.txt:600,700,800,900"
+);
+
+// Extract all numbers from all files
+List<Integer> allNumbers = filePaths.stream()
+    .map(path -> path.split(":")[1])      // Get data part
+    .flatMap(data -> Arrays.stream(data.split(",")))  // Split by comma
+    .map(Integer::parseInt)
+    .collect(Collectors.toList());
+
+System.out.println("All numbers: " + allNumbers);
+// Output: All numbers: [100, 200, 300, 400, 500, 600, 700, 800, 900]
+
+int sum = allNumbers.stream().mapToInt(Integer::intValue).sum();
+System.out.println("Sum: " + sum);
+// Output: Sum: 4500
+```
+
+### Example 4: Course Enrollment System
+```java
+class Course {
+    private String title;
+    private List<String> topics;
+    
+    public Course(String title, List<String> topics) {
+        this.title = title;
+        this.topics = topics;
+    }
+    
+    public String getTitle() { return title; }
+    public List<String> getTopics() { return topics; }
+}
+
+class Student {
+    private String name;
+    private List<Course> enrolledCourses;
+    
+    public Student(String name, List<Course> courses) {
+        this.name = name;
+        this.enrolledCourses = courses;
+    }
+    
+    public List<Course> getEnrolledCourses() { return enrolledCourses; }
+}
+
+List<Student> students = Arrays.asList(
+    new Student("John", Arrays.asList(
+        new Course("Java", Arrays.asList("OOP", "Streams", "Lambda")),
+        new Course("Python", Arrays.asList("ML", "Data Science"))
+    )),
+    new Student("Emma", Arrays.asList(
+        new Course("Java", Arrays.asList("OOP", "Streams", "Lambda"))
+    ))
+);
+
+// Get all distinct topics across all students and courses
+List<String> allTopics = students.stream()
+    .flatMap(student -> student.getEnrolledCourses().stream())
+    .flatMap(course -> course.getTopics().stream())
+    .distinct()
+    .sorted()
+    .collect(Collectors.toList());
+
+System.out.println("All topics: " + allTopics);
+// Output: All topics: [Data Science, Lambda, ML, OOP, Streams]
 ```
 
 ---
 
-## Key Concepts
+## Summary
 
-### Lazy Evaluation
-Intermediate operations are **lazy** - they don't execute until a terminal operation (like `collect()`, `forEach()`, `count()`) is called.
+### Key Takeaways
 
-### Method Chaining
-Operations can be chained together to create powerful data processing pipelines.
+1. **map()**: Use for simple one-to-one transformations
+   - Transform objects
+   - Extract properties
+   - Convert types
 
-### Immutability
-Stream operations don't modify the original collection - they create new streams.
+2. **mapToInt/Long/Double()**: Use for primitive conversions
+   - Better performance
+   - Avoid boxing overhead
+   - Access specialized operations (sum, average, etc.)
 
-### Short-circuiting
-Operations like `limit()` can cause the stream to stop processing early, improving performance.
+3. **flatMap()**: Use for flattening nested structures
+   - Flatten collections
+   - Process nested objects
+   - Handle one-to-many relationships
+   - Combine multiple streams
+
+### The Golden Rule
+- If your transformation produces **one result per element**, use `map()`
+- If your transformation produces **zero or more results per element** (a collection/stream), use `flatMap()`
 
 ---
 
-## Common Use Cases
+## Practice Exercise
 
-1. **filter()** - Remove unwanted data, apply conditions
-2. **map()** - Transform data, extract properties
-3. **sorted()** - Order results
-4. **distinct()** - Remove duplicates
-5. **limit()** - Pagination, top-N results
-6. **skip()** - Pagination, ignore initial elements
+Try this challenge to test your understanding:
 
----
+```java
+// Given a list of sentences, find all unique words longer than 3 characters
+List<String> sentences = Arrays.asList(
+    "Java streams are powerful",
+    "FlatMap flattens nested structures",
+    "Map transforms elements"
+);
 
-## Best Practices
+// Solution:
+List<String> result = sentences.stream()
+    .flatMap(sentence -> Arrays.stream(sentence.split(" ")))
+    .filter(word -> word.length() > 3)
+    .map(String::toLowerCase)
+    .distinct()
+    .sorted()
+    .collect(Collectors.toList());
 
-1. Keep lambda expressions simple and readable
-2. Chain operations in logical order
-3. Use method references when possible (`String::toUpperCase`)
-4. Remember that streams are one-time use
-5. Consider performance with large datasets
-6. Use `parallel()` for CPU-intensive operations on large datasets
+System.out.println(result);
+// Output: [elements, flatmap, flattens, java, nested, powerful, streams, structures, transforms]
+```
+
+Happy streaming! 🚀

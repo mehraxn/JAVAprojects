@@ -5,7 +5,6 @@ package mountainhuts;
  * It is a data class with getters for name, province, and altitude
  * */
 public class Municipality {
-	
 	// ADDED FOR R2
 	private final String name;
 	// ADDED FOR R2

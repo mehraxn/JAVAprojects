@@ -4,29 +4,45 @@ import java.util.Optional;
 
 /**
  * Represents a mountain hut
- * 
- * It includes a name, optional altitude, category,
+ * * It includes a name, optional altitude, category,
  * number of beds and location municipality.
- *  
- *
+ * *
  */
 public class MountainHut {
+	// ADDED FOR R2
+	private final String name;
+	// ADDED FOR R2
+	private final Integer altitude;
+	// ADDED FOR R2
+	private final String category;
+	// ADDED FOR R2
+	private final Integer bedsNumber;
+	// ADDED FOR R2
+	private final Municipality municipality;
+
+	// ADDED FOR R2 (Constructor with all fields)
+	public MountainHut(String name, Integer altitude, String category, Integer bedsNumber, Municipality municipality) {
+		this.name = name;
+		this.altitude = altitude;
+		this.category = category;
+		this.bedsNumber = bedsNumber;
+		this.municipality = municipality;
+	}
 
 	/**
 	 * Retrieves the name of the hut
 	 * @return name of the hut
 	 */
 	public String getName() {
-		return null;
+		return name; // ADDED FOR R2
 	}
 
 	/**
 	 * Retrieves altituted if available
-	 * 
-	 * @return optional hut altitude
+	 * * @return optional hut altitude
 	 */
 	public Optional<Integer> getAltitude() {
-		return Optional.empty();
+		return Optional.ofNullable(altitude); // ADDED FOR R2
 	}
 
 	/**
@@ -34,7 +50,7 @@ public class MountainHut {
 	 * @return hut category
 	 */
 	public String getCategory() {
-		return null;
+		return category; // ADDED FOR R2
 	}
 
 	/**
@@ -42,7 +58,7 @@ public class MountainHut {
 	 * @return number of beds
 	 */
 	public Integer getBedsNumber() {
-		return null;
+		return bedsNumber; // ADDED FOR R2
 	}
 
 	/**
@@ -50,6 +66,6 @@ public class MountainHut {
 	 * @return hut municipality
 	 */
 	public Municipality getMunicipality() {
-		return null;
+		return municipality; // ADDED FOR R2
 	}
 }

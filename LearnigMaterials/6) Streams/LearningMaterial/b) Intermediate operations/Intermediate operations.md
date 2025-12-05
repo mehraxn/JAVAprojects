@@ -162,7 +162,7 @@ Page 2 (skip 3, limit 3): [4, 5, 6]
 - With Comparator: uses custom comparison logic
 - Returns a new stream with sorted elements
 
-**Example:**
+**Example 1: Sorting Numbers**
 ```java
 import java.util.Comparator;
 import java.util.List;
@@ -203,6 +203,99 @@ Original: [5, 2, 8, 1, 9, 3]
 Ascending: [1, 2, 3, 5, 8, 9]
 Descending: [9, 8, 5, 3, 2, 1]
 By distance from 5: [5, 3, 8, 2, 9, 1]
+```
+
+**Example 2: Sorting Strings by Length**
+```java
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class SortedByLengthExample {
+    public static void main(String[] args) {
+        List<String> words = List.of("banana", "kiwi", "apple", "strawberry", "fig");
+        
+        // Sort by string length (shortest to longest)
+        List<String> byLength = words.stream()
+            .sorted(Comparator.comparingInt(String::length))
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + words);
+        System.out.println("Sorted by length: " + byLength);
+        
+        // Sort by length descending (longest to shortest)
+        List<String> byLengthDesc = words.stream()
+            .sorted(Comparator.comparingInt(String::length).reversed())
+            .collect(Collectors.toList());
+        
+        System.out.println("Sorted by length (desc): " + byLengthDesc);
+    }
+}
+```
+
+**Output:**
+```
+Original: [banana, kiwi, apple, strawberry, fig]
+Sorted by length: [fig, kiwi, apple, banana, strawberry]
+Sorted by length (desc): [strawberry, banana, apple, kiwi, fig]
+```
+
+**Example 3: Sorting List of Lists by Number of Elements**
+```java
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class SortedListOfListsExample {
+    public static void main(String[] args) {
+        List<List<String>> listOfLists = List.of(
+            List.of("apple", "banana", "cherry"),
+            List.of("dog"),
+            List.of("red", "green", "blue", "yellow", "orange"),
+            List.of("java", "python")
+        );
+        
+        // Sort by number of elements (smallest to largest)
+        List<List<String>> sortedBySize = listOfLists.stream()
+            .sorted(Comparator.comparingInt(List::size))
+            .collect(Collectors.toList());
+        
+        System.out.println("Original:");
+        listOfLists.forEach(System.out::println);
+        
+        System.out.println("\nSorted by size:");
+        sortedBySize.forEach(System.out::println);
+        
+        // Sort by size descending (largest to smallest)
+        List<List<String>> sortedBySizeDesc = listOfLists.stream()
+            .sorted(Comparator.comparingInt(List::size).reversed())
+            .collect(Collectors.toList());
+        
+        System.out.println("\nSorted by size (desc):");
+        sortedBySizeDesc.forEach(System.out::println);
+    }
+}
+```
+
+**Output:**
+```
+Original:
+[apple, banana, cherry]
+[dog]
+[red, green, blue, yellow, orange]
+[java, python]
+
+Sorted by size:
+[dog]
+[java, python]
+[apple, banana, cherry]
+[red, green, blue, yellow, orange]
+
+Sorted by size (desc):
+[red, green, blue, yellow, orange]
+[apple, banana, cherry]
+[java, python]
+[dog]
 ```
 
 ---

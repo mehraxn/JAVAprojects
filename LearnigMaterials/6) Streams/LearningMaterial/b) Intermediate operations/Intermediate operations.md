@@ -5,6 +5,54 @@ Intermediate operations are operations that transform a stream into another stre
 
 ---
 
+## Understanding Predicate
+
+Before diving into the `filter()` operation, it's important to understand what a **Predicate** is.
+
+### What is a Predicate?
+
+A `Predicate<T>` is a functional interface in Java that represents a boolean-valued function of one argument. It's part of the `java.util.function` package.
+
+**Definition:**
+```java
+@FunctionalInterface
+public interface Predicate<T> {
+    boolean test(T t);
+}
+```
+
+**Key Points:**
+- Takes one input of type `T`
+- Returns a `boolean` value (`true` or `false`)
+- Used to test/evaluate a condition on the input
+- Commonly used with `filter()`, `removeIf()`, and other conditional operations
+
+**Examples of Predicates:**
+```java
+import java.util.function.Predicate;
+
+public class PredicateExample {
+    public static void main(String[] args) {
+        // Predicate to check if number is even
+        Predicate<Integer> isEven = n -> n % 2 == 0;
+        System.out.println("Is 4 even? " + isEven.test(4)); // true
+        System.out.println("Is 5 even? " + isEven.test(5)); // false
+        
+        // Predicate to check if string is longer than 5 characters
+        Predicate<String> isLongString = s -> s.length() > 5;
+        System.out.println("Is 'hello' long? " + isLongString.test("hello")); // false
+        System.out.println("Is 'elephant' long? " + isLongString.test("elephant")); // true
+        
+        // Predicate to check if number is positive
+        Predicate<Integer> isPositive = n -> n > 0;
+        System.out.println("Is 10 positive? " + isPositive.test(10)); // true
+        System.out.println("Is -5 positive? " + isPositive.test(-5)); // false
+    }
+}
+```
+
+---
+
 ## 1. filter()
 
 **Purpose:** Selects elements from a stream that match a given condition (predicate).
@@ -48,6 +96,300 @@ public class FilterExample {
 Original: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 Even numbers: [2, 4, 6, 8, 10]
 Greater than 5: [6, 7, 8, 9, 10]
+```
+
+### Additional Filter Examples
+
+**Example 1: Filter Odd Numbers**
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class FilterOddNumbers {
+    public static void main(String[] args) {
+        List<Integer> numbers = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        
+        // Filter odd numbers only
+        List<Integer> oddNumbers = numbers.stream()
+            .filter(n -> n % 2 != 0)
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + numbers);
+        System.out.println("Odd numbers: " + oddNumbers);
+    }
+}
+```
+
+**Output:**
+```
+Original: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+Odd numbers: [1, 3, 5, 7, 9]
+```
+
+**Example 2: Filter Numbers Less Than or Equal to 5**
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class FilterLessThanOrEqual {
+    public static void main(String[] args) {
+        List<Integer> numbers = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        
+        // Filter numbers less than or equal to 5
+        List<Integer> lessThanOrEqualFive = numbers.stream()
+            .filter(n -> n <= 5)
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + numbers);
+        System.out.println("Less than or equal to 5: " + lessThanOrEqualFive);
+    }
+}
+```
+
+**Output:**
+```
+Original: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+Less than or equal to 5: [1, 2, 3, 4, 5]
+```
+
+**Example 3: Filter Strings That Start With a Specific Letter**
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class FilterStringsByStartLetter {
+    public static void main(String[] args) {
+        List<String> words = List.of("apple", "banana", "avocado", "cherry", "apricot", "blueberry");
+        
+        // Filter words starting with 'a'
+        List<String> wordsStartingWithA = words.stream()
+            .filter(w -> w.startsWith("a"))
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + words);
+        System.out.println("Words starting with 'a': " + wordsStartingWithA);
+        
+        // Filter words starting with 'b'
+        List<String> wordsStartingWithB = words.stream()
+            .filter(w -> w.startsWith("b"))
+            .collect(Collectors.toList());
+        
+        System.out.println("Words starting with 'b': " + wordsStartingWithB);
+    }
+}
+```
+
+**Output:**
+```
+Original: [apple, banana, avocado, cherry, apricot, blueberry]
+Words starting with 'a': [apple, avocado, apricot]
+Words starting with 'b': [banana, blueberry]
+```
+
+**Example 4: Filter Strings by Length**
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class FilterStringsByLength {
+    public static void main(String[] args) {
+        List<String> words = List.of("cat", "elephant", "dog", "butterfly", "ant", "giraffe");
+        
+        // Filter words with length greater than 5
+        List<String> longWords = words.stream()
+            .filter(w -> w.length() > 5)
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + words);
+        System.out.println("Words with length > 5: " + longWords);
+        
+        // Filter words with length exactly 3
+        List<String> threeLetterWords = words.stream()
+            .filter(w -> w.length() == 3)
+            .collect(Collectors.toList());
+        
+        System.out.println("Words with length 3: " + threeLetterWords);
+    }
+}
+```
+
+**Output:**
+```
+Original: [cat, elephant, dog, butterfly, ant, giraffe]
+Words with length > 5: [elephant, butterfly, giraffe]
+Words with length 3: [cat, dog, ant]
+```
+
+**Example 5: Filter Numbers in a Range**
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class FilterNumbersInRange {
+    public static void main(String[] args) {
+        List<Integer> numbers = List.of(1, 5, 10, 15, 20, 25, 30, 35, 40);
+        
+        // Filter numbers between 10 and 30 (inclusive)
+        List<Integer> numbersInRange = numbers.stream()
+            .filter(n -> n >= 10 && n <= 30)
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + numbers);
+        System.out.println("Numbers between 10 and 30: " + numbersInRange);
+    }
+}
+```
+
+**Output:**
+```
+Original: [1, 5, 10, 15, 20, 25, 30, 35, 40]
+Numbers between 10 and 30: [10, 15, 20, 25, 30]
+```
+
+**Example 6: Filter Negative Numbers**
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class FilterNegativeNumbers {
+    public static void main(String[] args) {
+        List<Integer> numbers = List.of(-5, 3, -2, 8, -10, 0, 7, -1);
+        
+        // Filter negative numbers only
+        List<Integer> negativeNumbers = numbers.stream()
+            .filter(n -> n < 0)
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + numbers);
+        System.out.println("Negative numbers: " + negativeNumbers);
+    }
+}
+```
+
+**Output:**
+```
+Original: [-5, 3, -2, 8, -10, 0, 7, -1]
+Negative numbers: [-5, -2, -10, -1]
+```
+
+**Example 7: Filter Non-Negative Numbers**
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class FilterNonNegativeNumbers {
+    public static void main(String[] args) {
+        List<Integer> numbers = List.of(-5, 3, -2, 8, -10, 0, 7, -1);
+        
+        // Filter non-negative numbers (>= 0)
+        List<Integer> nonNegativeNumbers = numbers.stream()
+            .filter(n -> n >= 0)
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + numbers);
+        System.out.println("Non-negative numbers: " + nonNegativeNumbers);
+    }
+}
+```
+
+**Output:**
+```
+Original: [-5, 3, -2, 8, -10, 0, 7, -1]
+Non-negative numbers: [3, 8, 0, 7]
+```
+
+**Example 8: Filter Strings Containing a Substring**
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class FilterStringsContaining {
+    public static void main(String[] args) {
+        List<String> words = List.of("hello", "world", "helicopter", "help", "welcome");
+        
+        // Filter words containing "hel"
+        List<String> wordsWithHel = words.stream()
+            .filter(w -> w.contains("hel"))
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + words);
+        System.out.println("Words containing 'hel': " + wordsWithHel);
+    }
+}
+```
+
+**Output:**
+```
+Original: [hello, world, helicopter, help, welcome]
+Words containing 'hel': [hello, helicopter, help]
+```
+
+**Example 9: Filter Empty or Blank Strings**
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class FilterNonEmptyStrings {
+    public static void main(String[] args) {
+        List<String> words = List.of("hello", "", "world", "   ", "java", "");
+        
+        // Filter non-empty strings
+        List<String> nonEmptyWords = words.stream()
+            .filter(w -> !w.isEmpty())
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + words);
+        System.out.println("Non-empty strings: " + nonEmptyWords);
+        
+        // Filter non-blank strings (not empty and not just whitespace)
+        List<String> nonBlankWords = words.stream()
+            .filter(w -> !w.isBlank())
+            .collect(Collectors.toList());
+        
+        System.out.println("Non-blank strings: " + nonBlankWords);
+    }
+}
+```
+
+**Output:**
+```
+Original: [hello, , world,    , java, ]
+Non-empty strings: [hello, world,    , java]
+Non-blank strings: [hello, world, java]
+```
+
+**Example 10: Filter Numbers Divisible by a Specific Value**
+```java
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class FilterDivisibleNumbers {
+    public static void main(String[] args) {
+        List<Integer> numbers = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 18, 20);
+        
+        // Filter numbers divisible by 3
+        List<Integer> divisibleByThree = numbers.stream()
+            .filter(n -> n % 3 == 0)
+            .collect(Collectors.toList());
+        
+        System.out.println("Original: " + numbers);
+        System.out.println("Divisible by 3: " + divisibleByThree);
+        
+        // Filter numbers divisible by 5
+        List<Integer> divisibleByFive = numbers.stream()
+            .filter(n -> n % 5 == 0)
+            .collect(Collectors.toList());
+        
+        System.out.println("Divisible by 5: " + divisibleByFive);
+    }
+}
+```
+
+**Output:**
+```
+Original: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 18, 20]
+Divisible by 3: [3, 6, 9, 12, 15, 18]
+Divisible by 5: [5, 10, 15, 20]
 ```
 
 ---

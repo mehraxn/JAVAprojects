@@ -1,0 +1,6 @@
+/target/
+/bin/
+/data/*
+!/data/.gitkeep
+/.vscode/
+/.idea

@@ -1,51 +1,168 @@
-# R1 - Subscription Feature - Complete Analysis (Updated Implementation)
+# R1 - SUBSCRIPTION TASK ANALYSIS
 
-## 📋 PART 1: EXACT R1 TASK DESCRIPTION (FROM DOCUMENT 1)
+## EXACT TASK DESCRIPTION FROM REQUIREMENTS
 
-### R1 - Subscription
-
+```
+R1 - Subscription
 The interaction with the system is made using class Social.
-
-You can register a new account using the method addPerson() which receives as parameters a unique code, name and surname.
-
-The method throws the exception PersonExistsException if the code passed is already associated with a subscription.
-
-The method getPerson() returns a string containing code, name and surname of the person, in order, separated by blanks. If the code, passed as a parameter, does not match any person, the method throws the exception NoSuchCodeException.
-
+You can register a new account using the method addPerson() which receives
+as parameters a unique code, name and surname.
+The method throws the exception PersonExistsException if the code
+passed is already associated with a subscription.
+The method getPerson() returns a string containing code, name and
+surname of the person, in order, separated by blanks. If the code,
+passed as a parameter, does not match any person, the method throws the
+exception NoSuchCodeException.
 💡 Hint:
-- use the Person class (already provided) to represent the person
-- use the repository pattern (already provided)
-  - a PersonRepository class that provides the basic ORM-related operations
-  - a personRepository object in the facade class that wraps the collection of Person objects
+
+use the Person class (already provided) to represent the person
+use the repository pattern (already provided)
+
+a PersonRepository class that provides the basic ORM-related operations
+a personRepository object in the facade class that wraps the collection of Person objects
+```
 
 ---
 
-## 📝 PART 2: WHAT WE HAVE TO DO - TASKS LIST
+## TASKS BREAKDOWN FOR R1
 
-### Task 1: Implement `addPerson()` method
-**Requirements:**
-1. Accept three parameters: `String code`, `String name`, `String surname`
-2. Check if the code already exists in the database
-3. If code exists → throw `PersonExistsException`
-4. If code doesn't exist → create a new `Person` object
-5. Save the new person to the database using the repository
-6. Use the `PersonRepository` for all database operations
+### Task 1.1: Implement addPerson() method
+- Accept three parameters: code (String), name (String), surname (String)
+- Check if code already exists in database
+- If exists: throw PersonExistsException
+- If not exists: create new Person object and save to database
 
-### Task 2: Implement `getPerson()` method
-**Requirements:**
-1. Accept one parameter: `String code`
-2. Search for the person in the database using the code
-3. If person exists → return a formatted string: `"code name surname"` (separated by spaces)
-4. If person doesn't exist → throw `NoSuchCodeException`
-5. Use the `PersonRepository` for database query
+### Task 1.2: Implement getPerson() method
+- Accept one parameter: code (String)
+- Search for person with given code in database
+- If not found: throw NoSuchCodeException
+- If found: return formatted string "code name surname" separated by blanks
+
+### Task 1.3: Use provided Person class
+- Person class is already provided as JPA entity
+- Has fields: code (ID), name, surname
+- Has constructor and getters
+
+### Task 1.4: Use repository pattern
+- PersonRepository is already provided
+- Extends GenericRepository<Person, String>
+- Provides CRUD operations through JPA
 
 ---
 
-## 🔄 PART 3: COMPLETE CHANGES MADE IN THE CODE
+## COMPLETE CODE SCRUTINY FOR R1
 
-### Change 1: `addPerson()` Method Implementation
+### FILE: Person.java
 
-#### BEFORE (Original Code - Document 9):
+#### Original Person Class (Already Provided)
+```java
+@Entity
+class Person {
+  @Id
+  private String code;
+  private String name;
+  private String surname;
+
+  Person() {
+    // default constructor is needed by JPA
+  }
+
+  Person(String code, String name, String surname) {
+    this.code = code;
+    this.name = name;
+    this.surname = surname;
+  }
+
+  String getCode() {
+    return code;
+  }
+
+  String getName() {
+    return name;
+  }
+
+  String getSurname() {
+    return surname;
+  }
+
+  //....
+}
+```
+
+#### Analysis of Person Class for R1:
+- **@Entity annotation**: Marks this class as JPA entity that maps to database table
+- **@Id annotation**: Marks 'code' field as primary key
+- **Fields**:
+  - `code`: String - unique identifier (primary key)
+  - `name`: String - person's first name
+  - `surname`: String - person's last name
+- **Default constructor**: Required by JPA for entity instantiation
+- **Parameterized constructor**: Used to create Person objects in our code
+- **Getters**: Provide access to private fields
+- **Package-private access**: Class and methods have package-private visibility (suitable for internal use)
+
+**FOR R1**: This class is used AS-IS, no modifications needed. It perfectly supports both addPerson() and getPerson() operations.
+
+---
+
+### FILE: PersonRepository.java
+
+#### Original PersonRepository Class (Already Provided)
+```java
+package social;
+
+public class PersonRepository extends GenericRepository<Person, String> {
+
+  public PersonRepository() {
+    super(Person.class);
+  }
+
+}
+```
+
+#### Analysis of PersonRepository for R1:
+- **Extends GenericRepository<Person, String>**: 
+  - First type parameter: Person = entity type
+  - Second type parameter: String = ID type (matches Person's code field)
+- **Constructor**: Calls super with Person.class to initialize generic repository
+- **Inherited methods available for R1**:
+  - `findById(String code)`: Returns Optional<Person> - used in BOTH addPerson() and getPerson()
+  - `save(Person person)`: Persists new person - used in addPerson()
+  - `update(Person person)`: Updates existing person - NOT needed for R1
+  - `delete(Person person)`: Deletes person - NOT needed for R1
+  - `findAll()`: Returns all persons - NOT needed for R1
+
+**FOR R1**: This class is used AS-IS, no modifications needed. The inherited findById() and save() methods are sufficient.
+
+---
+
+### FILE: Social.java
+
+#### Code Added for R1
+
+##### 1. Repository Instance Variable
+```java
+private final PersonRepository personRepository = new PersonRepository();
+```
+
+**Analysis**:
+- **Type**: PersonRepository (our custom repository)
+- **Modifier**: `private final` 
+  - `private`: Only accessible within Social class (encapsulation)
+  - `final`: Cannot be reassigned after initialization (immutable reference)
+- **Initialization**: Creates new instance immediately (not lazy)
+- **Purpose**: Provides access to database operations for Person entities
+- **Pattern**: Dependency - Social class depends on PersonRepository
+
+**Why this approach**:
+- Simple instantiation suitable for this architecture
+- Repository handles all database complexity
+- Social class acts as facade, delegating persistence to repository
+
+---
+
+##### 2. addPerson() Method Implementation
+
 ```java
 /**
  * Creates a new account for a person
@@ -64,113 +181,82 @@ public void addPerson(String code, String name, String surname) throws PersonExi
 }
 ```
 
-#### AFTER (Updated Code - Document 11):
-```java
-/**
- * Creates a new account for a person
- * * @param code    nickname of the account
- * @param name    first name
- * @param surname last name
- * @throws PersonExistsException in case of duplicate code
- */
-public void addPerson(String code, String name, String surname) throws PersonExistsException {
-    if (personRepository.findById(code).isPresent()){    // check if db already contains the code//ADDED FOR R1
-        throw new PersonExistsException();
-    }
-    Person person = new Person(code, name, surname);    // create the person as a POJO//ADDED FOR R1
-    personRepository.save(person);                      //ADDED FOR R1
-}
-```
+**Line-by-Line Analysis**:
 
-#### DETAILED LINE-BY-LINE CHANGES:
+**Line 1**: `if (personRepository.findById(code).isPresent())`
+- **personRepository.findById(code)**: 
+  - Calls inherited method from GenericRepository
+  - Executes JPA query: `SELECT p FROM Person p WHERE p.code = :code`
+  - Returns: `Optional<Person>` (may contain Person or be empty)
+- **.isPresent()**:
+  - Method of Optional class
+  - Returns: `true` if Optional contains a value, `false` if empty
+  - Purpose: Check if person with this code already exists
+- **if condition**: Enters block if person exists (validation check)
 
-**JavaDoc Comment Changes:**
-```java
-// BEFORE
- * @param code    nickname of the account
+**Line 2**: `throw new PersonExistsException();`
+- **throw**: Java keyword to throw exception
+- **new PersonExistsException()**: Creates instance of custom exception
+- **Purpose**: Signal to caller that operation failed due to duplicate code
+- **Effect**: Method execution stops, exception propagates to caller
+- **Note**: PersonExistsException is checked exception (must be declared in method signature)
 
-// AFTER
- * * @param code    nickname of the account
-```
-**Change:** Added an extra asterisk (`*`) before `@param` in all parameter documentation.
+**Line 4**: `Person person = new Person(code, name, surname);`
+- **Person person**: Declares variable of type Person
+- **new Person(code, name, surname)**: 
+  - Calls parameterized constructor of Person class
+  - Creates new Person object (POJO - Plain Old Java Object)
+  - Object is in "transient" state (not yet in database)
+- **Parameters passed**:
+  - `code`: Will become the primary key (@Id field)
+  - `name`: Person's first name
+  - `surname`: Person's last name
 
----
+**Line 5**: `personRepository.save(person);`
+- **personRepository.save(person)**:
+  - Calls inherited save() method from GenericRepository
+  - Internally executes: `JPAUtil.transaction(em -> em.persist(person))`
+  - **em.persist(person)**: JPA method that:
+    - Changes object state from "transient" to "managed"
+    - Generates SQL INSERT statement
+    - Executes: `INSERT INTO Person (code, name, surname) VALUES (?, ?, ?)`
+    - Person now exists in database
+- **Return value**: void (method doesn't return anything)
+- **Transaction**: Automatically handled by JPAUtil.transaction()
+  - Begins transaction
+  - Executes persist
+  - Commits transaction
+  - If error: rolls back transaction
 
-**Line 1 - Original:**
-```java
-if (personRepository.findById(code).isPresent()){    // check if db already contains the code
-```
+**Method Flow Summary**:
+1. Check if code exists → if YES → throw exception (stop here)
+2. If code doesn't exist → continue
+3. Create Person object in memory (transient state)
+4. Save to database (managed/persistent state)
+5. Method completes successfully (no return value)
 
-**Line 1 - Updated:**
-```java
-if (personRepository.findById(code).isPresent()){    // check if db already contains the code//ADDED FOR R1
-```
+**Exception Handling**:
+- **Declared exception**: `throws PersonExistsException`
+  - Must be handled by caller (checked exception)
+- **Possible undeclared exceptions**:
+  - Database connection errors (runtime exceptions)
+  - JPA/Hibernate exceptions (wrapped by JPAUtil)
 
-**Change:** Added comment `//ADDED FOR R1` at the end of the existing comment.
-
----
-
-**Line 2 - Original:**
-```java
-    throw new PersonExistsException();
-```
-
-**Line 2 - Updated:**
-```java
-    throw new PersonExistsException();
-```
-
-**Change:** No change on this line.
-
----
-
-**Line 3 - Original:**
-```java
-}
-```
-
-**Line 3 - Updated:**
-```java
-}
-```
-
-**Change:** No change on this line.
-
----
-
-**Line 4 - Original:**
-```java
-Person person = new Person(code, name, surname);    // create the person as a POJO
-```
-
-**Line 4 - Updated:**
-```java
-Person person = new Person(code, name, surname);    // create the person as a POJO//ADDED FOR R1
-```
-
-**Change:** Added comment `//ADDED FOR R1` at the end of the existing comment.
+**Testing Scenarios**:
+- **Scenario 1**: New unique code
+  - Input: code="john123", name="John", surname="Doe"
+  - Expected: Person saved successfully, no exception
+- **Scenario 2**: Duplicate code
+  - Input: code="john123" (already exists), name="Jane", surname="Smith"
+  - Expected: PersonExistsException thrown, no database modification
+- **Scenario 3**: Null values
+  - Input: code=null, name="John", surname="Doe"
+  - Expected: Database constraint violation (code is primary key, cannot be null)
 
 ---
 
-**Line 5 - Original:**
-```java
-personRepository.save(person);                      // save it to db
-```
+##### 3. getPerson() Method Implementation
 
-**Line 5 - Updated:**
-```java
-personRepository.save(person);                      //ADDED FOR R1
-```
-
-**Changes:** 
-1. Removed the original comment `// save it to db`
-2. Added new comment `//ADDED FOR R1`
-
----
-
-### Change 2: `getPerson()` Method Implementation
-
-#### BEFORE (Original Code - Document 9):
 ```java
 /**
  * Retrieves information about the person given their account code.
@@ -182,771 +268,604 @@ personRepository.save(person);                      //ADDED FOR R1
  * @throws NoSuchCodeException if a person with that code does not exist
  */
 public String getPerson(String code) throws NoSuchCodeException {
-    return null; // TO BE IMPLEMENTED
-}
-```
-
-#### AFTER (Updated Code - Document 11):
-```java
-/**
- * Retrieves information about the person given their account code.
- * The info consists in name and surname of the person, in order, separated by
- * blanks.
- * * @param code account code
- * @return the information of the person
- * @throws NoSuchCodeException if a person with that code does not exist
- */
-public String getPerson(String code) throws NoSuchCodeException {
-    Optional<Person> res = personRepository.findById(code); //ADDED FOR R1
-    if (!res.isPresent()) { //ADDED FOR R1
-    	throw new NoSuchCodeException(); //ADDED FOR R1
+    Optional<Person> personOpt = personRepository.findById(code); //ADDED FOR R1 - find person by code
+    if (personOpt.isEmpty()) { //ADDED FOR R1 - check if person exists
+      throw new NoSuchCodeException(); //ADDED FOR R1
     } //ADDED FOR R1
-    Person p = res.get(); //ADDED FOR R1
-    return p.getCode() + " " + p.getName() + " " + p.getSurname(); //ADDED FOR R1
+    Person person = personOpt.get(); //ADDED FOR R1
+    return code + " " + person.getName() + " " + person.getSurname(); //ADDED FOR R1 - return formatted string
 }
 ```
 
-#### DETAILED LINE-BY-LINE CHANGES:
+**Line-by-Line Analysis**:
 
-**JavaDoc Comment Changes:**
-```java
-// BEFORE
- * @param code account code
+**Line 1**: `Optional<Person> personOpt = personRepository.findById(code);`
+- **Optional<Person>**: Java 8+ container that may or may not contain a Person object
+  - Helps avoid NullPointerException
+  - Forces explicit handling of "not found" case
+- **personOpt**: Variable name (convention: "Opt" suffix for Optional)
+- **personRepository.findById(code)**:
+  - Calls inherited method from GenericRepository
+  - Internally executes: `JPAUtil.withEntityManager(em -> Optional.ofNullable(em.find(Person.class, code)))`
+  - **em.find(Person.class, code)**: JPA method that:
+    - Generates SQL: `SELECT code, name, surname FROM Person WHERE code = ?`
+    - Returns: Person object if found, null if not found
+  - **Optional.ofNullable()**: Wraps result in Optional (handles null safely)
+- **Result**: 
+  - If person exists: Optional contains Person object
+  - If person doesn't exist: Optional is empty (not null!)
 
-// AFTER
- * * @param code account code
-```
-**Change:** Added an extra asterisk (`*`) before `@param`.
+**Line 2**: `if (personOpt.isEmpty())`
+- **personOpt.isEmpty()**: 
+  - Method of Optional class
+  - Returns: `true` if Optional contains no value, `false` if contains value
+  - Opposite of isPresent()
+- **if condition**: Enters block if person was NOT found
 
----
+**Line 3**: `throw new NoSuchCodeException();`
+- **throw**: Java keyword to throw exception
+- **new NoSuchCodeException()**: Creates instance of custom exception
+- **Purpose**: Signal to caller that requested code doesn't exist
+- **Effect**: Method execution stops, exception propagates to caller
+- **Note**: NoSuchCodeException is checked exception (must be declared in method signature)
 
-**Original Single Line:**
-```java
-return null; // TO BE IMPLEMENTED
-```
+**Line 5**: `Person person = personOpt.get();`
+- **Person person**: Declares variable of type Person
+- **personOpt.get()**:
+  - Method of Optional class
+  - Extracts the Person object from Optional
+  - **IMPORTANT**: Only safe to call after checking isEmpty() or isPresent()
+  - If called on empty Optional: throws NoSuchElementException (we avoid this by checking first)
+- **Result**: person variable now holds the Person object from database
 
-**Replaced with 6 Lines:**
+**Line 6**: `return code + " " + person.getName() + " " + person.getSurname();`
+- **Return type**: String (as declared in method signature)
+- **String concatenation**: Using + operator
+  - `code`: Parameter passed to method (String)
+  - `" "`: Space character (String literal)
+  - `person.getName()`: Calls getter, returns person's name (String)
+  - `" "`: Another space character
+  - `person.getSurname()`: Calls getter, returns person's surname (String)
+- **Result format**: "code name surname"
+  - Example: If code="john123", name="John", surname="Doe"
+  - Returns: "john123 John Doe"
+- **Important**: Format is specified in requirements:
+  - "code, name and surname of the person, in order, separated by blanks"
+  - We return code first (even though it's redundant since caller already has it)
 
-**Line 1:**
-```java
-Optional<Person> res = personRepository.findById(code); //ADDED FOR R1
-```
-**Purpose:** Query the database to find a person with the given code. Store the result in an `Optional<Person>` named `res`.
+**Method Flow Summary**:
+1. Search database for person with given code
+2. If not found → throw NoSuchCodeException (stop here)
+3. If found → extract Person object from Optional
+4. Format string: "code name surname"
+5. Return formatted string to caller
 
----
+**Exception Handling**:
+- **Declared exception**: `throws NoSuchCodeException`
+  - Must be handled by caller (checked exception)
+- **Possible undeclared exceptions**:
+  - Database connection errors (runtime exceptions)
+  - JPA/Hibernate exceptions (wrapped by JPAUtil)
 
-**Line 2:**
-```java
-if (!res.isPresent()) { //ADDED FOR R1
-```
-**Purpose:** Check if the Optional is empty (person NOT found). Uses negative logic with `!` operator.
-
----
-
-**Line 3:**
-```java
-    throw new NoSuchCodeException(); //ADDED FOR R1
-```
-**Purpose:** If person doesn't exist, throw the exception immediately.
-
----
-
-**Line 4:**
-```java
-} //ADDED FOR R1
-```
-**Purpose:** Close the if block.
-
----
-
-**Line 5:**
-```java
-Person p = res.get(); //ADDED FOR R1
-```
-**Purpose:** Extract the Person object from the Optional (we know it exists at this point).
-
----
-
-**Line 6:**
-```java
-return p.getCode() + " " + p.getName() + " " + p.getSurname(); //ADDED FOR R1
-```
-**Purpose:** Concatenate code, name, and surname with space separators, and return the formatted string.
-
----
-
-## 🔍 PART 4: COMPLETE CODE SCRUTINY AND EXPLANATION
-
-### SCRUTINY OF `addPerson()` METHOD
-
-#### Line 1: Check for Existing Person
-```java
-if (personRepository.findById(code).isPresent()){    // check if db already contains the code//ADDED FOR R1
-```
-
-**What it does:**
-- Calls `findById(code)` on the `PersonRepository` instance
-- `PersonRepository` extends `GenericRepository<Person, String>`
-- The `findById()` method is defined in `GenericRepository` (Document 2):
+**Alternative Implementation Considerations**:
+- **Current approach**: Uses Optional.isEmpty() + get()
+  - Pro: Clear and explicit
+  - Pro: Easy to understand for junior programmers
+- **Alternative 1**: Optional.orElseThrow()
   ```java
-  public Optional<E> findById(I id) {
-    return JPAUtil.withEntityManager(
-      em -> Optional.ofNullable(em.find(entityClass, id))
-    );
-  }
+  Person person = personRepository.findById(code)
+                    .orElseThrow(() -> new NoSuchCodeException());
+  return code + " " + person.getName() + " " + person.getSurname();
   ```
-- Returns an `Optional<Person>` object
-- Immediately calls `.isPresent()` on the returned Optional
-- `.isPresent()` returns `true` if a Person with that code exists, `false` otherwise
+  - Pro: More concise, functional style
+  - Con: Harder for beginners to understand lambda expressions
+- **Alternative 2**: Optional.map()
+  ```java
+  return personRepository.findById(code)
+           .map(p -> code + " " + p.getName() + " " + p.getSurname())
+           .orElseThrow(() -> new NoSuchCodeException());
+  ```
+  - Pro: Most concise, pure functional style
+  - Con: Much harder for beginners
+- **Decision**: Current approach is best for junior programmers (clear and simple)
 
-**Database Interaction:**
-- Uses `JPAUtil.withEntityManager()` which provides an EntityManager
-- Internally calls `em.find(Person.class, code)` which is a JPA method
-- JPA/Hibernate executes SQL: `SELECT * FROM Person WHERE code = ?`
-- If found: Optional contains Person, `isPresent()` returns `true`
-- If not found: Optional is empty, `isPresent()` returns `false`
+**Testing Scenarios**:
+- **Scenario 1**: Person exists
+  - Input: code="john123" (exists in DB with name="John", surname="Doe")
+  - Expected: Returns "john123 John Doe"
+- **Scenario 2**: Person doesn't exist
+  - Input: code="unknown999" (not in DB)
+  - Expected: NoSuchCodeException thrown
+- **Scenario 3**: Null code
+  - Input: code=null
+  - Expected: Will find nothing (findById handles null), throws NoSuchCodeException
+- **Scenario 4**: Empty string code
+  - Input: code=""
+  - Expected: Will find nothing (no person with empty code), throws NoSuchCodeException
 
-**Why this approach?**
-- Combines query and check in a single line
-- More concise than storing Optional in a variable first
-- Directly chains the method calls: `findById().isPresent()`
-- Efficient: no unnecessary intermediate variables
-
-**Control Flow:**
-- If `true` (person exists): enters if block, throws exception
-- If `false` (person doesn't exist): skips if block, continues to creation
-
-**Comment:**
-- Original comment: `// check if db already contains the code`
-- Added marker: `//ADDED FOR R1`
-- Dual comment clearly indicates the purpose and implementation tracking
+**String Format Verification**:
+- Requirement states: "code, name and surname of the person, in order, separated by blanks"
+- Our implementation: `code + " " + person.getName() + " " + person.getSurname()`
+- **Verification**: ✓ CORRECT
+  - Code comes first ✓
+  - Name comes second ✓
+  - Surname comes third ✓
+  - Separated by single space (" ") ✓
+  - Order matches requirement ✓
 
 ---
 
-#### Line 2: Throw Exception if Duplicate
-```java
-    throw new PersonExistsException();
+## DATA FLOW DIAGRAM FOR R1
+
+```
+addPerson() Flow:
+==================
+User/Test → Social.addPerson(code, name, surname)
+              ↓
+         PersonRepository.findById(code)
+              ↓
+         JPAUtil.withEntityManager()
+              ↓
+         EntityManager.find()
+              ↓
+         [Database Query: SELECT * FROM Person WHERE code = ?]
+              ↓
+         Optional<Person>
+              ↓
+    ┌─────────┴──────────┐
+    │                    │
+ isEmpty?             isPresent?
+    │                    │
+    NO                  YES
+    ↓                    ↓
+Create Person      throw PersonExistsException
+    ↓                    ↓
+PersonRepository   Method ends with exception
+.save(person)          (propagates to caller)
+    ↓
+JPAUtil.transaction()
+    ↓
+EntityManager.persist()
+    ↓
+[Database: INSERT INTO Person VALUES (...)]
+    ↓
+Method completes successfully
+(no return value)
+
+
+getPerson() Flow:
+==================
+User/Test → Social.getPerson(code)
+              ↓
+         PersonRepository.findById(code)
+              ↓
+         JPAUtil.withEntityManager()
+              ↓
+         EntityManager.find()
+              ↓
+         [Database Query: SELECT * FROM Person WHERE code = ?]
+              ↓
+         Optional<Person>
+              ↓
+    ┌─────────┴──────────┐
+    │                    │
+ isEmpty?             isPresent?
+    │                    │
+   YES                   NO
+    ↓                    ↓
+throw              Extract Person with get()
+NoSuchCodeException      ↓
+    ↓              Format string:
+Method ends        "code name surname"
+with exception          ↓
+(propagates         Return string
+to caller)          to caller
 ```
 
-**What it does:**
-- Creates a new instance of `PersonExistsException`
-- Throws it to the caller
-- Method execution stops immediately at this point
+---
 
-**Exception Class (Document 7):**
+## DEPENDENCY ANALYSIS FOR R1
+
+### Classes Used:
+1. **Social** (main facade class)
+   - Depends on: PersonRepository
+   - Purpose: Provides public API for R1 operations
+
+2. **PersonRepository** (data access layer)
+   - Depends on: GenericRepository, Person, JPAUtil
+   - Purpose: Handles database operations for Person entities
+
+3. **GenericRepository** (base repository class)
+   - Depends on: JPAUtil, Jakarta Persistence API
+   - Purpose: Provides generic CRUD operations
+
+4. **Person** (entity class)
+   - Depends on: Jakarta Persistence API (annotations)
+   - Purpose: Represents person data and maps to database table
+
+5. **JPAUtil** (utility class)
+   - Depends on: Jakarta Persistence API, H2 Database
+   - Purpose: Manages EntityManager lifecycle and transactions
+
+### External Dependencies:
+1. **Jakarta Persistence API (JPA)**
+   - Annotations: @Entity, @Id
+   - Interfaces: EntityManager, EntityTransaction
+   - Classes: Persistence
+
+2. **Hibernate ORM**
+   - Implementation of JPA specification
+   - Handles SQL generation and execution
+
+3. **H2 Database**
+   - In-memory database for testing
+   - Stores Person records
+
+4. **Java Standard Library**
+   - Optional<T> class
+   - String class
+   - Exception handling
+
+---
+
+## EXCEPTION HANDLING STRATEGY FOR R1
+
+### Custom Exceptions:
+
+#### PersonExistsException
 ```java
 public class PersonExistsException extends Exception {
   private static final long serialVersionUID = 1L;
 }
 ```
+- **Type**: Checked exception (extends Exception)
+- **When thrown**: When trying to add person with duplicate code
+- **Purpose**: Inform caller that person already exists
+- **Handling**: Must be caught or declared by caller
 
-**Exception Type:**
-- Extends `Exception` (checked exception)
-- Must be declared in method signature: `throws PersonExistsException`
-- Caller must handle with try-catch or declare throws
-
-**Purpose:**
-- Enforces unique code constraint
-- Prevents duplicate primary keys in database
-- Informs caller that the operation failed due to duplicate code
-
-**When this executes:**
-- Only when `personRepository.findById(code).isPresent()` returns `true`
-- Meaning: database already contains a Person with this code
-
-**Control Flow:**
-- Method terminates here
-- No Person object is created
-- No database save operation occurs
-- Exception propagates to caller
-
----
-
-#### Line 3: Close if block
-```java
-}
-```
-
-**Purpose:** Closes the if statement that checks for existing person.
-
----
-
-#### Line 4: Create Person Object
-```java
-Person person = new Person(code, name, surname);    // create the person as a POJO//ADDED FOR R1
-```
-
-**What it does:**
-- Calls the `Person` constructor with three arguments
-- Creates a new Person object in memory (not yet in database)
-- Object is in "transient" state (JPA terminology)
-
-**Person Class Constructor (Document 6):**
-```java
-Person(String code, String name, String surname) {
-    this.code = code;
-    this.name = name;
-    this.surname = surname;
-}
-```
-
-**Person Class Structure:**
-```java
-@Entity
-class Person {
-  @Id
-  private String code;
-  private String name;
-  private String surname;
-  
-  Person() {
-    // default constructor needed by JPA
-  }
-  
-  Person(String code, String name, String surname) {
-    this.code = code;
-    this.name = name;
-    this.surname = surname;
-  }
-  
-  // getters...
-}
-```
-
-**JPA Annotations:**
-- `@Entity` - Marks this class as a JPA entity (maps to database table)
-- `@Id` - Marks `code` as the primary key
-- Hibernate will map this to table: `Person (code VARCHAR PRIMARY KEY, name VARCHAR, surname VARCHAR)`
-
-**Object State:**
-- Variable `person` now holds reference to the new Person object
-- Object contains: code, name, surname fields populated
-- Object is a POJO (Plain Old Java Object)
-- Not yet managed by JPA EntityManager
-- Not yet persisted to database
-
-**Comments:**
-- Original comment: `// create the person as a POJO`
-- Added marker: `//ADDED FOR R1`
-- "POJO" refers to Plain Old Java Object (before persistence)
-
----
-
-#### Line 5: Save to Database
-```java
-personRepository.save(person);                      //ADDED FOR R1
-```
-
-**What it does:**
-- Calls `save()` method on `PersonRepository`
-- Persists the Person object to the database
-- Makes the data permanent
-
-**Save Method Implementation (Document 2):**
-```java
-public void save(E entity) {
-    JPAUtil.transaction(em -> em.persist(entity));
-}
-```
-
-**Step-by-step execution:**
-
-1. **JPAUtil.transaction() is called:**
-   ```java
-   public static <X extends Exception> void transaction(ThrowingConsumer<EntityManager,X> action) throws X {
-     EntityManager em = getEntityManager();
-     EntityTransaction tx = em.getTransaction();
-     if(!inTransaction.get()){
-       inTransaction.set(true);
-       try(em){
-           tx.begin();
-           action.accept(em);
-           tx.commit();
-       } catch (Exception ex) {
-         if (tx.isActive())
-           tx.rollback();
-         throw ex;
-       } finally {
-         inTransaction.remove();
-       }
-     }else{
-       action.accept(em);
-     }
-   }
-   ```
-
-2. **EntityManager is obtained:**
-   - `getEntityManager()` retrieves or creates an EntityManager
-   - EntityManager is the JPA interface for persistence operations
-   - Manages entity lifecycle and database communication
-
-3. **Transaction begins:**
-   - `tx.begin()` starts a database transaction
-   - Ensures ACID properties (Atomicity, Consistency, Isolation, Durability)
-   - All operations within transaction are atomic (all or nothing)
-
-4. **Entity is persisted:**
-   - `em.persist(entity)` tells EntityManager to manage this entity
-   - Entity moves from "transient" state to "managed" state
-   - Hibernate prepares SQL: `INSERT INTO Person (code, name, surname) VALUES (?, ?, ?)`
-   - SQL parameters are bound: code, name, surname values
-
-5. **Transaction commits:**
-   - `tx.commit()` executes the prepared SQL statements
-   - INSERT is sent to database
-   - Database writes the new row
-   - Changes become permanent and visible to other transactions
-   - Entity remains in "managed" state
-
-6. **Error handling:**
-   - If any exception occurs during persist or commit
-   - `tx.rollback()` is called in the catch block
-   - Database returns to state before transaction began
-   - Exception is re-thrown to caller
-   - Person object is not saved
-
-7. **Cleanup:**
-   - EntityManager is closed (via try-with-resources)
-   - Entity becomes "detached" (no longer tracked by EntityManager)
-   - Transaction state is cleaned up
-
-**Result:**
-- Person record is now in the database
-- Can be retrieved in future queries
-- Code uniqueness is enforced by database primary key constraint
-
-**Comment Change:**
-- Original comment: `// save it to db`
-- New comment: `//ADDED FOR R1`
-- More concise marker for implementation tracking
-
----
-
-### SCRUTINY OF `getPerson()` METHOD
-
-#### Line 1: Query Database
-```java
-Optional<Person> res = personRepository.findById(code); //ADDED FOR R1
-```
-
-**What it does:**
-- Calls `findById(code)` on the `PersonRepository` instance
-- Queries database for Person with the given code
-- Returns `Optional<Person>` object
-- Stores the result in variable `res`
-
-**Database Query:**
-- Uses `JPAUtil.withEntityManager()` internally
-- Executes JPA query: `em.find(Person.class, code)`
-- Hibernate translates to SQL: `SELECT * FROM Person WHERE code = ?`
-- Database executes query with parameter binding
-
-**Two possible outcomes:**
-
-1. **Person found:**
-   - Database returns row with matching code
-   - Hibernate creates Person object from row data
-   - Object fields populated: code, name, surname
-   - Optional contains the Person object
-   - `res.isPresent()` will return `true`
-
-2. **Person not found:**
-   - Database returns no rows
-   - Hibernate returns `null`
-   - `Optional.ofNullable(null)` creates empty Optional
-   - `res.isPresent()` will return `false`
-
-**Variable naming:**
-- `res` is short for "result"
-- Abbreviated but clear in context
-- Could alternatively be named `result`, `optionalPerson`, or `personOptional`
-
-**Entity State:**
-- If found, Person is in "managed" state within EntityManager context
-- Entity is cached in first-level cache
-- Changes to entity would be tracked (though we don't modify it here)
-
-**Comment:**
-- `//ADDED FOR R1` marks this as R1 implementation
-
----
-
-#### Line 2: Check if Person Not Found
-```java
-if (!res.isPresent()) { //ADDED FOR R1
-```
-
-**What it does:**
-- Calls `isPresent()` on the Optional object `res`
-- Returns `true` if Optional contains a Person, `false` if empty
-- Applies `!` (NOT) operator to invert the logic
-- `!res.isPresent()` means "if person is NOT present"
-
-**Logic Flow:**
-- `res.isPresent()` returns:
-  - `true` if person found → `!true` = `false` → don't enter if block
-  - `false` if person not found → `!false` = `true` → enter if block
-
-**Why negative logic?**
-- Handles error case first (fail-fast pattern)
-- Throws exception immediately if person doesn't exist
-- Remaining code executes only when person exists
-- Avoids nested if-else structure
-- More readable: "if not found, throw exception; otherwise, continue"
-
-**Alternative positive logic:**
-```java
-if (res.isPresent()) {
-    Person p = res.get();
-    return p.getCode() + " " + p.getName() + " " + p.getSurname();
-} else {
-    throw new NoSuchCodeException();
-}
-```
-Both approaches work, but negative check is more concise.
-
-**Optional API Note:**
-- `isPresent()` is the traditional way (Java 8+)
-- Modern alternative: `res.isEmpty()` (Java 11+) would be more direct
-- But `!res.isPresent()` is widely compatible and clear
-
----
-
-#### Line 3: Throw Exception for Not Found
-```java
-    throw new NoSuchCodeException(); //ADDED FOR R1
-```
-
-**What it does:**
-- Creates new instance of `NoSuchCodeException`
-- Throws it to the caller
-- Method execution stops immediately
-
-**Exception Class (Document 5):**
+#### NoSuchCodeException
 ```java
 public class NoSuchCodeException extends Exception {
   private static final long serialVersionUID = 1L;
 }
 ```
+- **Type**: Checked exception (extends Exception)
+- **When thrown**: When trying to get person with non-existent code
+- **Purpose**: Inform caller that person doesn't exist
+- **Handling**: Must be caught or declared by caller
 
-**Exception Type:**
-- Extends `Exception` (checked exception)
-- Must be declared in method signature: `throws NoSuchCodeException`
-- Caller must handle it with try-catch or declare throws
+### Exception Flow:
 
-**Purpose:**
-- Communicates to caller that requested code doesn't exist
-- Follows requirement: "throws the exception NoSuchCodeException"
-- Allows caller to handle missing persons appropriately
-- Prevents returning null or invalid data
+**addPerson() exceptions**:
+1. **PersonExistsException**: 
+   - Thrown explicitly by our code
+   - Caller must handle
+2. **RuntimeException** (potential):
+   - Database connection failures
+   - JPA/Hibernate errors
+   - Wrapped by JPAUtil
 
-**When this executes:**
-- Only when `!res.isPresent()` is `true`
-- Meaning: database query found no Person with given code
-- Could occur if:
-  - Code was never added
-  - Code was deleted
-  - Code was misspelled in request
+**getPerson() exceptions**:
+1. **NoSuchCodeException**:
+   - Thrown explicitly by our code
+   - Caller must handle
+2. **RuntimeException** (potential):
+   - Database connection failures
+   - JPA/Hibernate errors
+   - Wrapped by JPAUtil
 
-**Control Flow:**
-- Method terminates here
-- No return statement is reached
-- Exception propagates up the call stack
-- Caller must handle or propagate exception
+---
 
-**Example Usage:**
-```java
-try {
-    String info = social.getPerson("P999");
-    System.out.println(info);
-} catch (NoSuchCodeException e) {
-    System.out.println("Error: Person not found!");
-}
+## DATABASE SCHEMA FOR R1
+
+### Person Table Structure:
+```sql
+CREATE TABLE Person (
+    code VARCHAR(255) NOT NULL PRIMARY KEY,
+    name VARCHAR(255),
+    surname VARCHAR(255)
+);
+```
+
+### Column Details:
+- **code**: 
+  - Type: VARCHAR(255)
+  - Constraint: PRIMARY KEY, NOT NULL
+  - Purpose: Unique identifier for person
+  - Maps to: Person.code field (@Id annotation)
+
+- **name**:
+  - Type: VARCHAR(255)
+  - Constraint: None (nullable)
+  - Purpose: Person's first name
+  - Maps to: Person.name field
+
+- **surname**:
+  - Type: VARCHAR(255)
+  - Constraint: None (nullable)
+  - Purpose: Person's last name
+  - Maps to: Person.surname field
+
+### SQL Operations Generated:
+
+**For addPerson()**:
+```sql
+-- Step 1: Check if exists (findById)
+SELECT code, name, surname 
+FROM Person 
+WHERE code = ?;
+
+-- Step 2: If not exists, insert (save)
+INSERT INTO Person (code, name, surname) 
+VALUES (?, ?, ?);
+```
+
+**For getPerson()**:
+```sql
+-- Query person by code
+SELECT code, name, surname 
+FROM Person 
+WHERE code = ?;
 ```
 
 ---
 
-#### Line 4: Close if Block
-```java
-} //ADDED FOR R1
+## COMPLETE EXAMPLE EXECUTION TRACE
+
+### Example 1: Successful addPerson()
+
+**Input**: `addPerson("john123", "John", "Doe")`
+
+**Execution Trace**:
+```
+1. Call: Social.addPerson("john123", "John", "Doe")
+2. Call: personRepository.findById("john123")
+3. Call: JPAUtil.withEntityManager(em -> ...)
+4. Call: em.find(Person.class, "john123")
+5. Execute SQL: SELECT code, name, surname FROM Person WHERE code = 'john123'
+6. Database returns: null (no person found)
+7. Return: Optional.ofNullable(null) = Optional.empty()
+8. Check: personOpt.isPresent() = false
+9. Skip: if block (don't throw exception)
+10. Create: new Person("john123", "John", "Doe")
+11. Call: personRepository.save(person)
+12. Call: JPAUtil.transaction(em -> em.persist(person))
+13. Begin transaction
+14. Call: em.persist(person)
+15. Execute SQL: INSERT INTO Person (code, name, surname) VALUES ('john123', 'John', 'Doe')
+16. Database stores: Person record
+17. Commit transaction
+18. Method completes successfully
 ```
 
-**Purpose:** Closes the if statement that handles the not-found case.
-
-**Execution State:**
-- If this line is reached, we're exiting the exception-throwing block
-- Means we've already thrown exception and won't execute further code
-- This closing brace is technically never "reached" during exception flow
+**Result**: Person "john123" saved to database, no exception, method returns void
 
 ---
 
-#### Line 5: Extract Person Object
-```java
-Person p = res.get(); //ADDED FOR R1
+### Example 2: Duplicate addPerson()
+
+**Setup**: Person "john123" already exists in database
+
+**Input**: `addPerson("john123", "Jane", "Smith")`
+
+**Execution Trace**:
+```
+1. Call: Social.addPerson("john123", "Jane", "Smith")
+2. Call: personRepository.findById("john123")
+3. Call: JPAUtil.withEntityManager(em -> ...)
+4. Call: em.find(Person.class, "john123")
+5. Execute SQL: SELECT code, name, surname FROM Person WHERE code = 'john123'
+6. Database returns: Person object with code="john123", name="John", surname="Doe"
+7. Return: Optional.ofNullable(person) = Optional[Person]
+8. Check: personOpt.isPresent() = true
+9. Enter: if block
+10. Throw: new PersonExistsException()
+11. Method execution stops
+12. Exception propagates to caller
 ```
 
-**What it does:**
-- Calls `get()` method on the Optional object `res`
-- Extracts and returns the Person object contained in the Optional
-- Stores it in variable `p`
-
-**Important Safety Note:**
-- Calling `get()` on empty Optional throws `NoSuchElementException`
-- **But we're safe here** because:
-  - We already checked `!res.isPresent()` in line 2
-  - If Optional was empty, exception was thrown in line 3
-  - This line only executes if Optional contains a Person
-- This is the correct pattern for safe Optional usage
-
-**Variable naming:**
-- `p` is short abbreviation for "person"
-- Concise but clear in context
-- Alternative names: `person`, `foundPerson`, `existingPerson`
-
-**Object State:**
-- `p` now references the Person entity from database
-- Object contains fields: code, name, surname
-- Fields populated from database row
-- Object provides getter methods to access fields
-
-**Why separate variable?**
-- Could directly call `res.get().getCode()` etc.
-- But storing in variable makes next line more readable
-- Follows principle: one operation per line
-- Makes debugging easier (can inspect `p` in debugger)
+**Result**: PersonExistsException thrown, no database modification, Jane Smith not added
 
 ---
 
-#### Line 6: Format and Return String
-```java
-return p.getCode() + " " + p.getName() + " " + p.getSurname(); //ADDED FOR R1
+### Example 3: Successful getPerson()
+
+**Setup**: Person "john123" exists in database with name="John", surname="Doe"
+
+**Input**: `getPerson("john123")`
+
+**Execution Trace**:
+```
+1. Call: Social.getPerson("john123")
+2. Call: personRepository.findById("john123")
+3. Call: JPAUtil.withEntityManager(em -> ...)
+4. Call: em.find(Person.class, "john123")
+5. Execute SQL: SELECT code, name, surname FROM Person WHERE code = 'john123'
+6. Database returns: Person object with code="john123", name="John", surname="Doe"
+7. Return: Optional.ofNullable(person) = Optional[Person]
+8. Check: personOpt.isEmpty() = false
+9. Skip: if block (don't throw exception)
+10. Extract: Person person = personOpt.get()
+11. Get: person.getName() returns "John"
+12. Get: person.getSurname() returns "Doe"
+13. Concatenate: "john123" + " " + "John" + " " + "Doe" = "john123 John Doe"
+14. Return: "john123 John Doe"
 ```
 
-**What it does:**
-- Calls three getter methods on Person object `p`
-- Concatenates the results with space separators
-- Returns the formatted string to caller
-
-**Getter Methods (Document 6):**
-```java
-String getCode() {
-    return code;
-}
-
-String getName() {
-    return name;
-}
-
-String getSurname() {
-    return surname;
-}
-```
-
-**String Concatenation:**
-- Uses `+` operator to concatenate strings
-- Execution order (left to right):
-  1. `p.getCode()` returns code string (e.g., "P001")
-  2. `+ " "` appends space: "P001 "
-  3. `+ p.getName()` appends name: "P001 Mario "
-  4. `+ " "` appends space: "P001 Mario "
-  5. `+ p.getSurname()` appends surname: "P001 Mario Rossi"
-- Java compiler optimizes this to use StringBuilder internally
-
-**Result Format:**
-- Pattern: `"code name surname"`
-- All three fields separated by single spaces
-- No trailing or leading spaces
-- Example outputs:
-  - `"P001 Mario Rossi"`
-  - `"USER123 Alice Smith"`
-  - `"ABC456 John Doe"`
-
-**Requirement Compliance:**
-- Requirement states: "code, name and surname of the person, in order, separated by blanks"
-- "blanks" means space characters
-- Implementation: ✅ Correct format
-- Order: ✅ code first, name second, surname third
-- Separator: ✅ single spaces between fields
-
-**Alternative Implementations:**
-```java
-// Using String.format()
-return String.format("%s %s %s", p.getCode(), p.getName(), p.getSurname());
-
-// Using String.join()
-return String.join(" ", p.getCode(), p.getName(), p.getSurname());
-
-// Using StringBuilder
-StringBuilder sb = new StringBuilder();
-sb.append(p.getCode()).append(" ")
-  .append(p.getName()).append(" ")
-  .append(p.getSurname());
-return sb.toString();
-```
-All work correctly, but simple concatenation is most concise.
-
-**Return behavior:**
-- String is returned to caller
-- Method execution completes successfully
-- No exceptions thrown (happy path)
-- Caller receives the formatted information
+**Result**: Returns string "john123 John Doe"
 
 ---
 
-## 📊 PART 5: COMPARISON WITH PREVIOUS IMPLEMENTATION
+### Example 4: Person Not Found
 
-### Comparison: `addPerson()` Method
+**Setup**: Person "unknown999" does NOT exist in database
 
-#### Previous Implementation (Document 10):
-```java
-public void addPerson(String code, String name, String surname) throws PersonExistsException {
-    Optional<Person> result = personRepository.findById(code); //TASKF FOR R1
-    
-    boolean exists = result.isPresent(); //TASKF FOR R1
-    if (exists == true){ //TASKF FOR R1
-        throw new PersonExistsException(); //TASKF FOR R1
-    } //TASKF FOR R1
+**Input**: `getPerson("unknown999")`
 
-    Person newPerson = new Person(code, name, surname); //TASKF FOR R1
-    personRepository.save(newPerson); //TASKF FOR R1
-}
+**Execution Trace**:
+```
+1. Call: Social.getPerson("unknown999")
+2. Call: personRepository.findById("unknown999")
+3. Call: JPAUtil.withEntityManager(em -> ...)
+4. Call: em.find(Person.class, "unknown999")
+5. Execute SQL: SELECT code, name, surname FROM Person WHERE code = 'unknown999'
+6. Database returns: null (no person found)
+7. Return: Optional.ofNullable(null) = Optional.empty()
+8. Check: personOpt.isEmpty() = true
+9. Enter: if block
+10. Throw: new NoSuchCodeException()
+11. Method execution stops
+12. Exception propagates to caller
 ```
 
-#### Current Implementation (Document 11):
-```java
-public void addPerson(String code, String name, String surname) throws PersonExistsException {
-    if (personRepository.findById(code).isPresent()){    // check if db already contains the code//ADDED FOR R1
-        throw new PersonExistsException();
-    }
-    Person person = new Person(code, name, surname);    // create the person as a POJO//ADDED FOR R1
-    personRepository.save(person);                      //ADDED FOR R1
-}
-```
-
-#### Key Differences:
-
-| Aspect | Previous (Document 10) | Current (Document 11) |
-|--------|------------------------|----------------------|
-| **Lines of Code** | 7 lines | 3 lines |
-| **Optional Storage** | Stored in `result` variable | Not stored, used inline |
-| **Boolean Variable** | Uses `exists` variable | No intermediate boolean |
-| **Comparison** | `if (exists == true)` | Direct `if (.isPresent())` |
-| **Blank Lines** | 1 blank line after check | No blank lines |
-| **Person Variable** | Named `newPerson` | Named `person` |
-| **Comments** | Marker: `//TASKF FOR R1` | Markers: `//ADDED FOR R1` + descriptions |
-| **Code Style** | More verbose, explicit | More concise, idiomatic |
-
-#### Analysis:
-
-**Current Implementation is Better because:**
-1. ✅ **More concise** - 3 lines vs 7 lines
-2. ✅ **More idiomatic Java** - chains method calls naturally
-3. ✅ **No redundant variables** - `result` and `exists` not needed
-4. ✅ **Cleaner comparison** - `isPresent()` instead of `== true`
-5. ✅ **Better comments** - descriptive comments retained
-6. ✅ **Standard naming** - `person` is conventional
-
-**Previous Implementation characteristics:**
-- More explicit and verbose
-- Good for learning/understanding each step
-- Extra variables make debugging easier
-- `exists == true` is unnecessarily explicit
+**Result**: NoSuchCodeException thrown, no string returned
 
 ---
 
-### Comparison: `getPerson()` Method
+## KEY DESIGN PATTERNS USED IN R1
 
-#### Previous Implementation (Document 10):
-```java
-public String getPerson(String code) throws NoSuchCodeException {
-    Optional<Person> result = personRepository.findById(code); //TASKF FOR R1
-    
-    if (result.isPresent()) { //TASKF FOR R1
-        Person foundPerson = result.get(); //TASKF FOR R1
-        String id = foundPerson.getCode(); //TASKF FOR R1
-        String n = foundPerson.getName(); //TASKF FOR R1
-        String s = foundPerson.getSurname(); //TASKF FOR R1
-        return id + " " + n + " " + s; //TASKF FOR R1
-    } else { //TASKF FOR R1
-        throw new NoSuchCodeException(); //TASKF FOR R1
-    } //TASKF FOR R1
-}
-```
+### 1. Repository Pattern
+- **Purpose**: Separate data access logic from business logic
+- **Implementation**: PersonRepository class
+- **Benefits**:
+  - Social class doesn't know about JPA/database details
+  - Easy to test (can mock repository)
+  - Can change database implementation without affecting Social class
 
-#### Current Implementation (Document 11):
-```java
-public String getPerson(String code) throws NoSuchCodeException {
-    Optional<Person> res = personRepository.findById(code); //ADDED FOR R1
-    if (!res.isPresent()) { //ADDED FOR R1
-    	throw new NoSuchCodeException(); //ADDED FOR R1
-    } //ADDED FOR R1
-    Person p = res.get(); //ADDED FOR R1
-    return p.getCode() + " " + p.getName() + " " + p.getSurname(); //ADDED FOR R1
-}
-```
+### 2. Facade Pattern
+- **Purpose**: Provide simple interface to complex subsystem
+- **Implementation**: Social class
+- **Benefits**:
+  - Hides complexity of repository, JPA, transactions
+  - Simple API for users: just call addPerson() or getPerson()
+  - Centralizes business logic
 
-#### Key Differences:
+### 3. Data Access Object (DAO) Pattern
+- **Purpose**: Abstract persistence mechanism
+- **Implementation**: GenericRepository base class
+- **Benefits**:
+  - Reusable CRUD operations
+  - Consistent interface for all entities
+  - Reduces code duplication
 
-| Aspect | Previous (Document 10) | Current (Document 11) |
-|--------|------------------------|----------------------|
-| **Lines of Code** | 10 lines | 6 lines |
-| **Logic Pattern** | Positive check (if present) | Negative check (if not present) |
-| **Optional Variable** | Named `result` | Named `res` |
-| **Person Variable** | Named `foundPerson` | Named `p` |
-| **Field Variables** | 3 separate (`id`, `n`, `s`) | None (direct call) |
-| **Blank Lines** | 1 blank line | No blank lines |
-| **Control Flow** | if-else block | Early return pattern |
-| **Comments** | Marker: `//TASKF FOR R1` | Marker: `//ADDED FOR R1` |
-| **Code Style** | More verbose, explicit | More concise |
-
-#### Analysis:
-
-**Current Implementation is Better because:**
-1. ✅ **More concise** - 6 lines vs 10 lines
-2. ✅ **Fail-fast pattern** - handles error immediately
-3. ✅ **No intermediate variables** - directly uses getters
-4. ✅ **Cleaner flow** - exception first, happy path second
-5. ✅ **Less nesting** - avoids if-else structure
-
-**Previous Implementation characteristics:**
-- More explicit step-by-step breakdown
-- Extra variables (`id`, `n`, `s`) for each field
-- Positive logic (if present, do X, else throw)
-- More verbose but perhaps clearer for beginners
-
-**Best Practice Note:**
-- Current implementation follows "guard clause" pattern
-- Checks preconditions first and exits early
-- Remaining code handles only the success case
-- More maintainable and less deeply nested
+### 4. Entity Pattern
+- **Purpose**: Represent domain object that maps to database
+- **Implementation**: Person class with JPA annotations
+- **Benefits**:
+  - Clear mapping between objects and database tables
+  - Type-safe access to data
+  - Object-oriented representation of data
 
 ---
 
-## 📊 PART 6: ADDITIONAL TECHNICAL DETAILS
+## TESTING CONSIDERATIONS FOR R1
 
-### Architecture Overview
+### Unit Tests Needed:
 
-```
-┌─────────────────────────────────────────────┐
-│           Social (Facade Class)              │
-│  Methods:                                    │
-│  - addPerson(code, name, surname)           │
-│  - getPerson(code)                          │
-└──────────────────┬──────────────────────────┘
-                   │ uses
-                   ▼
-┌─────────────────────────────────────────────┐
-│         PersonRepository                     │
-│  extends GenericRepository<Person, String>  │
-│  Methods:                                   │
-│  - findById(code) : Optional<Person>        │
-│  - save(person) : void                      │
-└──────────────────┬──────────────────────────┘
-                   │ uses
-                   ▼
-┌─────────────────────────────────────────────┐
-│         GenericRepository<E, I>              │
-│  Generic CRUD operations:                   │
-│  - findById(I id) : Optional<E>             │
-│  - save(E entity) : void                    │
-│  - findAll()
+#### Test addPerson():
+1. **testAddPersonSuccess**: Add person with unique code → should succeed
+2. **testAddPersonDuplicateCode**: Add person with existing code → should throw PersonExistsException
+3. **testAddPersonNullCode**: Add person with null code → behavior depends on JPA (likely fail)
+4. **testAddPersonEmptyCode**: Add person with empty string code → should succeed (valid string)
+5. **testAddPersonNullName**: Add person with null name → should succeed (name can be null)
+6. **testAddPersonSpecialCharacters**: Add person with special characters in fields → should succeed
+
+#### Test getPerson():
+1. **testGetPersonSuccess**: Get existing person → should return "code name surname"
+2. **testGetPersonNotFound**: Get non-existent person → should throw NoSuchCodeException
+3. **testGetPersonNullCode**: Get person with null code → should throw NoSuchCodeException
+4. **testGetPersonEmptyCode**: Get person with empty code → should throw NoSuchCodeException
+5. **testGetPersonFormat**: Verify exact format of returned string
+6. **testGetPersonWithSpacesInName**: Person with spaces in name → format should be correct
+
+### Integration Tests Needed:
+1. **testAddThenGet**: Add person, then get same person → should return correct data
+2. **testAddMultiple**: Add multiple persons → all should succeed
+3. **testConcurrentAdd**: Multiple threads adding same code → one should succeed, others fail
+4. **testDatabasePersistence**: Add person, restart application, get person → should still exist
+
+---
+
+## POTENTIAL IMPROVEMENTS AND EDGE CASES
+
+### Edge Cases to Consider:
+1. **Very long strings**: What if code/name/surname is 1000 characters?
+   - Current: Database column is VARCHAR(255), will truncate or fail
+   - Solution: Add validation in addPerson()
+
+2. **Special characters**: What if name contains quotes, newlines, emojis?
+   - Current: JPA should handle properly, but worth testing
+   - Solution: May need sanitization depending on requirements
+
+3. **Case sensitivity**: Is "john123" different from "JOHN123"?
+   - Current: Depends on database collation
+   - Solution: Normalize to lowercase? Document behavior?
+
+4. **Whitespace**: What if code is "  john123  " (with spaces)?
+   - Current: Treated as different from "john123"
+   - Solution: Add trim() in addPerson()?
+
+5. **Null safety**: What if name or surname is null?
+   - Current: Allowed (no NOT NULL constraint)
+   - getPerson() will return: "code null null"
+   - Solution: Decide if nulls should be allowed, add validation
+
+### Code Quality Improvements:
+1. **Add input validation**:
+   ```java
+   public void addPerson(String code, String name, String surname) {
+       if (code == null || code.trim().isEmpty()) {
+           throw new IllegalArgumentException("Code cannot be null or empty");
+       }
+       // ... rest of method
+   }
+   ```
+
+2. **Add logging**:
+   ```java
+   public void addPerson(String code, String name, String surname) {
+       logger.debug("Adding person with code: {}", code);
+       // ... method implementation
+       logger.info("Successfully added person: {}", code);
+   }
+   ```
+
+3. **Extract string formatting**:
+   ```java
+   private String formatPersonInfo(String code, Person person) {
+       return code + " " + person.getName() + " " + person.getSurname();
+   }
+   ```
+
+---
+
+## SUMMARY OF R1 IMPLEMENTATION
+
+### What Was Required:
+✅ Method to register new account (addPerson)
+✅ Check for duplicate codes
+✅ Throw PersonExistsException for duplicates
+✅ Method to retrieve person information (getPerson)
+✅ Return formatted string "code name surname"
+✅ Throw NoSuchCodeException if not found
+✅ Use Person class
+✅ Use repository pattern
+
+### What Was Implemented:
+✅ All requirements met
+✅ Clean, readable code
+✅ Proper exception handling
+✅ Database integration through JPA/Hibernate
+✅ Transaction management
+✅ Suitable for junior programmers (clear and simple)
+
+### Code Quality Assessment:
+- **Readability**: Excellent (clear variable names, simple logic)
+- **Maintainability**: Good (follows standard patterns)
+- **Testability**: Good (can mock repository)
+- **Performance**: Adequate (standard JPA operations)
+- **Error Handling**: Complete (all exceptions properly handled)
+- **Documentation**: Good (JavaDoc comments present)
+
+### Final Notes:
+The R1 implementation is **complete, correct, and well-suited for junior programmers**. It follows Java best practices, uses standard design patterns, and properly integrates with the JPA/Hibernate framework. The code is production-ready for the requirements specified.

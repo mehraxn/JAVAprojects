@@ -1,268 +1,125 @@
-# Social Network Application - Complete Project Guide
+# Complete Code Analysis for R1 (Subscription Feature)
 
-## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Architecture & Design Patterns](#architecture--design-patterns)
-3. [Technology Stack](#technology-stack)
-4. [Project Structure](#project-structure)
-5. [R1: Subscription Feature - Deep Dive](#r1-subscription-feature---deep-dive)
-6. [Implementation Guide](#implementation-guide)
-7. [Testing R1](#testing-r1)
+## Quick Answer
+
+**No, `getPerson()` is NOT the only code for R1!**
+
+R1 consists of **multiple components** across different files. The "ADDED FOR R1" comments only appear on `getPerson()` because `addPerson()` was likely provided as a **reference implementation** or **skeleton code**.
 
 ---
 
-## Project Overview
+## All Code Components for R1
 
-### What is This Project?
+### 1. **Social.java** - Two Methods
 
-This is a **Social Network Application** built using Java and Hibernate ORM. Think of it like building a simplified version of Facebook or LinkedIn, where you can:
-
-- Create user accounts (profiles)
-- Add friends (connections)
-- Create groups (communities)
-- Post content (status updates)
-- View statistics about the network
-
-The project is divided into 5 main requirements (R1-R5), each adding more functionality:
-
-| Requirement | Feature | Description |
-|-------------|---------|-------------|
-| **R1** | **Subscription** | Register users and retrieve their information |
-| R2 | Friends | Add bidirectional friendships between users |
-| R3 | Groups | Create and manage groups, add members |
-| R4 | Statistics | Get insights (most popular users, largest groups) |
-| R5 | Posts | Create and retrieve posts with pagination |
-
-### Why Use Hibernate ORM?
-
-**ORM (Object-Relational Mapping)** is a technique that lets you:
-- Work with Java objects instead of writing SQL queries
-- Automatically convert between Java classes and database tables
-- Save objects to the database without writing INSERT statements
-- Retrieve objects without writing SELECT statements
-
-**Example without ORM:**
+#### Method 1: `addPerson()` ✓ Part of R1
 ```java
-// You'd have to write SQL manually
-String sql = "INSERT INTO persons (code, name, surname) VALUES (?, ?, ?)";
-PreparedStatement ps = connection.prepareStatement(sql);
-ps.setString(1, code);
-ps.setString(2, name);
-ps.setString(3, surname);
-ps.executeUpdate();
-```
-
-**With ORM (Hibernate):**
-```java
-// Just create an object and save it!
-Person person = new Person(code, name, surname);
-personRepository.save(person);
-```
-
----
-
-## Architecture & Design Patterns
-
-### 1. **Facade Pattern** (Main Entry Point)
-
-The `Social` class acts as a **Facade** - a simplified interface that hides the complexity of the system.
-
-```
-User Code → Social.java (Facade) → Repositories → Database
-```
-
-**Why?** Users don't need to know about repositories, transactions, or entity managers. They just call simple methods like `addPerson()`.
-
-### 2. **Repository Pattern** (Data Access Layer)
-
-Repositories handle all database operations. This separates business logic from data access.
-
-```
-Social (Business Logic)
-   ↓
-PersonRepository (Data Access)
-   ↓
-Database (PostgreSQL/H2/MySQL)
-```
-
-**Benefits:**
-- Easy to test (can mock repositories)
-- Can switch databases without changing business logic
-- Centralizes all database queries
-
-### 3. **Entity Pattern** (Domain Models)
-
-Entities are Java classes that represent database tables. They use JPA annotations to define the mapping.
-
-```java
-@Entity  // This class maps to a database table
-class Person {
-    @Id  // This is the primary key
-    private String code;
-    
-    private String name;
-    private String surname;
+public void addPerson(String code, String name, String surname) throws PersonExistsException {
+    // Simple checks do not need transaction wrapper if they are single operations
+    if (personRepository.findById(code).isPresent()){    // check if db already contains the code
+        throw new PersonExistsException();
+    }
+    Person person = new Person(code, name, surname);    // create the person as a POJO
+    personRepository.save(person);                      // save it to db
 }
 ```
 
----
+**Why no "ADDED FOR R1" comment?**
+- Likely provided as **reference implementation** for students
+- Shows the pattern students should follow
+- May have been completed by instructor/provided code
 
-## Technology Stack
-
-### Core Technologies
-
-| Technology | Purpose | Version |
-|-----------|---------|---------|
-| **Java** | Programming Language | 17+ |
-| **Jakarta EE (JPA)** | Java Persistence API | 3.x |
-| **Hibernate** | ORM Implementation | 6.x |
-| **H2 Database** | In-memory database (testing) | Latest |
-
-### Key Libraries
-
-- **jakarta.persistence**: Provides JPA annotations and interfaces
-- **Hibernate Core**: Implements JPA specification
-- **H2**: Lightweight database for testing
-
----
-
-## Project Structure
-
-```
-social/
-│
-├── Social.java                    # Facade class (main interface)
-│   └── Methods: addPerson(), getPerson(), addFriendship(), etc.
-│
-├── Person.java                    # Entity class
-│   └── Represents a user in the database
-│
-├── PersonRepository.java          # Data access for Person entities
-│   └── Extends GenericRepository
-│
-├── GenericRepository.java         # Base repository class
-│   └── Provides CRUD operations (Create, Read, Update, Delete)
-│
-├── JPAUtil.java                   # Utility for managing EntityManager
-│   └── Handles transactions and database connections
-│
-└── Exception Classes
-    ├── PersonExistsException.java
-    ├── NoSuchCodeException.java
-    └── GroupExistsException.java
+#### Method 2: `getPerson()` ✓ Part of R1
+```java
+public String getPerson(String code) throws NoSuchCodeException {
+    Person p = personRepository.findById(code).orElse(null);       // ADDED FOR R1
+    if (p == null) throw new NoSuchCodeException();                // ADDED FOR R1
+    return p.getCode() + " " + p.getName() + " " + p.getSurname(); // ADDED FOR R1
+}
 ```
 
-### Data Flow Example
-
-```
-User calls: social.addPerson("john123", "John", "Doe")
-     ↓
-Social.addPerson() checks if code exists
-     ↓
-Creates new Person object
-     ↓
-PersonRepository.save() persists to database
-     ↓
-JPAUtil manages EntityManager and transaction
-     ↓
-Hibernate generates SQL: INSERT INTO Person VALUES (...)
-     ↓
-Database stores the record
-```
+**Why has "ADDED FOR R1" comment?**
+- This is what **students implemented**
+- Following the pattern from `addPerson()`
+- Students wrote these 3 lines themselves
 
 ---
 
-## R1: Subscription Feature - Deep Dive
-
-### What Does R1 Do?
-
-R1 implements the **user registration and retrieval system**. It allows:
-
-1. **Adding new users** to the social network
-2. **Retrieving user information** by their unique code
-3. **Error handling** for duplicate users and missing users
-
-### Requirements Summary
-
-| Requirement | Method | Input | Output | Exception |
-|------------|--------|-------|--------|-----------|
-| Register user | `addPerson()` | code, name, surname | void | `PersonExistsException` if code exists |
-| Get user info | `getPerson()` | code | "code name surname" | `NoSuchCodeException` if not found |
-
----
-
-## Implementation Guide
-
-### Step 1: Understanding the Person Entity
-
-The `Person` class is a **JPA Entity** that maps to a database table.
+### 2. **Person.java** - Entity Class
 
 ```java
-@Entity
+package social;
+
+import java.util.HashSet;
+import java.util.Set;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+
+@Entity  // ← Required for R1
 class Person {
-  @Id
-  private String code;      // Primary Key (unique identifier)
-  private String name;      // First name
-  private String surname;   // Last name
+  @Id  // ← Required for R1
+  private String code;       // ← Required for R1
+  private String name;       // ← Required for R1
+  private String surname;    // ← Required for R1
 
   @ManyToMany
-  private Set<Person> friends = new HashSet<>();
+  private Set<Person> friends = new HashSet<>();  // For R2
 
   @ManyToMany
-  private Set<Group> groups = new HashSet<>();
+  private Set<Group> groups = new HashSet<>();    // For R3
 
   @OneToMany(mappedBy = "author")
-  private Set<Post> posts = new HashSet<>();
+  private Set<Post> posts = new HashSet<>();      // For R5
 
-  Person() {
-    // Default constructor required by JPA
+  Person() {  // ← Required for R1 (JPA needs this)
+    // default constructor is needed by JPA
   }
 
-  Person(String code, String name, String surname) {
+  Person(String code, String name, String surname) {  // ← Required for R1
     this.code = code;
     this.name = name;
     this.surname = surname;
   }
 
-  String getCode() {
+  String getCode() {      // ← Required for R1
     return code;
   }
 
-  String getName() {
+  String getName() {      // ← Required for R1
     return name;
   }
 
-  String getSurname() {
+  String getSurname() {   // ← Required for R1
     return surname;
   }
+
+  // Methods for R2, R3, R5...
 }
 ```
 
-#### Key JPA Annotations Explained
+**What's needed for R1:**
+- `@Entity` annotation - marks class as database entity
+- `@Id` annotation - marks primary key
+- Three fields: `code`, `name`, `surname`
+- Default constructor (for JPA)
+- Parameterized constructor (for our code)
+- Three getter methods
 
-| Annotation | Purpose | Example |
-|-----------|---------|---------|
-| `@Entity` | Marks class as a database table | `Person` table created automatically |
-| `@Id` | Marks primary key field | `code` becomes the unique identifier |
-| `@ManyToMany` | Defines many-to-many relationship | One person has many friends; each friend is also a person |
-| `@OneToMany` | Defines one-to-many relationship | One person has many posts |
-
-**Database Table Created:**
-```sql
-CREATE TABLE Person (
-    code VARCHAR(255) PRIMARY KEY,
-    name VARCHAR(255),
-    surname VARCHAR(255)
-);
-```
+**Not needed for R1:**
+- `friends` field (for R2)
+- `groups` field (for R3)
+- `posts` field (for R5)
+- Methods like `addFriend()`, `addGroup()`, etc.
 
 ---
 
-### Step 2: Understanding PersonRepository
-
-The repository provides CRUD operations for Person entities.
+### 3. **PersonRepository.java** - Data Access Layer
 
 ```java
+package social;
+
 public class PersonRepository extends GenericRepository<Person, String> {
 
   public PersonRepository() {
@@ -272,606 +129,290 @@ public class PersonRepository extends GenericRepository<Person, String> {
 }
 ```
 
-#### What Does It Inherit?
-
-From `GenericRepository<Person, String>`:
-- `Person`: The entity type
-- `String`: The type of the ID (code field)
-
-#### Available Methods
-
-| Method | Purpose | Example |
-|--------|---------|---------|
-| `findById(String id)` | Find person by code | `Optional<Person> p = repo.findById("john123")` |
-| `findAll()` | Get all persons | `List<Person> all = repo.findAll()` |
-| `save(Person p)` | Insert new person | `repo.save(person)` |
-| `update(Person p)` | Update existing person | `repo.update(person)` |
-| `delete(Person p)` | Delete person | `repo.delete(person)` |
+**Entire file is required for R1:**
+- Extends `GenericRepository<Person, String>`
+- Provides CRUD operations through inheritance
+- No additional methods needed for R1
 
 ---
 
-### Step 3: Understanding the Social Facade
+### 4. **Exception Classes**
 
-The `Social` class is the **main interface** users interact with.
-
+#### PersonExistsException.java ✓ Required for R1
 ```java
-public class Social {
+package social;
 
-  private final PersonRepository personRepository = new PersonRepository();
-  
-  // R1 Methods:
-  public void addPerson(String code, String name, String surname) 
-      throws PersonExistsException { ... }
-  
-  public String getPerson(String code) 
-      throws NoSuchCodeException { ... }
-}
-```
-
----
-
-### Step 4: Implementing addPerson() - Line by Line
-
-```java
-public void addPerson(String code, String name, String surname) 
-    throws PersonExistsException {
-    
-    // Line 35: Check if person already exists
-    if (personRepository.findById(code).isPresent()){
-        throw new PersonExistsException();
-    }
-    
-    // Line 38: Create new Person object (POJO)
-    Person person = new Person(code, name, surname);
-    
-    // Line 39: Save to database
-    personRepository.save(person);
-}
-```
-
-#### Detailed Explanation
-
-**Line 35: Existence Check**
-```java
-if (personRepository.findById(code).isPresent()){
-```
-
-- `findById(code)` → Returns `Optional<Person>`
-- `.isPresent()` → Returns `true` if person exists, `false` otherwise
-- If exists → throw exception (business rule: no duplicate codes)
-
-**Why Optional?**
-`Optional` is a Java container that may or may not contain a value. It prevents `NullPointerException`.
-
-```java
-// Instead of:
-Person p = findById("john123");
-if (p != null) { ... }  // Could forget this check!
-
-// Use Optional:
-Optional<Person> opt = findById("john123");
-if (opt.isPresent()) { ... }  // Forces you to check
-```
-
-**Line 38: Create Person Object**
-```java
-Person person = new Person(code, name, surname);
-```
-
-- Creates a new `Person` object in memory
-- At this point, it's **NOT** in the database yet
-- It's just a regular Java object (POJO = Plain Old Java Object)
-
-**Line 39: Persist to Database**
-```java
-personRepository.save(person);
-```
-
-This line does several things behind the scenes:
-
-1. **JPAUtil.transaction()** starts a database transaction
-2. **EntityManager.persist()** tells Hibernate to save the object
-3. **Hibernate generates SQL**: `INSERT INTO Person VALUES ('john123', 'John', 'Doe')`
-4. **Transaction commits** - changes are permanently saved
-5. **EntityManager closes** - resources are released
-
-#### Execution Flow Diagram
-
-```
-addPerson("john123", "John", "Doe")
-    ↓
-[Check if exists]
-    ↓
-Repository.findById("john123")
-    ↓
-JPAUtil.withEntityManager(...)
-    ↓
-EntityManager.find(Person.class, "john123")
-    ↓
-SQL: SELECT * FROM Person WHERE code = 'john123'
-    ↓
-Result: No rows found → Optional.empty()
-    ↓
-isPresent() → false (person doesn't exist)
-    ↓
-[Create Person object]
-    ↓
-person = new Person("john123", "John", "Doe")
-    ↓
-[Save to database]
-    ↓
-Repository.save(person)
-    ↓
-JPAUtil.transaction(...)
-    ↓
-EntityManager.persist(person)
-    ↓
-SQL: INSERT INTO Person (code, name, surname) VALUES ('john123', 'John', 'Doe')
-    ↓
-Transaction commits
-    ↓
-Success! Person is now in database
-```
-
----
-
-### Step 5: Implementing getPerson() - Line by Line
-
-```java
-public String getPerson(String code) throws NoSuchCodeException {
-    
-    // Line 51: Try to find person by code
-    Person p = personRepository.findById(code).orElse(null);
-    
-    // Line 52: If not found, throw exception
-    if (p == null) throw new NoSuchCodeException();
-    
-    // Line 53: Return formatted string
-    return p.getCode() + " " + p.getName() + " " + p.getSurname();
-}
-```
-
-#### Detailed Explanation
-
-**Line 51: Retrieve Person**
-```java
-Person p = personRepository.findById(code).orElse(null);
-```
-
-- `findById(code)` → Returns `Optional<Person>`
-- `.orElse(null)` → If present, return the person; otherwise return `null`
-
-**Alternative ways to handle Optional:**
-
-```java
-// Method 1: orElse
-Person p = findById(code).orElse(null);
-if (p == null) throw exception;
-
-// Method 2: orElseThrow (more elegant)
-Person p = findById(code)
-    .orElseThrow(() -> new NoSuchCodeException());
-
-// Method 3: ifPresent
-findById(code).ifPresent(p -> {
-    // Do something with person
-});
-```
-
-**Line 52: Validation**
-```java
-if (p == null) throw new NoSuchCodeException();
-```
-
-- If person not found, throw exception
-- This is a **checked exception** (must be declared in method signature)
-
-**Line 53: Format Output**
-```java
-return p.getCode() + " " + p.getName() + " " + p.getSurname();
-```
-
-- Concatenates code, name, and surname with spaces
-- Example: `"john123 John Doe"`
-
-#### Execution Flow Diagram
-
-```
-getPerson("john123")
-    ↓
-[Search database]
-    ↓
-Repository.findById("john123")
-    ↓
-JPAUtil.withEntityManager(...)
-    ↓
-EntityManager.find(Person.class, "john123")
-    ↓
-SQL: SELECT * FROM Person WHERE code = 'john123'
-    ↓
-Result: Found row → Person(code="john123", name="John", surname="Doe")
-    ↓
-Optional<Person> containing the person
-    ↓
-.orElse(null) → Returns the person
-    ↓
-p != null → continue
-    ↓
-Format string: "john123" + " " + "John" + " " + "Doe"
-    ↓
-Return: "john123 John Doe"
-```
-
----
-
-### Step 6: Understanding Exception Handling
-
-#### PersonExistsException
-
-```java
 public class PersonExistsException extends Exception {
   private static final long serialVersionUID = 1L;
 }
 ```
 
-**When thrown?**
-- When trying to add a person with a code that already exists
-
-**Example scenario:**
+#### NoSuchCodeException.java ✓ Required for R1
 ```java
-social.addPerson("john123", "John", "Doe");    // ✓ Success
-social.addPerson("john123", "Jane", "Smith");  // ✗ PersonExistsException!
-```
+package social;
 
-#### NoSuchCodeException
-
-```java
 public class NoSuchCodeException extends Exception {
 	private static final long serialVersionUID = 1L;
 }
 ```
 
-**When thrown?**
-- When trying to retrieve or operate on a person that doesn't exist
+**Both exceptions are needed for R1:**
+- `PersonExistsException` - thrown by `addPerson()`
+- `NoSuchCodeException` - thrown by `getPerson()`
 
-**Example scenario:**
+---
+
+### 5. **Infrastructure Code** (Provided/Pre-existing)
+
+#### GenericRepository.java ✓ Used by R1
 ```java
-String info = social.getPerson("unknown123");  // ✗ NoSuchCodeException!
+package social;
+
+public class GenericRepository<E, I> {
+    // CRUD methods that PersonRepository inherits
+    public Optional<E> findById(I id) { ... }
+    public void save(E entity) { ... }
+    public void update(E entity) { ... }
+    public void delete(E entity) { ... }
+    public List<E> findAll() { ... }
+}
 ```
 
-#### Why Checked Exceptions?
+**Not written for R1, but essential:**
+- Provides data access methods
+- Already implemented
+- Used by `PersonRepository`
 
-These are **checked exceptions** (extend `Exception`), which means:
-
-1. **Must be declared** in method signature: `throws PersonExistsException`
-2. **Must be handled** by caller using try-catch or declaring throws
-3. **Compiler enforces** this - won't compile without handling
-
-**Alternative: Unchecked Exceptions**
+#### JPAUtil.java ✓ Used by R1
 ```java
-// Unchecked - extends RuntimeException
-public class PersonExistsException extends RuntimeException { }
+package social;
 
-// No need to declare or catch
-public void addPerson(String code, String name, String surname) {
-    // No throws clause needed
+public class JPAUtil {
+    // Transaction and EntityManager management
+    public static EntityManager getEntityManager() { ... }
+    public static <T> T withEntityManager(...) { ... }
+    public static void transaction(...) { ... }
+}
+```
+
+**Not written for R1, but essential:**
+- Manages database connections
+- Handles transactions
+- Already implemented
+
+---
+
+## Complete R1 Code Checklist
+
+### Files You Need to Create/Modify for R1:
+
+| File | What to Add | Status |
+|------|-------------|--------|
+| **Person.java** | Entity class with `@Entity`, `@Id`, fields, constructors, getters | ✓ Provided or students create |
+| **PersonRepository.java** | Extend `GenericRepository<Person, String>` | ✓ Provided or students create |
+| **PersonExistsException.java** | Exception class extending `Exception` | ✓ Provided or students create |
+| **NoSuchCodeException.java** | Exception class extending `Exception` | ✓ Provided or students create |
+| **Social.java** | `addPerson()` method | ✓ Provided as reference |
+| **Social.java** | `getPerson()` method | **✓ Students implement** |
+
+### Infrastructure (Pre-existing):
+
+| File | Purpose | Status |
+|------|---------|--------|
+| **GenericRepository.java** | Base repository with CRUD | ✓ Provided |
+| **JPAUtil.java** | JPA utility for transactions | ✓ Provided |
+
+---
+
+## Why Comments Only on `getPerson()`?
+
+### Scenario 1: Incremental Teaching
+```java
+// Step 1: Instructor provides addPerson() as example
+public void addPerson(String code, String name, String surname) 
+    throws PersonExistsException {
+    // Full implementation shown as example
+}
+
+// Step 2: Students implement getPerson() following the pattern
+public String getPerson(String code) throws NoSuchCodeException {
+    // Students write this themselves
+    Person p = personRepository.findById(code).orElse(null); // ADDED FOR R1
+    if (p == null) throw new NoSuchCodeException();          // ADDED FOR R1
+    return p.getCode() + " " + p.getName() + " " + p.getSurname(); // ADDED FOR R1
+}
+```
+
+### Scenario 2: Testing Strategy
+```java
+// Provided code (already tested)
+public void addPerson(...) {
+    // Works correctly, no need to mark
+}
+
+// Student code (needs to be tested)
+public String getPerson(...) {
+    // Marked so instructor knows what to grade
+    // ADDED FOR R1 indicates student work
 }
 ```
 
 ---
 
-### Step 7: Understanding JPAUtil
+## What Students Actually Write for R1
 
-The `JPAUtil` class manages the JPA infrastructure.
+Based on the comment markers, students likely write:
 
-#### Key Methods
-
-**1. getEntityManager()**
+### 1. In Social.java
 ```java
-public static EntityManager getEntityManager() {
-    // Creates or retrieves an EntityManager
-    // EntityManager is the JPA interface for interacting with database
+public String getPerson(String code) throws NoSuchCodeException {
+    Person p = personRepository.findById(code).orElse(null);       // Line 1
+    if (p == null) throw new NoSuchCodeException();                // Line 2
+    return p.getCode() + " " + p.getName() + " " + p.getSurname(); // Line 3
 }
 ```
 
-**2. withEntityManager()**
-```java
-public static <T> T withEntityManager(Function<EntityManager, T> action) {
-    EntityManager em = getEntityManager();
-    try {
-        return action.apply(em);
-    } finally {
-        closeEntityManager();
-    }
-}
-```
-
-**Usage in repository:**
-```java
-public Optional<E> findById(I id) {
-    return JPAUtil.withEntityManager(
-        em -> Optional.ofNullable(em.find(entityClass, id))
-    );
-}
-```
-
-**What happens:**
-1. Get EntityManager
-2. Execute: `em.find(Person.class, "john123")`
-3. Return result wrapped in Optional
-4. Close EntityManager
-
-**3. transaction()**
-```java
-public static void transaction(ThrowingConsumer<EntityManager> action) {
-    EntityManager em = getEntityManager();
-    EntityTransaction tx = em.getTransaction();
-    try {
-        tx.begin();          // Start transaction
-        action.accept(em);   // Execute operations
-        tx.commit();         // Save changes
-    } catch (Exception ex) {
-        tx.rollback();       // Undo if error
-        throw ex;
-    }
-}
-```
-
-**Usage in repository:**
-```java
-public void save(E entity) {
-    JPAUtil.transaction(em -> em.persist(entity));
-}
-```
+### 2. Possibly the Entity and Repository (if not provided)
+- Complete Person.java entity class
+- Complete PersonRepository.java
+- Exception classes
 
 ---
 
-## Testing R1
+## Line-by-Line: What Each Line Does
 
-### Example Test Cases
+### In `addPerson()` (Provided as Reference)
 
 ```java
-public class TestR1 {
+// Line 1: Check if person already exists
+if (personRepository.findById(code).isPresent()){
+    // findById returns Optional<Person>
+    // isPresent() returns true if person found
     
-    @Test
-    public void testAddPerson() throws PersonExistsException {
-        Social social = new Social();
-        
-        // Should succeed
-        social.addPerson("john123", "John", "Doe");
-        
-        // Verify person was added
-        String info = social.getPerson("john123");
-        assertEquals("john123 John Doe", info);
-    }
-    
-    @Test(expected = PersonExistsException.class)
-    public void testAddDuplicatePerson() throws PersonExistsException {
-        Social social = new Social();
-        
-        // First add should succeed
-        social.addPerson("john123", "John", "Doe");
-        
-        // Second add should throw exception
-        social.addPerson("john123", "Jane", "Smith");
-    }
-    
-    @Test(expected = NoSuchCodeException.class)
-    public void testGetNonExistentPerson() throws NoSuchCodeException {
-        Social social = new Social();
-        
-        // Should throw exception
-        social.getPerson("unknown123");
-    }
-    
-    @Test
-    public void testGetPerson() throws Exception {
-        Social social = new Social();
-        
-        // Add person
-        social.addPerson("alice99", "Alice", "Smith");
-        
-        // Retrieve and verify
-        String info = social.getPerson("alice99");
-        assertEquals("alice99 Alice Smith", info);
-        assertTrue(info.contains("Alice"));
-        assertTrue(info.contains("Smith"));
-    }
+// Line 2: Throw exception if duplicate
+    throw new PersonExistsException();
 }
-```
 
-### Manual Testing
-
-```java
-public class Main {
-    public static void main(String[] args) {
-        Social social = new Social();
-        
-        try {
-            // Test 1: Add person
-            System.out.println("Adding John...");
-            social.addPerson("john123", "John", "Doe");
-            System.out.println("✓ Success!");
-            
-            // Test 2: Get person
-            System.out.println("Retrieving John...");
-            String info = social.getPerson("john123");
-            System.out.println("Person info: " + info);
-            System.out.println("✓ Success!");
-            
-            // Test 3: Try duplicate
-            System.out.println("Trying to add duplicate...");
-            social.addPerson("john123", "Jane", "Smith");
-            
-        } catch (PersonExistsException e) {
-            System.out.println("✗ Person already exists!");
-        } catch (NoSuchCodeException e) {
-            System.out.println("✗ Person not found!");
-        }
-    }
-}
-```
-
-**Expected Output:**
-```
-Adding John...
-*** new EntityManager
-✓ Success!
-Retrieving John...
-*** new EntityManager
-Person info: john123 John Doe
-✓ Success!
-Trying to add duplicate...
-*** new EntityManager
-✗ Person already exists!
-```
-
----
-
-## Common Mistakes and Solutions
-
-### Mistake 1: Forgetting to Save
-
-```java
-// ❌ WRONG - Person not saved to database
+// Line 3: Create new Person object in memory
 Person person = new Person(code, name, surname);
-// Missing: personRepository.save(person);
-```
 
-```java
-// ✅ CORRECT
-Person person = new Person(code, name, surname);
+// Line 4: Save to database
 personRepository.save(person);
+    // Triggers: JPAUtil.transaction() → EntityManager.persist() → INSERT SQL
 ```
 
-### Mistake 2: Not Checking for Null
+### In `getPerson()` (Students Write This)
 
 ```java
-// ❌ WRONG - Could throw NullPointerException
+// Line 1: Try to find person in database
 Person p = personRepository.findById(code).orElse(null);
-return p.getCode() + " " + p.getName();  // Crash if p is null!
-```
+    // findById returns Optional<Person>
+    // orElse(null) extracts value or returns null if not found
 
-```java
-// ✅ CORRECT
-Person p = personRepository.findById(code).orElse(null);
+// Line 2: Validate result
 if (p == null) throw new NoSuchCodeException();
-return p.getCode() + " " + p.getName();
+    // If person not found, throw exception
+
+// Line 3: Format and return result
+return p.getCode() + " " + p.getName() + " " + p.getSurname();
+    // Concatenate fields with spaces
+    // Example: "john123 John Doe"
 ```
 
-### Mistake 3: Not Handling Exceptions
+---
+
+## Common Misconceptions
+
+### ❌ Misconception 1: "Only getPerson() is R1"
+**Reality:** R1 includes both `addPerson()` and `getPerson()`, plus all supporting code (entities, repositories, exceptions)
+
+### ❌ Misconception 2: "Comments mark all R1 code"
+**Reality:** Comments only mark what **students wrote**. Pre-existing or reference code isn't marked.
+
+### ❌ Misconception 3: "I only need to write 3 lines"
+**Reality:** You need all the infrastructure:
+- Person entity
+- PersonRepository
+- Exception classes
+- Both methods in Social.java
+
+---
+
+## Testing R1 - Both Methods Required
 
 ```java
-// ❌ WRONG - Won't compile
-public void test() {
-    social.addPerson("john", "John", "Doe");  // Error: unhandled exception
-}
-```
-
-```java
-// ✅ CORRECT - Option 1: Try-Catch
-public void test() {
+@Test
+public void testR1Complete() throws Exception {
+    Social social = new Social();
+    
+    // Test 1: addPerson() - Add a person
+    social.addPerson("john123", "John", "Doe");
+    
+    // Test 2: getPerson() - Retrieve the person
+    String info = social.getPerson("john123");
+    
+    // Verify both methods work together
+    assertEquals("john123 John Doe", info);
+    
+    // Test 3: addPerson() - Try duplicate
     try {
-        social.addPerson("john", "John", "Doe");
+        social.addPerson("john123", "Jane", "Smith");
+        fail("Should throw PersonExistsException");
     } catch (PersonExistsException e) {
-        System.out.println("Person already exists");
+        // Expected
     }
-}
-
-// ✅ CORRECT - Option 2: Declare throws
-public void test() throws PersonExistsException {
-    social.addPerson("john", "John", "Doe");
-}
-```
-
-### Mistake 4: Creating Entity Without Default Constructor
-
-```java
-// ❌ WRONG - JPA requires default constructor
-@Entity
-class Person {
-    private String code;
     
-    Person(String code) {  // Only parameterized constructor
-        this.code = code;
+    // Test 4: getPerson() - Try non-existent
+    try {
+        social.getPerson("unknown");
+        fail("Should throw NoSuchCodeException");
+    } catch (NoSuchCodeException e) {
+        // Expected
     }
 }
 ```
 
-```java
-// ✅ CORRECT - Add default constructor
-@Entity
-class Person {
-    private String code;
-    
-    Person() {  // Default constructor for JPA
-    }
-    
-    Person(String code) {
-        this.code = code;
-    }
-}
-```
+**Both methods must work for R1 to be complete!**
 
 ---
 
-## Key Takeaways
+## Summary Table: R1 Code Components
 
-### R1 Implementation Checklist
+| Component | File | Lines of Code | Who Writes | Comments |
+|-----------|------|---------------|------------|----------|
+| Entity | Person.java | ~40 lines | Provided or Students | Core R1 code |
+| Repository | PersonRepository.java | ~6 lines | Provided or Students | Core R1 code |
+| Exception 1 | PersonExistsException.java | ~4 lines | Provided or Students | Core R1 code |
+| Exception 2 | NoSuchCodeException.java | ~4 lines | Provided or Students | Core R1 code |
+| Add Method | Social.java | 8 lines | Provided as reference | Core R1 functionality |
+| Get Method | Social.java | 3 lines | **Students write** | **Marked with comments** |
+| Infrastructure | GenericRepository.java | ~80 lines | Pre-existing | Not part of assignment |
+| Infrastructure | JPAUtil.java | ~200 lines | Pre-existing | Not part of assignment |
 
-- [x] **Person Entity**: Annotated with `@Entity` and `@Id`
-- [x] **PersonRepository**: Extends `GenericRepository<Person, String>`
-- [x] **addPerson() Method**:
-  - Check if code exists
-  - Throw `PersonExistsException` if duplicate
-  - Create Person object
-  - Save to database using repository
-- [x] **getPerson() Method**:
-  - Find person by code
-  - Throw `NoSuchCodeException` if not found
-  - Return formatted string: "code name surname"
-- [x] **Exception Classes**: Defined as checked exceptions
-- [x] **JPAUtil**: Manages EntityManager and transactions
+**Total student-written code for R1:** Approximately 50-60 lines (if all components need to be created)
 
-### Design Principles Applied
-
-1. **Separation of Concerns**: Business logic (Social) separated from data access (Repository)
-2. **Single Responsibility**: Each class has one purpose
-3. **Repository Pattern**: Centralizes data access
-4. **Facade Pattern**: Simple interface hides complexity
-5. **Exception Handling**: Clear error reporting
+**Minimum student-written code:** 3 lines (if only `getPerson()` needs implementation)
 
 ---
 
-## Next Steps
+## Conclusion
 
-After mastering R1, you can move to:
+**R1 is NOT just 3 lines of code!**
 
-- **R2 (Friends)**: Implement bidirectional relationships using `@ManyToMany`
-- **R3 (Groups)**: Create groups and manage memberships
-- **R4 (Statistics)**: Query data to find interesting insights
-- **R5 (Posts)**: Implement posting and pagination features
+While only `getPerson()` has "ADDED FOR R1" comments, the complete R1 implementation includes:
 
-Each requirement builds on the previous one, using the same patterns and infrastructure established in R1.
+1. ✓ Person entity class (entire file)
+2. ✓ PersonRepository class (entire file)  
+3. ✓ Two exception classes (entire files)
+4. ✓ `addPerson()` method (8 lines in Social.java)
+5. ✓ `getPerson()` method (3 lines in Social.java - marked with comments)
 
----
+The comments indicate what **students implemented themselves**, but the requirement includes all the supporting infrastructure needed to make the system work.
 
-## Additional Resources
+Think of it like building a car:
+- The **engine** (infrastructure) is provided
+- The **chassis** (Person entity, repositories) might be provided or you build it
+- The **steering wheel** (`addPerson()`) is shown as an example
+- The **gas pedal** (`getPerson()`) is what you implement
 
-### JPA & Hibernate
-- [Jakarta EE Tutorial](https://jakarta.ee/learn/)
-- [Hibernate Documentation](https://hibernate.org/orm/documentation/)
-- [JPA Annotations Guide](https://jakarta.ee/specifications/persistence/3.0/apidocs/)
-
-### Design Patterns
-- [Repository Pattern](https://martinfowler.com/eaaCatalog/repository.html)
-- [Facade Pattern](https://refactoring.guru/design-patterns/facade)
-
-### Java Optional
-- [Oracle Optional Guide](https://docs.oracle.com/javase/8/docs/api/java/util/Optional.html)
-
----
-
-**Happy Coding! 🚀**
-
-*Remember: Understanding R1 thoroughly makes all other requirements easier, as they follow the same patterns and principles.*
+But you need **all parts** for the car to run! 🚗

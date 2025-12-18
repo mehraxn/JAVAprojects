@@ -1008,6 +1008,468 @@ private final NetworkOperations networks = new NetworkOperationsImpl();
 
 ---
 
+## Understanding Java Imports and Type Visibility
+
+### A Common Question About Imports
+
+**Question:**
+> "When NetworkOperations imports Network, and WeatherReport imports NetworkOperations, does WeatherReport automatically have access to Network? Do we need to import Network separately in WeatherReport?"
+
+**Short Answer:** 
+**Partially True** - You have **INDIRECT** access through method signatures, but **NOT DIRECT** access to the class itself.
+
+---
+
+### How Java Imports Actually Work
+
+#### The Import Chain
+
+```java
+// File: NetworkOperations.java
+package com.weather.report.operations;
+
+import com.weather.report.model.entities.Network;  // ← NetworkOperations imports Network
+
+public interface NetworkOperations {
+    Network createNetwork(...);   // Network in return type
+    Network updateNetwork(...);   // Network in return type
+}
+```
+
+```java
+// File: WeatherReport.java  
+package com.weather.report;
+
+import com.weather.report.operations.NetworkOperations;  // ← WeatherReport imports NetworkOperations
+// NOTE: No import for Network!
+
+public class WeatherReport {
+    private final NetworkOperations networks = OperationsFactory.getNetworkOperations();
+    
+    public NetworkOperations networks() {
+        return networks;
+    }
+}
+```
+
+**The Key Rule: Imports Are NOT Transitive**
+
+```
+File A imports File B
+File B imports File C
+──────────────────────
+File A does NOT automatically import File C
+```
+
+---
+
+### What You CAN Do Without Importing Network ✅
+
+#### Scenario 1: Receive Network Objects from Methods
+
+```java
+// Client code - NO Network import needed!
+import com.weather.report.WeatherReport;
+import com.weather.report.operations.NetworkOperations;
+
+public class Client {
+    public static void main(String[] args) {
+        WeatherReport system = new WeatherReport();
+        
+        // ✅ This WORKS without importing Network!
+        NetworkOperations netOps = system.networks();
+        Network net = netOps.createNetwork("NET_01", "Name", "Desc", "admin");
+        //      ^^^^^^^
+        // Network type is known through NetworkOperations method signature
+    }
+}
+```
+
+**Why this works:**
+- The method `createNetwork()` declares `Network` as its return type
+- When you call the method, Java compiler knows the return type from the interface
+- You get **indirect access** to Network through the method signature
+
+#### Scenario 2: Store and Pass Network Objects
+
+```java
+// All of this works WITHOUT importing Network
+public class Client {
+    public void test(WeatherReport system) {
+        NetworkOperations ops = system.networks();
+        
+        // ✅ Store Network objects
+        Network net1 = ops.createNetwork("NET_01", "Name1", "Desc", "admin");
+        Network net2 = ops.createNetwork("NET_02", "Name2", "Desc", "admin");
+        
+        // ✅ Pass Network objects to methods
+        Network updated = ops.updateNetwork("NET_01", "NewName", "NewDesc", "admin");
+        
+        // ✅ Use Network objects in collections
+        List<Network> networks = new ArrayList<>();
+        networks.add(net1);
+        networks.add(net2);
+    }
+}
+```
+
+#### Scenario 3: Method Signatures with Network
+
+```java
+// You can use Network in local method signatures
+public class Client {
+    // ✅ Network type is known through the imported NetworkOperations
+    public void processNetwork(Network net) {
+        System.out.println(net.getCode());
+        System.out.println(net.getName());
+    }
+    
+    public Network findNetwork(WeatherReport system, String code) {
+        return system.networks().getNetworks(code).iterator().next();
+    }
+}
+```
+
+---
+
+### What You CANNOT Do Without Importing Network ❌
+
+#### Scenario 1: Cannot Instantiate Network
+
+```java
+import com.weather.report.operations.NetworkOperations;
+// No Network import!
+
+public class MyClient {
+    public void test() {
+        // ❌ This FAILS - Compiler error!
+        Network net = new Network();  
+        // ERROR: cannot find symbol 'Network'
+        
+        // ❌ This also FAILS
+        Network net = new Network("NET_01", "Name", "Description");
+        // ERROR: cannot find symbol 'Network'
+    }
+}
+```
+
+**Error message:**
+```
+error: cannot find symbol
+  symbol:   class Network
+  location: class MyClient
+```
+
+#### Scenario 2: Cannot Reference Network Class
+
+```java
+public class MyClient {
+    public void test() {
+        // ❌ This FAILS
+        if (obj instanceof Network) {
+            // ERROR: cannot find symbol 'Network'
+        }
+        
+        // ❌ This FAILS
+        Class<?> clazz = Network.class;
+        // ERROR: cannot find symbol 'Network'
+        
+        // ❌ This FAILS
+        Network[] networks = new Network[10];
+        // ERROR: cannot find symbol 'Network'
+    }
+}
+```
+
+#### Scenario 3: Cannot Access Network Static Members
+
+```java
+public class MyClient {
+    public void test() {
+        // ❌ This FAILS (if Network had static members)
+        String defaultCode = Network.DEFAULT_CODE;
+        // ERROR: cannot find symbol 'Network'
+        
+        // ❌ This FAILS
+        Network.someStaticMethod();
+        // ERROR: cannot find symbol 'Network'
+    }
+}
+```
+
+#### Scenario 4: Cannot Use Network in Class/Method Declarations
+
+```java
+// ❌ This FAILS in WeatherReport if Network isn't imported
+public class WeatherReport {
+    // ERROR: cannot find symbol 'Network'
+    public Network getNetworkByCode(String code) {
+        return networks.getNetworks(code).iterator().next();
+    }
+    
+    // ERROR: cannot find symbol 'Network'
+    private List<Network> cachedNetworks = new ArrayList<>();
+}
+```
+
+---
+
+### Visual Explanation: Import Visibility
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      WeatherReport.java                         │
+│                                                                 │
+│  import NetworkOperations;  ← DIRECT import                    │
+│                               (full access)                     │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐  │
+│  │  NetworkOperations netOps = ...;                        │  │
+│  │                    ^^^^^^^^^^^                           │  │
+│  │                    Known directly                        │  │
+│  │                                                          │  │
+│  │  Network net = netOps.createNetwork(...);               │  │
+│  │  ^^^^^^^ ^^^   ^^^^^^^^^^^^^^^^^^^                      │  │
+│  │  │       │     │                                        │  │
+│  │  │       │     └─ Method returns Network               │  │
+│  │  │       │        (known from interface)               │  │
+│  │  │       │                                              │  │
+│  │  │       └─ Variable uses Network type                 │  │
+│  │  │          (type inferred from method)                │  │
+│  │  │                                                      │  │
+│  │  └─ Type is known INDIRECTLY                           │  │
+│  │     through interface method signature                 │  │
+│  └─────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ✅ CAN: Use Network objects from method returns               │
+│  ✅ CAN: Pass Network objects to methods                       │
+│  ✅ CAN: Store Network in variables                            │
+│  ❌ CANNOT: Create new Network() instances                     │
+│  ❌ CANNOT: Reference Network.class                            │
+│  ❌ CANNOT: Declare Network fields in WeatherReport            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Why WeatherReport Doesn't Import Network
+
+Looking at the actual `WeatherReport.java` implementation:
+
+```java
+package com.weather.report;
+
+import com.weather.report.operations.NetworkOperations;  // Import operations
+// NO import for Network!
+
+public class WeatherReport {
+    private final NetworkOperations networks = OperationsFactory.getNetworkOperations();
+    
+    // Only returns the operations interface
+    public NetworkOperations networks() {
+        return networks;  // Returns NetworkOperations, NOT Network
+    }
+    
+    // Never directly works with Network class
+    // Doesn't create Networks
+    // Doesn't declare Network fields
+    // Doesn't have methods returning Network
+}
+```
+
+**Reasons WeatherReport doesn't import Network:**
+
+1. **✅ Doesn't Need It:**
+   - WeatherReport never directly references `Network` class
+   - Only returns `NetworkOperations` interface
+   - Clients work with Network through the operations interface
+
+2. **✅ Better Design (Loose Coupling):**
+   - Facade doesn't depend on entity classes
+   - Only depends on operation interfaces
+   - Reduces coupling between layers
+
+3. **✅ Separation of Concerns:**
+   - WeatherReport's job: coordinate operations
+   - NetworkOperations' job: manage Network entities
+   - Clean separation of responsibilities
+
+4. **✅ Information Hiding:**
+   - Entity implementation details hidden from facade
+   - Facade doesn't expose entity creation
+   - Enforces access through proper channels (operations)
+
+---
+
+### When You WOULD Need to Import Network
+
+#### Example 1: If Facade Had Network-Specific Methods
+
+```java
+// If WeatherReport had this method, it WOULD need to import Network:
+import com.weather.report.model.entities.Network;  // ← Now we need this
+
+public class WeatherReport {
+    // Now we're working with Network directly
+    public Network getNetworkByCode(String code) {
+        //     ^^^^^^^ Return type requires import
+        Collection<Network> nets = networks.getNetworks(code);
+        return nets.isEmpty() ? null : nets.iterator().next();
+    }
+    
+    public List<Network> getAllNetworks() {
+        //          ^^^^^^^ Type in generic requires import
+        return new ArrayList<>(networks.getNetworks());
+    }
+}
+```
+
+#### Example 2: If Facade Cached Network Objects
+
+```java
+import com.weather.report.model.entities.Network;  // ← Need import for field
+
+public class WeatherReport {
+    // Field declaration requires import
+    private Map<String, Network> cachedNetworks = new HashMap<>();
+    //                  ^^^^^^^ Type usage requires import
+    
+    public Network getCachedNetwork(String code) {
+        return cachedNetworks.get(code);
+    }
+}
+```
+
+---
+
+### Comparison Table: Import Requirements
+
+| What You Want To Do | Need Network Import? | Why? |
+|---------------------|---------------------|------|
+| `Network net = ops.createNetwork()` | ❌ No | Type known from method return signature |
+| `ops.updateNetwork(..., Network net)` | ❌ No | Parameter type known from interface |
+| Pass Network to your own method | ❌ No | Type inferred from where it came from |
+| `new Network()` | ✅ Yes | Cannot instantiate without import |
+| `Network.class` | ✅ Yes | Cannot reference class literal without import |
+| Method returning `Network` | ✅ Yes | Must declare return type explicitly |
+| Field of type `Network` | ✅ Yes | Must declare field type explicitly |
+| `instanceof Network` | ✅ Yes | Cannot reference type in instanceof |
+| `Network[]` array | ✅ Yes | Cannot declare array of type |
+| Static members like `Network.CONSTANT` | ✅ Yes | Cannot access class members |
+
+---
+
+### The Actual Import Strategy in WeatherReport
+
+**What IS imported:**
+```java
+import com.weather.report.model.UserType;           // ← Used in method signature
+import com.weather.report.model.entities.User;      // ← Used in method signature
+import com.weather.report.operations.*;             // ← Operations interfaces used
+import com.weather.report.repositories.CRUDRepository;  // ← Used directly
+import com.weather.report.services.DataImportingService; // ← Used directly
+```
+
+**What is NOT imported:**
+```java
+// NOT imported - accessed indirectly:
+// import com.weather.report.model.entities.Network;
+// import com.weather.report.model.entities.Gateway;
+// import com.weather.report.model.entities.Sensor;
+// import com.weather.report.model.entities.Operator;
+// import com.weather.report.model.entities.Parameter;
+// import com.weather.report.model.entities.Threshold;
+```
+
+**Why?**
+- ✅ WeatherReport doesn't directly work with these entity classes
+- ✅ They're accessed through operations interfaces
+- ✅ Keeps WeatherReport focused on coordination
+- ✅ Reduces coupling and dependencies
+
+---
+
+### Real-World Client Code Example
+
+```java
+// File: MyApplication.java
+import com.weather.report.WeatherReport;
+import com.weather.report.model.UserType;
+import com.weather.report.operations.NetworkOperations;
+// Notice: NO import for Network!
+
+public class MyApplication {
+    public static void main(String[] args) throws Exception {
+        // Create the facade
+        WeatherReport system = new WeatherReport();
+        
+        // Create a user (User is imported)
+        User admin = system.createUser("admin", UserType.MAINTAINER);
+        //   ^^^^
+        // User is imported because WeatherReport.createUser() 
+        // returns User directly in its signature
+        
+        // Get operations interface
+        NetworkOperations netOps = system.networks();
+        
+        // Work with Network objects WITHOUT importing Network!
+        Network net1 = netOps.createNetwork("NET_01", "Network 1", "Desc", "admin");
+        //      ^^^^^^^ 
+        // Network type is known through netOps.createNetwork() return type
+        
+        Network net2 = netOps.createNetwork("NET_02", "Network 2", "Desc", "admin");
+        
+        // Update network - still no import needed
+        Network updated = netOps.updateNetwork("NET_01", "Updated Name", "New Desc", "admin");
+        
+        // Get all networks
+        Collection<Network> allNets = netOps.getNetworks();
+        //             ^^^^^^^ Type known through method signature
+        
+        // Process networks
+        for (Network net : allNets) {
+            System.out.println(net.getCode() + ": " + net.getName());
+        }
+        
+        // All of this works WITHOUT importing Network!
+        // Because we're using Network objects through method signatures,
+        // not referencing the Network class directly.
+    }
+}
+```
+
+---
+
+### Key Takeaways: Import Visibility
+
+1. **Imports Are Not Transitive**
+   - If A imports B, and B imports C, then A does NOT automatically import C
+   - Each file must explicitly import what it directly references
+
+2. **Method Signatures Provide Indirect Access**
+   - You can use types that appear in method signatures of imported interfaces
+   - You can receive, store, and pass these objects
+   - You CANNOT create new instances or reference the class itself
+
+3. **WeatherReport's Minimal Imports**
+   - Only imports what it directly references (operations, User, UserType)
+   - Doesn't import entity classes (Network, Gateway, Sensor)
+   - This is good design - loose coupling, separation of concerns
+
+4. **When You Need to Import**
+   - When you want to create instances: `new Network()`
+   - When you need class references: `Network.class`
+   - When declaring fields/return types: `public Network myMethod()`
+   - When using static members: `Network.SOME_CONSTANT`
+
+5. **Good Design Pattern**
+   - Facade imports interfaces (NetworkOperations)
+   - Clients use entities through interfaces (Network through NetworkOperations)
+   - Entity classes stay hidden behind the interface layer
+   - Reduces coupling, increases maintainability
+
+---
+
 ## Integration with Project Structure
 
 ### The Complete Architecture

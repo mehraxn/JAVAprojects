@@ -1,0 +1,21 @@
+1 ReportRepositoryImpl.java ) In NetworkReportImpl.java, the constructor uses a custom CRUDRepository class and its read method. Since there is also a read method in CRUDRepository.java, how does the constructor know which read method to use ? (How does Java know to use CRUDRepository's read() method and not some other class's read() method?)
+
+
+2 ReportRepositoryImpl.java )  hat are custom and standard classes in Java, and what is the difference between them ? Is CRUDRepository custom or standard? Is the import necessary (import com.weather.report.repositories.CRUDRepository;) ? 
+
+3 in the networkreportImpl we have some methos which are 
+
+
+
+getMostActiveGateways()
+
+
+
+getLeastActiveGateways()
+
+
+
+getGatewaysLoadRatio() 
+
+
+getHistogram()

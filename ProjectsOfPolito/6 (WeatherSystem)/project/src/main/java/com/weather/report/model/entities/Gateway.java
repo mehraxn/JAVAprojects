@@ -1,9 +1,8 @@
 package com.weather.report.model.entities;
 
 import java.util.Collection;
-import java.util.Objects; //ADDED FOR R1
 
-import com.weather.report.model.Timestamped;
+import com.weather.report.model.Timestamped; //ADDED FOR R1
 
 public class Gateway extends Timestamped {
 
@@ -23,18 +22,5 @@ public class Gateway extends Timestamped {
 
   public String getDescription() {
     return null;
-  }
-
-  @Override //ADDED FOR R1
-  public boolean equals(Object o) { //ADDED FOR R1
-    if (this == o) return true; //ADDED FOR R1
-    if (o == null || getClass() != o.getClass()) return false; //ADDED FOR R1
-    Gateway gateway = (Gateway) o; //ADDED FOR R1
-    return Objects.equals(code, gateway.code); //ADDED FOR R1
-  } //ADDED FOR R1
-
-  @Override //ADDED FOR R1
-  public int hashCode() { //ADDED FOR R1
-    return Objects.hash(code); //ADDED FOR R1
-  } //ADDED FOR R1
+  }                                                        
 }

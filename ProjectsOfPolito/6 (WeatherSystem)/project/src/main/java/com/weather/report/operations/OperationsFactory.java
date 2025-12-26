@@ -1,8 +1,5 @@
 package com.weather.report.operations;
 
-import com.weather.report.operations.NetworkOperations; //ADDED FOR R1
-import com.weather.report.operations.NetworkOperationsImpl; //ADDED FOR R1
-
 public class OperationsFactory {
 
   public static NetworkOperations getNetworkOperations() {

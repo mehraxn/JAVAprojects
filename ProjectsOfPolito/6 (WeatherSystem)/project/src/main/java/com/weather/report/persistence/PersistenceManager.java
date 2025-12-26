@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
 public class PersistenceManager {
+  
   private static final String TEST_PU_NAME = "weatherReportTestPU";
   private static final String PU_NAME = "weatherReportPU";
 

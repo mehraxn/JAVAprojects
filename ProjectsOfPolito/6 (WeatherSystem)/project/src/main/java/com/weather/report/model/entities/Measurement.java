@@ -7,12 +7,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /// Represnts a measurement taken by a sensor in the weather report system
 @Entity
+@Table(name = "MEASUREMENTS")
 public class Measurement {
 
-  @Id
+  @Id 
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private String sensorCode;
@@ -63,4 +65,27 @@ public class Measurement {
   public LocalDateTime getTimestamp() {
     return this.timestamp;
   }
+
+  //public void setTimestamp(LocalDateTime timestamp) { //ADDED FOR R2
+  //  this.timestamp = timestamp; //ADDED FOR R2
+  //}
+
+  //public void setValue(double value) { //ADDED FOR R2
+  //  this.value = value; //ADDED FOR R2
+  //}
+
+  //public void setSensorCode(String sensorCode) { //ADDED FOR R2
+  //  this.sensorCode = sensorCode; //ADDED FOR R2
+  //}
+
+  public void setGatewayCode(String getawayCode) { //ADDED FOR R2
+    this.gatewayCode = getawayCode; //ADDED FOR R2
+  }
+  public void setNetworkCode(String networkCode) { //ADDED FOR R2
+    this.networkCode = networkCode; //ADDED FOR R2
+  }
+  //public void setId(Long id) { //ADDED FOR R2
+  //  this.id = id; //ADDED FOR R2
+  //}
+
 }

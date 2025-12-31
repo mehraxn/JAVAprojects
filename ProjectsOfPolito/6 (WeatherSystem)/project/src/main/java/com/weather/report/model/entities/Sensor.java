@@ -1,31 +1,77 @@
 package com.weather.report.model.entities;
 
-import com.weather.report.model.Timestamped;                                    //ADDED FOR R1
+import com.weather.report.model.Timestamped;
 
-import jakarta.persistence.Id;                                              //ADDED FOR R1
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
+/// A _sensor_ measures a physical quantity and periodically sends the
+/// corresponding measurements.
+/// 
+/// A sensor may have a _threshold_ defined by the user to detect
+/// anomalous behaviours.
+@Entity
+@Table(name = "SENSORS")
 public class Sensor extends Timestamped {
 
-  @Id                                                                           //ADDED FOR R1
-  private String code;                                                          //ADDED FOR R1
-  private Threshold threshold;                                                  //ADDED FOR R1
+  @Id
+  private String code;
+  private String name;
+  private String description;
+  @Embedded
+  private Threshold threshold;
 
-  public Sensor() {}                                                            //ADDED FOR R1
+  // ADDED FOR R4
+  @ManyToOne
+  @JoinColumn(name = "gateway_code")
+  private Gateway gateway;
+
+  public Sensor() {
+    // default constructor
+  }
 
   public Threshold getThreshold() {
-    return threshold;                                                           //ADDED FOR R1
+    return threshold;
+  }
+
+  public void setCode(String code) {
+    this.code = code;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public void setThreshold(Threshold threshold) {
+    this.threshold = threshold;
   }
 
   public String getCode() {
-    return code;                                                                //ADDED FOR R1
+    return code;
   }
 
   public String getName() {
-    return null;
+    return name;
   }
 
   public String getDescription() {
-    return null;
+    return description;
   }
 
-}                                                                               //ADDED FOR R1
+  public Gateway getGateway() {
+    return gateway;
+  }
+
+  // ADDED R4 Connect this sensor to this gateway
+  public void setGateway(Gateway gateway) {
+    this.gateway = gateway;
+  }
+}

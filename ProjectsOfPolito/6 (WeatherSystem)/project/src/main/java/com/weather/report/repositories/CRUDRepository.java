@@ -4,9 +4,11 @@ import java.util.List;
 
 import com.weather.report.persistence.PersistenceManager;
 
-import jakarta.persistence.Entity; //ADDED FOR R1
-import jakarta.persistence.EntityManager; //ADDED FOR R1
-import jakarta.persistence.EntityTransaction; //ADDED FOR R1
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.TypedQuery;
 
 /**
  * Generic repository exposing basic CRUD operations backed by the persistence
@@ -29,14 +31,13 @@ public class CRUDRepository<T, ID> {
    * @param entityClass entity class handled by this repository
    */
   public CRUDRepository(Class<T> entityClass) {
-    this.entityClass = entityClass;                                             //ADDED FOR R1
+    this.entityClass = entityClass;
   }
 
   /**
    * Given an entity class retrieves the name of the entity to be used in the
    * queries.
-   * 
-   * @return the name of the entity (to be used in queries)
+   * * @return the name of the entity (to be used in queries)
    */
   protected String getEntityName() {
     Entity ea = entityClass.getAnnotation(jakarta.persistence.Entity.class);
@@ -54,24 +55,26 @@ public class CRUDRepository<T, ID> {
    * @return persisted entity
    */
   public T create(T entity) {
-    EntityManager entityManager = PersistenceManager.getEntityManager();        //ADDED FOR R1 //Entity manager is a standard JPA class used to interact with the persistence context.
-    EntityTransaction transaction = entityManager.getTransaction();             //ADDED FOR R1 //EntityTransaction is a standard JPA class used to control transactions on the EntityManager.
-    
-    try {                                                                        //ADDED FOR R1
-      transaction.begin();                                                       //ADDED FOR R1
-      entityManager.persist(entity);                                             //ADDED FOR R1
-      transaction.commit();                                                      //ADDED FOR R1
-      return entity;                                                             //ADDED FOR R1
-    } 
-    catch (Exception exception) {                                                 //ADDED FOR R1
-      if (transaction.isActive()) {                                               //ADDED FOR R1
-        transaction.rollback();                                                  //ADDED FOR R1
-      }                                                                         
-      throw exception;                                                           //ADDED FOR R1
+    EntityManager em = PersistenceManager.getEntityManager();
+    EntityTransaction tx = em.getTransaction();
+    try {
+      tx.begin();
+      em.persist(entity);
+      tx.commit();
+      return entity;
+    } catch (EntityExistsException | jakarta.persistence.RollbackException e) {
+      if (tx.isActive())
+        tx.rollback();
+      // Retrowing as RuntimeException ensures the Service layer
+      // catches it and throws IdAlreadyInUseException
+      throw new RuntimeException("Entity already exists", e);
+    } catch (Exception e) {
+      if (tx.isActive())
+        tx.rollback();
+      throw new RuntimeException("Error creating entity", e);
+    } finally {
+      em.close();
     }
-     finally {                                                                    //ADDED FOR R1
-      entityManager.close();                                                     //ADDED FOR R1
-    }                                                                               
   }
 
   /**
@@ -81,13 +84,14 @@ public class CRUDRepository<T, ID> {
    * @return found entity or {@code null} if absent
    */
   public T read(ID id) {
-    EntityManager entityManager = PersistenceManager.getEntityManager();        //ADDED FOR R1
-    try {                                                                        //ADDED FOR R1
-      T foundEntity = entityManager.find(entityClass, id);                       //ADDED FOR R1
-      return foundEntity;                                                        //ADDED FOR R1
-    } finally {                                                                  //ADDED FOR R1
-      entityManager.close();                                                     //ADDED FOR R1 //We close the EntityManager to free up resources ,without this, we could have resource leaks , But it is not part of the tests and test could pass without these too
-    }                                                                            //ADDED FOR R1
+    if (id == null)
+      return null;
+    EntityManager em = PersistenceManager.getEntityManager();
+    try {
+      return em.find(entityClass, id);
+    } finally {
+      em.close();
+    }
   }
 
   /**
@@ -96,15 +100,14 @@ public class CRUDRepository<T, ID> {
    * @return list of all entities
    */
   public List<T> read() {
-    EntityManager entityManager = PersistenceManager.getEntityManager();                            //ADDED FOR R1
-    try {                                                                                            //ADDED FOR R1
-      String entityName = getEntityName();                                                           //ADDED FOR R1
-      String jpqlQuery = "SELECT e FROM " + entityName + " e";                                       //ADDED FOR R1
-      List<T> allEntities = entityManager.createQuery(jpqlQuery, entityClass).getResultList();      //ADDED FOR R1
-      return allEntities;                                                                            //ADDED FOR R1
-    } finally {                                                                                      //ADDED FOR R1
-      entityManager.close();                                                                         //ADDED FOR R1 // We close the EntityManager to free up resources ,without this, we could have resource leaks , But it is not part of the tests and test could pass without these too
-    }                                                                                                //ADDED FOR R1
+    EntityManager em = PersistenceManager.getEntityManager();
+    try {
+      String jpql = "SELECT e FROM " + entityClass.getSimpleName() + " e";
+      TypedQuery<T> query = em.createQuery(jpql, entityClass);
+      return query.getResultList();
+    } finally {
+      em.close();
+    }
   }
 
   /**
@@ -114,21 +117,20 @@ public class CRUDRepository<T, ID> {
    * @return updated entity
    */
   public T update(T entity) {
-    EntityManager entityManager = PersistenceManager.getEntityManager();        //ADDED FOR R1
-    EntityTransaction transaction = entityManager.getTransaction();             //ADDED FOR R1
-    try {                                                                        //ADDED FOR R1
-      transaction.begin();                                                       //ADDED FOR R1
-      T mergedEntity = entityManager.merge(entity);                              //ADDED FOR R1
-      transaction.commit();                                                      //ADDED FOR R1
-      return mergedEntity;                                                       //ADDED FOR R1
-    } catch (Exception exception) {                                              //ADDED FOR R1
-      if (transaction.isActive()) {                                              //ADDED FOR R1
-        transaction.rollback();                                                  //ADDED FOR R1
-      }                                                                          //ADDED FOR R1
-      throw exception;                                                           //ADDED FOR R1
-    } finally {                                                                  //ADDED FOR R1
-      entityManager.close();                                                     //ADDED FOR R1 //We close the EntityManager to free up resources ,without this, we could have resource leaks , But it is not part of the tests and test could pass without these too
-    }                                                                            //ADDED FOR R1
+    EntityManager em = PersistenceManager.getEntityManager();
+    EntityTransaction tx = em.getTransaction();
+    try {
+      tx.begin();
+      T merged = em.merge(entity);
+      tx.commit();
+      return merged;
+    } catch (Exception e) {
+      if (tx.isActive())
+        tx.rollback();
+      throw new RuntimeException("Error updating entity", e);
+    } finally {
+      em.close();
+    }
   }
 
   /**
@@ -138,23 +140,27 @@ public class CRUDRepository<T, ID> {
    * @return deleted entity
    */
   public T delete(ID id) {
-    EntityManager entityManager = PersistenceManager.getEntityManager();        //ADDED FOR R1
-    EntityTransaction transaction = entityManager.getTransaction();             //ADDED FOR R1
-    try {                                                                        //ADDED FOR R1
-      transaction.begin();                                                       //ADDED FOR R1
-      T entityToDelete = entityManager.find(entityClass, id);                    //ADDED FOR R1
-      if (entityToDelete != null) {                                              //ADDED FOR R1
-        entityManager.remove(entityToDelete);                                    //ADDED FOR R1
-      }                                                                          //ADDED FOR R1
-      transaction.commit();                                                      //ADDED FOR R1
-      return entityToDelete;                                                     //ADDED FOR R1
-    } catch (Exception exception) {                                              //ADDED FOR R1
-      if (transaction.isActive()) {                                              //ADDED FOR R1
-        transaction.rollback();                                                  //ADDED FOR R1
-      }                                                                          //ADDED FOR R1
-      throw exception;                                                           //ADDED FOR R1
-    } finally {                                                                  //ADDED FOR R1
-      entityManager.close();                                                     //ADDED FOR R1 //We close the EntityManager to free up resources ,without this, we could have resource leaks , But it is not part of the tests and test could pass without these too
-    }                                                                            //ADDED FOR R1
+    EntityManager em = PersistenceManager.getEntityManager();
+    EntityTransaction tx = em.getTransaction();
+    try {
+      tx.begin();
+      T entity = em.find(entityClass, id);
+      if (entity != null) {
+        em.remove(entity);
+      }
+      tx.commit();
+      return entity;
+    } catch (Exception e) {
+      if (tx.isActive())
+        tx.rollback();
+      throw new RuntimeException("Error deleting entity", e);
+    } finally {
+      em.close();
+    }
   }
+
+  // static helper kept empty to satisfy existing calls.
+  public static void clearAll() {
+  }
+  
 }

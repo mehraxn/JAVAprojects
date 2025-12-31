@@ -62,6 +62,8 @@ public interface Report<HistogramRangeUnit> {
    *            {@code Duration} or {@code Double})
    */
   public interface Range<T> {
+    
+    
 
     /**
      * Returns the start value of this range.
@@ -70,7 +72,7 @@ public interface Report<HistogramRangeUnit> {
      * can belong to a bucket only if {@code start <= v}.
      */
     T getStart();
-
+    
     /**
      * Returns the end value of this range.
      * For all histograms in the Weather Report system ranges are

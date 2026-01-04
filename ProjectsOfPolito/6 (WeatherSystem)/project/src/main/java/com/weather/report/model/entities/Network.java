@@ -1,12 +1,12 @@
-package com.weather.report.model.entities;                                     // ADDED FOR R1
+package com.weather.report.model.entities;
 
-import java.util.ArrayList;                                                     // ADDED FOR R1
-import java.util.Collection;                                                    // ADDED FOR R1
-import java.util.Objects;                                                       // ADDED FOR R1
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Objects;
 
-import com.weather.report.model.Timestamped;                                    // ADDED FOR R1
+import com.weather.report.model.Timestamped;
 
-import jakarta.persistence.Entity;                                                   // ADDED FOR R1
+import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -15,85 +15,85 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
-@Entity                                                                         // ADDED FOR R1
-@Table(name = "NETWORKS")                                                       // ADDED FOR R1
-public class Network extends Timestamped {                                      // ADDED FOR R1
+@Entity
+@Table(name = "NETWORKS")
+public class Network extends Timestamped {
 
-    @Id                                                                         // ADDED FOR R1
-    private String code;                                                        // ADDED FOR R1
+    @Id
+    private String code;
 
-    private String name;                                                        // ADDED FOR R1
+    private String name;
 
-    private String description;                                                 // ADDED FOR R1
+    private String description;
 
-    @ManyToMany(fetch = FetchType.EAGER)                                        // ADDED FOR R1
-    @JoinTable(                                                                 // ADDED FOR R1
-        name = "NETWORK_OPERATORS",                                             // ADDED FOR R1
-        joinColumns = @JoinColumn(name = "network_code"),                       // ADDED FOR R1
-        inverseJoinColumns = @JoinColumn(name = "operator_email")               // ADDED FOR R1
-    )                                                                           // ADDED FOR R1
-    private Collection<Operator> operators = new ArrayList<>();                 // ADDED FOR R1
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "NETWORK_OPERATORS",
+            joinColumns = @JoinColumn(name = "network_code"),
+            inverseJoinColumns = @JoinColumn(name = "operator_email")
+    )
+    private Collection<Operator> operators = new ArrayList<>();
 
-    @OneToMany(mappedBy = "network") //ADDED FOR R4
-    private Collection<Gateway> gateways = new ArrayList<>(); //ADDED FOR R4
+    @OneToMany(mappedBy = "network")
+    private Collection<Gateway> gateways = new ArrayList<>();
 
+    public Network() {
+    }
 
-    public Network() {                                                          // ADDED FOR R1
-        // default constructor for JPA                                          // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
+    public Network(String code, String name, String description) {
+        this.code = code;
+        this.name = name;
+        this.description = description;
+    }
 
-    public Network(String code, String name, String description) {              // ADDED FOR R1
-        this.code = code;                                                       // ADDED FOR R1
-        this.name = name;                                                       // ADDED FOR R1
-        this.description = description;                                         // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
+    public Collection<Operator> getOperators() {
+        return this.operators;
+    }
 
-    public Collection<Operator> getOperators() {                                // ADDED FOR R1
-        return this.operators;                                                  // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
+    public void setOperators(Collection<Operator> operators) {
+        this.operators = operators;
+    }
 
-    public void setOperators(Collection<Operator> operators) {                  // ADDED FOR R1
-        this.operators = operators;                                             // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
+    public String getCode() {
+        return this.code;
+    }
 
-    public String getCode() {                                                   // ADDED FOR R1
-        return this.code;                                                       // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
+    public void setCode(String code) {
+        this.code = code;
+    }
 
-    public void setCode(String code) {                                          // ADDED FOR R1
-        this.code = code;                                                       // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
+    public String getName() {
+        return this.name;
+    }
 
-    public String getName() {                                                   // ADDED FOR R1
-        return this.name;                                                       // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public void setName(String name) {                                          // ADDED FOR R1
-        this.name = name;                                                       // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
+    public String getDescription() {
+        return this.description;
+    }
 
-    public String getDescription() {                                            // ADDED FOR R1
-        return this.description;                                                // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public void setDescription(String description) {                            // ADDED FOR R1
-        this.description = description;                                         // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
+    public Collection<Gateway> getGateways() {
+        return gateways;
+    }
 
-    public Collection<Gateway> getGateways() {//ADDED FOR R4 
-        return gateways;//ADDED FOR R4 
-    } //ADDED FOR R4 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Network network = (Network) o;
+        return Objects.equals(code, network.code);
+    }
 
-    @Override                                                                   // ADDED FOR R1
-    public boolean equals(Object o) {                                           // ADDED FOR R1
-        if (this == o) return true;                                             // ADDED FOR R1
-        if (o == null || getClass() != o.getClass()) return false;              // ADDED FOR R1
-        Network network = (Network) o;                                          // ADDED FOR R1
-        return Objects.equals(code, network.code);                              // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
-
-    @Override                                                                   // ADDED FOR R1
-    public int hashCode() {                                                     // ADDED FOR R1
-        return Objects.hash(code);                                              // ADDED FOR R1
-    }                                                                           // ADDED FOR R1
-}                                                                               // ADDED FOR R1
+    @Override
+    public int hashCode() {
+        return Objects.hash(code);
+    }
+}

@@ -66,26 +66,25 @@ public class Measurement {
     return this.timestamp;
   }
 
-  //public void setTimestamp(LocalDateTime timestamp) { //ADDED FOR R2
-  //  this.timestamp = timestamp; //ADDED FOR R2
-  //}
-
-  //public void setValue(double value) { //ADDED FOR R2
-  //  this.value = value; //ADDED FOR R2
-  //}
-
-  //public void setSensorCode(String sensorCode) { //ADDED FOR R2
-  //  this.sensorCode = sensorCode; //ADDED FOR R2
-  //}
-
-  public void setGatewayCode(String getawayCode) { //ADDED FOR R2
-    this.gatewayCode = getawayCode; //ADDED FOR R2
+  public void setTimestamp(LocalDateTime timestamp) { 
+    this.timestamp = timestamp; 
   }
-  public void setNetworkCode(String networkCode) { //ADDED FOR R2
-    this.networkCode = networkCode; //ADDED FOR R2
+
+  public void setValue(double value) { 
+    this.value = value; 
   }
-  //public void setId(Long id) { //ADDED FOR R2
-  //  this.id = id; //ADDED FOR R2
-  //}
+
+  public void setSensorCode(String sensorCode) { 
+    this.sensorCode = sensorCode; 
+  }
+  public void setGatewayCode(String getawayCode) { 
+    this.gatewayCode = getawayCode; 
+  }
+  public void setNetworkCode(String networkCode) { 
+    this.networkCode = networkCode; 
+  }
+  public void setId(Long id) { 
+    this.id = id; 
+  }
 
 }

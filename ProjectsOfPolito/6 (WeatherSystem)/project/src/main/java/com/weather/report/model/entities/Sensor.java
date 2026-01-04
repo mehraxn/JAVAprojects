@@ -25,7 +25,7 @@ public class Sensor extends Timestamped {
   @Embedded
   private Threshold threshold;
 
-  // ADDED FOR R4
+  
   @ManyToOne
   @JoinColumn(name = "gateway_code")
   private Gateway gateway;
@@ -70,7 +70,7 @@ public class Sensor extends Timestamped {
     return gateway;
   }
 
-  // ADDED R4 Connect this sensor to this gateway
+  
   public void setGateway(Gateway gateway) {
     this.gateway = gateway;
   }

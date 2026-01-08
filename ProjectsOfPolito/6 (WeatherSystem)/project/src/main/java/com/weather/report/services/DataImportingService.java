@@ -96,16 +96,13 @@ public class DataImportingService {
    * sensor and notifies operators when the value is out of bounds.
    */
   private static void checkMeasurement(Measurement measurement) {
-    /***********************************************************************/
-    /* Do not change these lines, use currentSensor to check for possible */
-    /* threshold violation, tests mocks this db interaction */
-    /***********************************************************************/
+    
     CRUDRepository<Sensor, String> sensorRepository = new CRUDRepository<>(Sensor.class);
     Sensor currentSensor = sensorRepository.read().stream()
         .filter(s -> measurement.getSensorCode().equals(s.getCode()))
         .findFirst()
         .orElse(null);
-    /***********************************************************************/
+
     
     boolean sensorExists = currentSensor != null;
     if (sensorExists) {

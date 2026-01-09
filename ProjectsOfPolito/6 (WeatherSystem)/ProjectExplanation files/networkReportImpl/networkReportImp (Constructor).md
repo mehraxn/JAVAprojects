@@ -8,7 +8,8 @@
 5. [Data Flow Diagram](#5-data-flow-diagram)
 6. [Time Complexity Analysis](#6-time-complexity-analysis)
 7. [Why Initialize Inside the Constructor?](#7-why-initialize-inside-the-constructor)
-8. [Potential Improvements](#8-potential-improvements)
+8. [Why Interfaces and Class Implementations?](#8-why-interfaces-and-class-implementations)
+9. [Potential Improvements](#9-potential-improvements)
 
 ---
 
@@ -760,7 +761,382 @@ The trade-off is that construction is slower (loads data immediately), but the o
 
 ---
 
-## 8. Potential Improvements
+## 8. Why Interfaces and Class Implementations?
+
+### Your Question Explained
+
+**Q: Why does NetworkReport have so many interfaces, and why do we override with classes, not interfaces?**
+
+Let's break this down by looking at the structure:
+
+---
+
+### The Interface Hierarchy
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        INTERFACE HIERARCHY                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│    ┌──────────────────────────────────┐                             │
+│    │      Report<T> (Interface)       │  ← Generic base interface   │
+│    ├──────────────────────────────────┤                             │
+│    │  + getCode(): String             │                             │
+│    │  + getStartDate(): String        │                             │
+│    │  + getEndDate(): String          │                             │
+│    │  + getNumberOfMeasurements()     │                             │
+│    │  + getHistogram(): SortedMap     │                             │
+│    │                                  │                             │
+│    │  ┌────────────────────────────┐  │                             │
+│    │  │  Range<T> (Inner Interface)│  │  ← Nested interface         │
+│    │  │  + getStart(): T           │  │                             │
+│    │  │  + getEnd(): T             │  │                             │
+│    │  │  + contains(T): boolean    │  │                             │
+│    │  └────────────────────────────┘  │                             │
+│    └──────────────────────────────────┘                             │
+│                     ▲                                               │
+│                     │ extends                                       │
+│                     │                                               │
+│    ┌──────────────────────────────────┐                             │
+│    │  NetworkReport (Interface)       │  ← Specific for networks    │
+│    ├──────────────────────────────────┤                             │
+│    │  + getMostActiveGateways()       │                             │
+│    │  + getLeastActiveGateways()      │                             │
+│    │  + getGatewaysLoadRatio()        │                             │
+│    │  + getHistogram() (specialized)  │                             │
+│    └──────────────────────────────────┘                             │
+│                     ▲                                               │
+│                     │ implements                                    │
+│                     │                                               │
+│    ┌──────────────────────────────────┐                             │
+│    │  NetworkReportImpl (CLASS)       │  ← Concrete implementation  │
+│    ├──────────────────────────────────┤                             │
+│    │  - code: String                  │                             │
+│    │  - measurements: List            │                             │
+│    │  + all interface methods...      │                             │
+│    │                                  │                             │
+│    │  ┌────────────────────────────┐  │                             │
+│    │  │  SimpleRange (Inner CLASS) │  │  ← Implements Range<T>      │
+│    │  └────────────────────────────┘  │                             │
+│    └──────────────────────────────────┘                             │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Why So Many Interfaces?
+
+#### Reason 1: Common Contract (Code Reuse)
+
+All reports (Network, Gateway, Sensor) share common fields:
+
+```java
+// Report<T> defines what ALL reports must have
+public interface Report<T> {
+    String getCode();           // Every report has a code
+    String getStartDate();      // Every report has date range
+    String getEndDate();
+    long getNumberOfMeasurements();  // Every report counts measurements
+    SortedMap<Range<T>, Long> getHistogram();  // Every report has histogram
+}
+
+// NetworkReport ADDS network-specific methods
+public interface NetworkReport extends Report<LocalDateTime> {
+    Collection<String> getMostActiveGateways();   // Only networks have this
+    Collection<String> getLeastActiveGateways();  // Only networks have this
+    Map<String, Double> getGatewaysLoadRatio();   // Only networks have this
+}
+
+// GatewayReport ADDS gateway-specific methods
+public interface GatewayReport extends Report<Duration> {
+    Collection<String> getMostActiveSensors();    // Only gateways have this
+    double getBatteryChargePercentage();          // Only gateways have this
+}
+```
+
+```
+Without Interface Hierarchy:
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│ NetworkReport   │  │ GatewayReport   │  │ SensorReport    │
+├─────────────────┤  ├─────────────────┤  ├─────────────────┤
+│ getCode()       │  │ getCode()       │  │ getCode()       │  ← DUPLICATED!
+│ getStartDate()  │  │ getStartDate()  │  │ getStartDate()  │  ← DUPLICATED!
+│ getEndDate()    │  │ getEndDate()    │  │ getEndDate()    │  ← DUPLICATED!
+│ getHistogram()  │  │ getHistogram()  │  │ getHistogram()  │  ← DUPLICATED!
+│ getMostActive.. │  │ getMostActive.. │  │ getMean()       │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+
+With Interface Hierarchy:
+                    ┌─────────────────┐
+                    │   Report<T>     │  ← Common methods defined ONCE
+                    ├─────────────────┤
+                    │ getCode()       │
+                    │ getStartDate()  │
+                    │ getEndDate()    │
+                    │ getHistogram()  │
+                    └────────┬────────┘
+           ┌─────────────────┼─────────────────┐
+           ▼                 ▼                 ▼
+   ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+   │ NetworkReport │ │ GatewayReport │ │ SensorReport  │
+   │ (only unique  │ │ (only unique  │ │ (only unique  │
+   │  methods)     │ │  methods)     │ │  methods)     │
+   └───────────────┘ └───────────────┘ └───────────────┘
+```
+
+#### Reason 2: Polymorphism
+
+You can treat all reports the same way for common operations:
+
+```java
+// Works with ANY type of report!
+public void printReportSummary(Report<?> report) {
+    System.out.println("Code: " + report.getCode());
+    System.out.println("From: " + report.getStartDate());
+    System.out.println("To: " + report.getEndDate());
+    System.out.println("Measurements: " + report.getNumberOfMeasurements());
+}
+
+// Usage:
+NetworkReport netReport = new NetworkReportImpl("NET_01", start, end);
+GatewayReport gwReport = new GatewayReportImpl("GW_0001", start, end);
+SensorReport senReport = new SensorReportImpl("S_000001", start, end);
+
+// Same method works for all!
+printReportSummary(netReport);   // Works!
+printReportSummary(gwReport);    // Works!
+printReportSummary(senReport);   // Works!
+```
+
+#### Reason 3: Abstraction (Hide Implementation)
+
+```java
+// Service layer only knows about interfaces
+public class ReportService {
+    
+    public NetworkReport generateNetworkReport(String code, String start, String end) {
+        return new NetworkReportImpl(code, start, end);  // Returns interface type
+    }
+}
+
+// Client code doesn't know about NetworkReportImpl
+NetworkReport report = reportService.generateNetworkReport("NET_01", start, end);
+// Client only sees NetworkReport interface methods
+```
+
+---
+
+### Why Classes Implement Interfaces (Not Interfaces Implementing Interfaces)?
+
+#### The Key Concept: Interfaces CANNOT Have Implementation
+
+```java
+// INTERFACE = Contract (WHAT to do)
+public interface Range<T> {
+    T getStart();           // Just declares the method
+    T getEnd();             // No code here!
+    boolean contains(T v);  // Just a signature
+}
+
+// CLASS = Implementation (HOW to do it)
+public class SimpleRange implements Range<LocalDateTime> {
+    private LocalDateTime startTime;  // Actual data storage
+    private LocalDateTime endTime;
+    
+    @Override
+    public LocalDateTime getStart() {
+        return startTime;  // Actual code!
+    }
+    
+    @Override
+    public LocalDateTime getEnd() {
+        return endTime;    // Actual code!
+    }
+    
+    @Override
+    public boolean contains(LocalDateTime timestamp) {
+        // Actual logic!
+        return !timestamp.isBefore(startTime) && !timestamp.isAfter(endTime);
+    }
+}
+```
+
+#### Visual Explanation
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     INTERFACE vs CLASS                              │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│   INTERFACE (Contract)              CLASS (Implementation)         │
+│   ═══════════════════              ════════════════════════         │
+│                                                                     │
+│   ┌─────────────────────┐          ┌─────────────────────┐         │
+│   │  "I promise to      │          │  "Here's HOW I      │         │
+│   │   have these        │    →     │   actually do       │         │
+│   │   methods"          │          │   those things"     │         │
+│   └─────────────────────┘          └─────────────────────┘         │
+│                                                                     │
+│   • No code                        • Has actual code               │
+│   • No fields                      • Has fields (data)             │
+│   • No constructors                • Has constructors              │
+│   • Can't create instances         • Can create instances          │
+│                                                                     │
+│   Range<T> range = ???             SimpleRange range =             │
+│   // Can't do this!                    new SimpleRange(...);       │
+│                                    // This works!                  │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### Why Can't You "Override with Interface"?
+
+```java
+// THIS IS IMPOSSIBLE:
+public interface SimpleRange implements Range<LocalDateTime> {
+    // ERROR! Interfaces can't have:
+    private LocalDateTime startTime;  // ❌ No fields allowed
+    
+    public LocalDateTime getStart() {
+        return startTime;  // ❌ No method bodies (before Java 8 default methods)
+    }
+}
+
+// THIS IS CORRECT:
+public class SimpleRange implements Range<LocalDateTime> {
+    private LocalDateTime startTime;  // ✓ Classes can have fields
+    
+    public LocalDateTime getStart() {
+        return startTime;  // ✓ Classes can have method bodies
+    }
+}
+```
+
+---
+
+### The Full Picture in NetworkReportImpl
+
+```java
+public class NetworkReportImpl implements NetworkReport {
+    
+    // ═══════════════════════════════════════════════════════════════
+    // FIELDS - Only classes can have instance variables
+    // ═══════════════════════════════════════════════════════════════
+    private String code;
+    private String startDateStr;
+    private String endDateStr;
+    private List<Measurement> measurements;
+    
+    // ═══════════════════════════════════════════════════════════════
+    // CONSTRUCTOR - Only classes can have constructors
+    // ═══════════════════════════════════════════════════════════════
+    public NetworkReportImpl(String networkCode, String startDate, String endDate) {
+        // Initialize fields...
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // INTERFACE METHODS - Implementing the contract
+    // ═══════════════════════════════════════════════════════════════
+    @Override
+    public String getCode() {
+        return code;  // Actual implementation
+    }
+    
+    @Override
+    public SortedMap<Range<LocalDateTime>, Long> getHistogram() {
+        // Returns SimpleRange objects (class implementing Range interface)
+        SortedMap<Range<LocalDateTime>, Long> histogram = new TreeMap<>();
+        SimpleRange range = new SimpleRange(...);  // Create class instance
+        histogram.put(range, count);
+        return histogram;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // INNER CLASS - Implements Range<LocalDateTime> interface
+    // ═══════════════════════════════════════════════════════════════
+    private class SimpleRange implements Range<LocalDateTime> {
+        private LocalDateTime startTime;   // Field - only in class
+        private LocalDateTime endTime;     // Field - only in class
+        private boolean isLastBucket;      // Field - only in class
+        
+        // Constructor - only in class
+        public SimpleRange(LocalDateTime start, LocalDateTime end, boolean isLast) {
+            this.startTime = start;
+            this.endTime = end;
+            this.isLastBucket = isLast;
+        }
+        
+        @Override
+        public LocalDateTime getStart() {
+            return startTime;  // Implementation
+        }
+        
+        @Override
+        public LocalDateTime getEnd() {
+            return endTime;    // Implementation
+        }
+        
+        @Override
+        public boolean contains(LocalDateTime timestamp) {
+            // Actual logic here
+            if (timestamp.isBefore(startTime)) return false;
+            if (isLastBucket) return !timestamp.isAfter(endTime);
+            return timestamp.isBefore(endTime);
+        }
+    }
+}
+```
+
+---
+
+### Summary Table
+
+| Question | Answer |
+|----------|--------|
+| **Why many interfaces?** | To define contracts, enable polymorphism, and avoid code duplication |
+| **Why Report<T> is generic?** | Different reports use different histogram types (LocalDateTime, Duration, Double) |
+| **Why NetworkReport extends Report?** | To inherit common methods and add network-specific ones |
+| **Why use classes to implement?** | Interfaces can't have fields, constructors, or method implementations |
+| **Why SimpleRange is a class?** | It needs to store data (startTime, endTime) and have actual logic |
+| **Why inner class?** | SimpleRange is only used inside NetworkReportImpl, keeps it encapsulated |
+
+---
+
+### The Design Pattern: "Program to Interface, Not Implementation"
+
+```java
+// ✓ GOOD: Return interface type
+public NetworkReport getNetworkReport(String code) {
+    return new NetworkReportImpl(code, null, null);
+}
+
+// ✗ BAD: Return implementation type
+public NetworkReportImpl getNetworkReport(String code) {
+    return new NetworkReportImpl(code, null, null);
+}
+```
+
+**Why?** Because you can change the implementation without affecting client code:
+
+```java
+// Today: Using NetworkReportImpl
+public NetworkReport getNetworkReport(String code) {
+    return new NetworkReportImpl(code, null, null);
+}
+
+// Tomorrow: Switch to a faster implementation
+public NetworkReport getNetworkReport(String code) {
+    return new FastNetworkReportImpl(code, null, null);  // Easy change!
+}
+
+// Client code doesn't change at all:
+NetworkReport report = service.getNetworkReport("NET_01");  // Still works!
+```
+
+---
+
+## 9. Potential Improvements
 
 ### 1. Database-Level Filtering
 

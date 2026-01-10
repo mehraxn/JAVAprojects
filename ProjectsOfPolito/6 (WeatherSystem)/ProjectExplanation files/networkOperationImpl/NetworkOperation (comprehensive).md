@@ -648,6 +648,126 @@ This is why we call:
 AlertingService.notifyDeletion(username, networkCode, Network.class);
 ```
 
+---
+
+#### ⚠️ IMPORTANT: What Happens to Gateways and Sensors When a Network is Deleted?
+
+**Answer: NOTHING! Only the Network is deleted. Gateways and Sensors are NOT deleted.**
+
+##### The Code Evidence
+
+Looking at the `deleteNetwork()` method:
+```java
+networkRepository.delete(networkCode);  // ← Only deletes the Network!
+// There is NO:
+// - gatewayRepository.delete(...)
+// - sensorRepository.delete(...)
+// - cascade deletion logic
+```
+
+##### Why? The Project Requirements Explain This
+
+From the project README:
+
+> *"Creation, modification and deletion of networks, gateways, sensors and their associated elements... These operations concern the **existence of objects in the system, independently of any hierarchical relationships**."*
+
+And:
+
+> *"Association and disassociation between elements (for example linking a gateway to a network, or a sensor to a gateway). **Association operations belong to topology management and are distinct from the operations that deal with object creation.**"*
+
+##### What This Means
+
+The system separates two concepts:
+
+| Concept | Operations | Responsibility |
+|---------|------------|----------------|
+| **Entity Existence** | Create, Update, Delete | `NetworkOperations`, `GatewayOperations`, `SensorOperations` |
+| **Relationships (Topology)** | Connect, Disconnect | `TopologyOperations` |
+
+**These are INDEPENDENT!** Deleting an entity does NOT automatically affect related entities.
+
+##### Visual Example
+
+```
+BEFORE deleteNetwork("NET_01"):
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              NET_01                                     │
+│                                │                                        │
+│              ┌─────────────────┼─────────────────┐                      │
+│              │                 │                 │                      │
+│              ▼                 ▼                 ▼                      │
+│           GW_0001           GW_0002           GW_0003                   │
+│              │                 │                 │                      │
+│         ┌────┴────┐       ┌────┴────┐       ┌────┴────┐                │
+│         ▼         ▼       ▼         ▼       ▼         ▼                │
+│     S_000001  S_000002  S_000003  S_000004  S_000005  S_000006          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+AFTER deleteNetwork("NET_01"):
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│                           [NET_01 DELETED]                              │
+│                                                                         │
+│           GW_0001           GW_0002           GW_0003  ← Still exist!   │
+│              │                 │                 │       (ORPHANED)     │
+│         ┌────┴────┐       ┌────┴────┐       ┌────┴────┐                │
+│         ▼         ▼       ▼         ▼       ▼         ▼                │
+│     S_000001  S_000002  S_000003  S_000004  S_000005  S_000006          │
+│                                                        ↑                │
+│                                               Still exist! (ORPHANED)   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+##### What Are "Orphaned" Entities?
+
+After deleting a network:
+- **Gateways** still exist in the database, but have no parent network
+- **Sensors** still exist in the database, still connected to their gateways
+- These entities can be:
+  - Connected to a different network later (via `TopologyOperations`)
+  - Deleted individually (via `GatewayOperations.deleteGateway()` or `SensorOperations.deleteSensor()`)
+  - Left as orphans (the system allows this)
+
+##### Why Design It This Way?
+
+| Design Choice | Benefit |
+|---------------|---------|
+| **No cascade delete** | Prevents accidental data loss |
+| **Separation of concerns** | Entity lifecycle ≠ Relationship lifecycle |
+| **Flexibility** | Gateways/Sensors can be reassigned to new networks |
+| **Data preservation** | Historical data in orphaned sensors is preserved |
+
+##### Comparison with Database CASCADE DELETE
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  DATABASE APPROACH                                                      │
+│                                                                         │
+│  With CASCADE DELETE:                                                   │
+│  DELETE FROM networks WHERE code = 'NET_01'                             │
+│  → Automatically deletes all related gateways                           │
+│  → Automatically deletes all related sensors                            │
+│  → All data is GONE!                                                    │
+│                                                                         │
+│  Without CASCADE DELETE (this system's approach):                       │
+│  DELETE FROM networks WHERE code = 'NET_01'                             │
+│  → Only network is deleted                                              │
+│  → Gateways remain (with null/broken network reference)                 │
+│  → Sensors remain (still connected to gateways)                         │
+│  → Data is PRESERVED!                                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Summary Table
+
+| When You Delete | What Gets Deleted | What Remains |
+|-----------------|-------------------|--------------|
+| **Network** | Only the Network | All Gateways, All Sensors, All Operators |
+| **Gateway** | Only the Gateway | Network (if any), All Sensors |
+| **Sensor** | Only the Sensor | Network (if any), Gateway (if any) |
+
+---
+
 #### Why Return the Deleted Network?
 
 ```java
@@ -675,8 +795,8 @@ deleteNetwork("NET_01", "admin")
          │
          NO
          ▼
-   networkRepository.delete("NET_01")  ← Actually removes from DB
-         │
+   networkRepository.delete("NET_01")  ← ONLY removes the Network from DB
+         │                               (Gateways and Sensors remain!)
          ▼
    AlertingService.notifyDeletion("admin", "NET_01", Network.class)
          │                              ↑
@@ -769,6 +889,99 @@ From the project README:
 │    Result: [NET_01, NET_02]                                             │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+#### ❓ Why Return ALL Networks When No Codes Provided? Why Not Return Null?
+
+##### Answer: It's Required by the Specification
+
+From the project README:
+
+> *"If the method is invoked without any input parameters, **it must return all Network elements** present in the system."*
+
+This is an **explicit requirement**, not a design choice.
+
+##### Why This Design Makes Sense
+
+| Call | Interpretation | Result |
+|------|----------------|--------|
+| `getNetworks()` | "Give me networks" (no filter) | ALL networks |
+| `getNetworks("NET_01")` | "Give me this specific one" | Only NET_01 |
+| `getNetworks("NET_01", "NET_02")` | "Give me these specific ones" | NET_01 and NET_02 |
+
+**Think of it like a search engine:**
+- Search with filter → Returns filtered results
+- Search without filter → Returns everything
+
+##### Why NOT Return Null?
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  ❌ BAD: Return null                                                    │
+│                                                                         │
+│  Collection<Network> networks = getNetworks();                          │
+│  for (Network n : networks) {  // ← NullPointerException!               │
+│      System.out.println(n);                                             │
+│  }                                                                      │
+│                                                                         │
+│  Problems:                                                              │
+│  • Caller must ALWAYS check for null before using                       │
+│  • Easy to forget null check → application crashes                      │
+│  • null is AMBIGUOUS: does it mean "no results" or "error"?             │
+│  • Violates "Null Object Pattern" best practice                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│  ✅ GOOD: Return all networks (Current Implementation)                  │
+│                                                                         │
+│  Collection<Network> networks = getNetworks();                          │
+│  for (Network n : networks) {  // ← Works perfectly!                    │
+│      System.out.println(n);    //   Even if empty, no crash             │
+│  }                                                                      │
+│                                                                         │
+│  Benefits:                                                              │
+│  • No null checks needed                                                │
+│  • Consistent return type (always a Collection)                         │
+│  • "No filter" = "give me everything" (intuitive API)                   │
+│  • Follows Java best practices                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Why NOT Return an Empty List?
+
+Returning an empty list when no codes are provided would also be wrong:
+
+```java
+// ❌ WRONG interpretation:
+if (noCodesProvided) {
+    return new ArrayList<>();  // Empty list - but user wanted ALL networks!
+}
+```
+
+This would be **semantically incorrect**:
+- User calls `getNetworks()` expecting to see networks
+- Getting an empty list suggests "there are no networks"
+- But there ARE networks - the user just didn't specify which ones!
+
+##### Real-World Analogy
+
+| Action | Expected Result |
+|--------|-----------------|
+| "Show me files named report.pdf" | Only files named report.pdf |
+| "Show me files" (no filter) | ALL files in the system |
+| "Show me files" → returns nothing | ❌ Confusing! User expects to see files |
+| "Show me files" → returns null | ❌ Even worse - application crashes! |
+
+##### Summary: The Three Possible Designs
+
+| Design | When No Codes Provided | Verdict |
+|--------|------------------------|---------|
+| Return `null` | Caller gets null | ❌ Causes NullPointerException |
+| Return empty list | Caller gets `[]` | ❌ Semantically wrong (implies no data exists) |
+| **Return all networks** | Caller gets all data | ✅ Correct! Matches requirements |
+
+---
 
 #### Why No Authorization Check?
 
@@ -1138,7 +1351,23 @@ This follows the **Single Responsibility Principle**: `NetworkOperationsImpl` ha
 
 ## 10. Common Questions
 
-### Q1: Why does `getNetworks()` not throw exceptions for invalid codes?
+### Q1: Why does `getNetworks()` return ALL networks when no codes are provided, instead of null?
+
+**Two reasons:**
+
+1. **It's required by the specification:**
+   > *"If the method is invoked without any input parameters, it must return all Network elements present in the system."*
+
+2. **It's good API design:**
+   - Returning `null` would cause `NullPointerException` if caller forgets to check
+   - Returning empty list would be semantically wrong (implies no data exists)
+   - "No filter" = "give me everything" is intuitive behavior
+
+See the [getNetworks() section](#getnetworks) for a detailed explanation.
+
+---
+
+### Q2: Why does `getNetworks()` not throw exceptions for invalid codes?
 
 From the requirements:
 > *"If a code passed as input does not correspond to an element present in the system, it is simply ignored."*
@@ -1147,13 +1376,13 @@ This is by design - invalid codes are silently skipped.
 
 ---
 
-### Q2: Why is there no `removeOperatorFromNetwork()` method?
+### Q3: Why is there no `removeOperatorFromNetwork()` method?
 
 Looking at the `NetworkOperations` interface, this method is not defined. The requirements only specify adding operators to networks, not removing them.
 
 ---
 
-### Q3: Why doesn't `createOperator()` validate email format?
+### Q4: Why doesn't `createOperator()` validate email format?
 
 The code only checks:
 ```java
@@ -1166,7 +1395,7 @@ There's no regex validation for email format (like `xxx@xxx.xxx`). The requireme
 
 ---
 
-### Q4: Can the same operator belong to multiple networks?
+### Q5: Can the same operator belong to multiple networks?
 
 Yes! From the requirements:
 > *"The same operator may be responsible for multiple networks."*
@@ -1175,7 +1404,7 @@ The `addOperatorToNetwork()` method allows adding an existing operator to any nu
 
 ---
 
-### Q5: What happens to operators when a network is deleted?
+### Q6: What happens to operators when a network is deleted?
 
 Looking at `deleteNetwork()`:
 ```java
@@ -1184,6 +1413,37 @@ AlertingService.notifyDeletion(username, networkCode, Network.class);
 ```
 
 The operators themselves are NOT deleted. Only the network-operator association is removed. Operators can still be associated with other networks.
+
+---
+
+### Q7: What happens to gateways and sensors when a network is deleted?
+
+**They are NOT deleted!** Only the network itself is removed.
+
+From the requirements:
+> *"These operations concern the existence of objects in the system, independently of any hierarchical relationships."*
+
+The gateways and sensors become "orphaned" - they still exist but are no longer connected to any network. They can be:
+- Reconnected to another network via `TopologyOperations`
+- Deleted individually
+- Left as orphans
+
+See the [deleteNetwork() section](#deletenetwork) for a detailed visual explanation.
+
+---
+
+### Q8: Why doesn't the system use cascade delete?
+
+**Design benefits of NO cascade delete:**
+
+| Benefit | Explanation |
+|---------|-------------|
+| **Prevents data loss** | Accidental network deletion doesn't destroy all data |
+| **Separation of concerns** | Entity existence is separate from relationships |
+| **Flexibility** | Gateways/Sensors can be reassigned |
+| **Data preservation** | Measurement history in sensors is preserved |
+
+This is a deliberate architectural choice documented in the requirements.
 
 ---
 

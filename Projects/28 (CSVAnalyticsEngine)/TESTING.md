@@ -1,30 +1,56 @@
-# Testing CSV Analytics Engine
+# CSV Analytics Engine Testing
 
-## Planned parser tests
+Use temporary input files for these manual tests. The examples assume the program has been compiled into an `out` directory.
 
-- Read headers and normal rows.
-- Read quoted commas and escaped quotes.
-- Handle empty files and header-only files.
-- Reject duplicate headers and inconsistent row widths.
+## Normal test cases
 
-## Planned analytics tests
+| Test | Input or action | Expected result |
+|---|---|---|
+| Read table | Header plus three complete rows | Correct columns and row count `3` |
+| Numeric statistics | Values `10`, `20`, and `30` | Min `10`, max `30`, average `20`, valid count `3` |
+| Decimal statistics | Values `1.5` and `2.5` | Min `1.5`, max `2.5`, average `2` |
+| Group rows | Categories `A`, `B`, `A` | Group A contains 2 rows; B contains 1 |
+| Filter rows | Filter category for `A` | Only exact value `A` rows are returned |
+| Case-insensitive column | Request `AMOUNT` for header `amount` | Column resolves and statistics are calculated |
+| CSV round trip | Read, write, and read a quoted data set | Columns and values remain unchanged |
 
-- Filter rows.
-- Sum and average numeric columns.
-- Group and count text values.
-- Export and reload a result data set.
+## Edge-case test cases
 
-## Planned validation tests
+| Test | Input or action | Expected result |
+|---|---|---|
+| Empty file | Zero-byte or whitespace-only file | Empty data set with zero rows and columns |
+| Header only | Valid header without data rows | Columns shown and row count `0` |
+| Blank rows | Blank lines between records | Blank lines are ignored |
+| Missing numeric cell | One blank amount | Missing count increases; other numbers are analyzed |
+| Invalid numeric cell | Amount `unknown` | Invalid count increases; analysis continues |
+| No valid numbers | Numeric analysis of blanks/text only | Min, max, and average are `n/a` |
+| Missing group value | Group a row with a blank category | Row appears in `(missing)` group |
+| Negative values | Values `-5` and `10` | Min `-5`, max `10`, average `2.5` |
+| Quoted comma | Value `"Berlin, Germany"` | Parsed as one field |
+| Escaped quote | Value `"He said ""yes"""` | Parsed with one quotation mark pair in the value |
 
-- Reject null or missing paths.
-- Reject unknown columns.
-- Reject non-numeric values in numeric operations.
-- Define behavior for empty numeric columns.
+## Invalid input test cases
 
-## Manual checklist
+| Test | Input | Expected result |
+|---|---|---|
+| Missing file | Path does not exist | `IOException` with a clear file message |
+| Empty header name | Header `name,,amount` | `IOException` reports invalid structure |
+| Duplicate header | Header `name,Name` | `IOException` rejects case-insensitive duplicate |
+| Short row | Header has 3 fields; row has 2 | `IOException` reports actual and expected counts |
+| Long row | Header has 2 fields; row has 3 | `IOException` reports actual and expected counts |
+| Broken quotes | Unclosed or misplaced quotation mark | `IOException` identifies the malformed line |
+| Unknown column | Analyze a column absent from the header | `IllegalArgumentException` |
+| Null data set | Pass `null` to an analytics method | `IllegalArgumentException` |
+| Multiline value | Quoted value spans physical lines | Rejected as unsupported/malformed input |
 
-- [ ] Implement a documented CSV grammar.
-- [ ] Keep parsing and analytics separate.
-- [ ] Use BigDecimal for decimal aggregation.
-- [ ] Return read-only data snapshots.
-- [ ] Use disposable files for manual tests.
+## Manual testing checklist
+
+- [ ] Compile all files in `src/csvanalyticsengine`.
+- [ ] Run `Main` without arguments and verify the usage message.
+- [ ] Run with a valid file and confirm columns and row count.
+- [ ] Request numeric statistics and verify valid, missing, and invalid counts.
+- [ ] Request grouping and verify every row belongs to one group.
+- [ ] Test commas and escaped quotation marks inside quoted cells.
+- [ ] Test empty, header-only, inconsistent, and malformed files.
+- [ ] Confirm unknown columns fail clearly.
+- [ ] Write and reread a temporary data set to verify CSV escaping.

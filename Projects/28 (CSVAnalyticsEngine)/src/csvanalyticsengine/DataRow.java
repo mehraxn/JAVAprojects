@@ -1,23 +1,36 @@
 package csvanalyticsengine;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class DataRow {
-    private final Map<String, String> values = new LinkedHashMap<>();
+    private final Map<String, String> values = new LinkedHashMap<String, String>();
 
-    public String get(String columnName) {
-        // TODO: Validate the column and return its value.
-        throw new UnsupportedOperationException("TODO: read a row value");
+    public void put(String column, String value) {
+        String validColumn = requireColumn(column);
+        if (values.containsKey(validColumn)) {
+            throw new IllegalArgumentException("Column already exists in this row: " + validColumn);
+        }
+        values.put(validColumn, value == null ? "" : value);
     }
 
-    public void put(String columnName, String value) {
-        // TODO: Validate and store a column value.
-        throw new UnsupportedOperationException("TODO: store a row value");
+    public String get(String column) {
+        String validColumn = requireColumn(column);
+        if (!values.containsKey(validColumn)) {
+            throw new IllegalArgumentException("Unknown column: " + validColumn);
+        }
+        return values.get(validColumn);
     }
 
     public Map<String, String> asMap() {
-        // TODO: Return an unmodifiable snapshot.
-        throw new UnsupportedOperationException("TODO: expose row values");
+        return Collections.unmodifiableMap(new LinkedHashMap<String, String>(values));
+    }
+
+    private String requireColumn(String column) {
+        if (column == null || column.trim().isEmpty()) {
+            throw new IllegalArgumentException("Column name cannot be empty.");
+        }
+        return column.trim();
     }
 }

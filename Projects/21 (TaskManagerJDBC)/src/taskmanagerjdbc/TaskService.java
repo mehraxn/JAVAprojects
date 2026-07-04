@@ -1,28 +1,43 @@
 package taskmanagerjdbc;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public class TaskService {
-    private final JdbcTaskRepository repository;
+    private final TaskRepository repository;
 
-    public TaskService(JdbcTaskRepository repository) {
+    public TaskService(TaskRepository repository) {
+        if (repository == null) {
+            throw new IllegalArgumentException("Task repository cannot be null.");
+        }
         this.repository = repository;
     }
 
-    public Task createTask(String title, String description,
-            java.time.LocalDate dueDate) throws SQLException {
-        // TODO: Validate input and delegate task creation.
-        throw new UnsupportedOperationException("TODO: create a task through the service");
+    public Task addTask(String title, String description, LocalDate dueDate) throws SQLException {
+        return repository.add(new Task(0, title, description, dueDate, Task.Status.OPEN));
     }
 
-    public void markDone(long taskId) throws SQLException {
-        // TODO: Load the task, change status, and persist it.
-        throw new UnsupportedOperationException("TODO: mark a task done");
+    public boolean updateTaskStatus(long taskId, Task.Status status) throws SQLException {
+        Optional<Task> existing = repository.findById(taskId);
+        if (!existing.isPresent()) {
+            return false;
+        }
+        Task task = existing.get();
+        task.setStatus(status);
+        return repository.update(task);
     }
 
-    public List<Task> listTasks(Task.Status status) throws SQLException {
-        // TODO: Return all tasks or filter by status.
-        throw new UnsupportedOperationException("TODO: list tasks through the service");
+    public boolean deleteTask(long taskId) throws SQLException {
+        return repository.delete(taskId);
+    }
+
+    public List<Task> listAllTasks() throws SQLException {
+        return repository.findAll();
+    }
+
+    public List<Task> searchByStatus(Task.Status status) throws SQLException {
+        return repository.findByStatus(status);
     }
 }

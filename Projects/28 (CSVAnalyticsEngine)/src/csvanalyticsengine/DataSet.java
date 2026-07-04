@@ -1,29 +1,68 @@
 package csvanalyticsengine;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 public class DataSet {
-    private final List<String> columns = new ArrayList<>();
-    private final List<DataRow> rows = new ArrayList<>();
+    private final List<String> columns;
+    private final List<DataRow> rows = new ArrayList<DataRow>();
 
-    public void addColumn(String columnName) {
-        // TODO: Validate and reject duplicate column names.
-        throw new UnsupportedOperationException("TODO: add a column");
+    public DataSet(List<String> columns) {
+        if (columns == null) {
+            throw new IllegalArgumentException("Column list cannot be null.");
+        }
+
+        List<String> checkedColumns = new ArrayList<String>();
+        Set<String> normalizedColumns = new HashSet<String>();
+        for (String column : columns) {
+            if (column == null || column.trim().isEmpty()) {
+                throw new IllegalArgumentException("Column names cannot be empty.");
+            }
+            String checkedColumn = column.trim();
+            String normalized = checkedColumn.toLowerCase(Locale.ROOT);
+            if (!normalizedColumns.add(normalized)) {
+                throw new IllegalArgumentException("Duplicate column name: " + checkedColumn);
+            }
+            checkedColumns.add(checkedColumn);
+        }
+        this.columns = Collections.unmodifiableList(checkedColumns);
     }
 
     public void addRow(DataRow row) {
-        // TODO: Validate row shape against the columns.
-        throw new UnsupportedOperationException("TODO: add a row");
+        if (row == null) {
+            throw new IllegalArgumentException("Row cannot be null.");
+        }
+        if (!row.asMap().keySet().equals(new java.util.LinkedHashSet<String>(columns))) {
+            throw new IllegalArgumentException("Row columns must exactly match the data set columns.");
+        }
+        rows.add(row);
     }
 
     public List<String> getColumns() {
-        // TODO: Return an unmodifiable column list.
-        throw new UnsupportedOperationException("TODO: list columns");
+        return columns;
     }
 
     public List<DataRow> getRows() {
-        // TODO: Return an unmodifiable row list.
-        throw new UnsupportedOperationException("TODO: list rows");
+        return Collections.unmodifiableList(new ArrayList<DataRow>(rows));
+    }
+
+    public int getRowCount() {
+        return rows.size();
+    }
+
+    public String resolveColumn(String requestedColumn) {
+        if (requestedColumn == null || requestedColumn.trim().isEmpty()) {
+            throw new IllegalArgumentException("Column name cannot be empty.");
+        }
+        for (String column : columns) {
+            if (column.equalsIgnoreCase(requestedColumn.trim())) {
+                return column;
+            }
+        }
+        throw new IllegalArgumentException("Unknown column: " + requestedColumn.trim());
     }
 }

@@ -20,6 +20,9 @@ public class TaskService {
     }
 
     public boolean updateTaskStatus(long taskId, Task.Status status) throws SQLException {
+        if (status == null) {
+            throw new IllegalArgumentException("Task status cannot be null.");
+        }
         Optional<Task> existing = repository.findById(taskId);
         if (!existing.isPresent()) {
             return false;

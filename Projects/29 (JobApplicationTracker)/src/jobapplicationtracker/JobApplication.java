@@ -3,9 +3,9 @@ package jobapplicationtracker;
 import java.time.LocalDate;
 
 public class JobApplication {
-    public enum Stage {
-        SAVED,
+    public enum Status {
         APPLIED,
+        SCREENING,
         INTERVIEW,
         OFFER,
         REJECTED,
@@ -13,37 +13,80 @@ public class JobApplication {
     }
 
     private final long id;
-    private String company;
-    private String role;
-    private LocalDate appliedDate;
-    private LocalDate reminderDate;
-    private Stage stage;
+    private final String company;
+    private final String role;
+    private final LocalDate applicationDate;
+    private Status status;
+    private String notes;
 
     public JobApplication(long id, String company, String role,
-            LocalDate appliedDate, LocalDate reminderDate, Stage stage) {
+            LocalDate applicationDate, Status status, String notes) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("Application ID must be positive.");
+        }
         this.id = id;
-        this.company = company;
-        this.role = role;
-        this.appliedDate = appliedDate;
-        this.reminderDate = reminderDate;
-        this.stage = stage;
+        this.company = requireText(company, "Company");
+        this.role = requireText(role, "Role");
+        if (applicationDate == null) {
+            throw new IllegalArgumentException("Application date cannot be null.");
+        }
+        this.applicationDate = applicationDate;
+        setStatus(status);
+        setNotes(notes);
     }
 
-    public long getId() { return id; }
-    public String getCompany() { return company; }
-    public String getRole() { return role; }
-    public LocalDate getAppliedDate() { return appliedDate; }
-    public LocalDate getReminderDate() { return reminderDate; }
-    public Stage getStage() { return stage; }
-
-    public void updateDetails(String company, String role,
-            LocalDate appliedDate, LocalDate reminderDate) {
-        // TODO: Validate all values before changing application details.
-        throw new UnsupportedOperationException("TODO: update application details");
+    public long getId() {
+        return id;
     }
 
-    public void setStage(Stage stage) {
-        // TODO: Validate and apply a legal stage transition.
-        throw new UnsupportedOperationException("TODO: update application stage");
+    public String getCompany() {
+        return company;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public LocalDate getApplicationDate() {
+        return applicationDate;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setStatus(Status status) {
+        if (status == null) {
+            throw new IllegalArgumentException("Application status cannot be null.");
+        }
+        this.status = status;
+    }
+
+    public void setNotes(String notes) {
+        String safeNotes = notes == null ? "" : notes.trim();
+        if (safeNotes.contains("\n") || safeNotes.contains("\r")) {
+            throw new IllegalArgumentException("Notes cannot contain line breaks.");
+        }
+        this.notes = safeNotes;
+    }
+
+    private String requireText(String value, String fieldName) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException(fieldName + " cannot be empty.");
+        }
+        String result = value.trim();
+        if (result.contains("\n") || result.contains("\r")) {
+            throw new IllegalArgumentException(fieldName + " cannot contain line breaks.");
+        }
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "#" + id + " " + company + " - " + role + " [" + status + ", " + applicationDate + "]";
     }
 }

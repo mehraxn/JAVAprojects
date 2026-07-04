@@ -1,79 +1,98 @@
-package urlshortenerbackend;
+package jobapplicationtracker;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
-public class FileUrlStore {
-    private static final String HEADER = "shortCode,originalUrl,createdAt,hitCount";
+public class CsvApplicationRepository implements ApplicationRepository {
+    private static final String HEADER = "id,company,role,applicationDate,status,notes";
 
-    public Map<String, UrlEntry> load(Path path) throws IOException {
+    @Override
+    public List<JobApplication> load(Path path) throws IOException {
         requirePath(path);
         if (!Files.exists(path) || Files.size(path) == 0) {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
+
         List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
         int headerIndex = firstNonBlankLine(lines);
         if (headerIndex == -1) {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
         if (!parseLine(lines.get(headerIndex), headerIndex + 1).equals(parseLine(HEADER, 1))) {
             throw new IOException("Unexpected CSV header. Expected: " + HEADER);
         }
 
-        Map<String, UrlEntry> entries = new LinkedHashMap<String, UrlEntry>();
+        List<JobApplication> applications = new ArrayList<JobApplication>();
+        Set<Long> ids = new HashSet<Long>();
         for (int index = headerIndex + 1; index < lines.size(); index++) {
-            if (lines.get(index).trim().isEmpty()) {
+            String line = lines.get(index);
+            if (line.trim().isEmpty()) {
                 continue;
             }
-            List<String> fields = parseLine(lines.get(index), index + 1);
-            if (fields.size() != 4) {
-                throw new IOException("Line " + (index + 1) + " must contain exactly 4 fields.");
+            List<String> fields = parseLine(line, index + 1);
+            if (fields.size() != 6) {
+                throw new IOException("Line " + (index + 1) + " must contain exactly 6 fields.");
             }
+
             try {
-                UrlEntry entry = new UrlEntry(
-                        fields.get(0), fields.get(1), LocalDateTime.parse(fields.get(2).trim()),
-                        Long.parseLong(fields.get(3).trim()));
-                if (entries.put(entry.getShortCode(), entry) != null) {
-                    throw new IOException("Duplicate short code on line " + (index + 1) + ".");
+                long id = Long.parseLong(fields.get(0).trim());
+                JobApplication application = new JobApplication(
+                        id,
+                        fields.get(1),
+                        fields.get(2),
+                        LocalDate.parse(fields.get(3).trim()),
+                        JobApplication.Status.valueOf(fields.get(4).trim()),
+                        fields.get(5));
+                if (!ids.add(id)) {
+                    throw new IOException("Duplicate application ID on line " + (index + 1) + ": " + id);
                 }
+                applications.add(application);
             } catch (NumberFormatException exception) {
-                throw new IOException("Invalid hit count on line " + (index + 1) + ".", exception);
+                throw new IOException("Invalid application ID on line " + (index + 1) + ".", exception);
             } catch (DateTimeParseException exception) {
-                throw new IOException("Invalid creation time on line " + (index + 1) + ".", exception);
+                throw new IOException("Invalid date on line " + (index + 1) + ". Use yyyy-MM-dd.", exception);
             } catch (IllegalArgumentException exception) {
-                throw new IOException("Invalid URL entry on line " + (index + 1) + ": "
+                throw new IOException("Invalid application on line " + (index + 1) + ": "
                         + exception.getMessage(), exception);
             }
         }
-        return Collections.unmodifiableMap(entries);
+        return Collections.unmodifiableList(applications);
     }
 
-    public void save(Path path, Map<String, UrlEntry> entries) throws IOException {
+    @Override
+    public void save(Path path, List<JobApplication> applications) throws IOException {
         requirePath(path);
-        if (entries == null) {
-            throw new IllegalArgumentException("Entry map cannot be null.");
+        if (applications == null) {
+            throw new IllegalArgumentException("Application list cannot be null.");
         }
+
         List<String> lines = new ArrayList<String>();
         lines.add(HEADER);
-        for (Map.Entry<String, UrlEntry> item : entries.entrySet()) {
-            UrlEntry entry = item.getValue();
-            if (entry == null || !item.getKey().equals(entry.getShortCode())) {
-                throw new IllegalArgumentException("Every map key must match a non-null URL entry.");
+        Set<Long> ids = new HashSet<Long>();
+        for (JobApplication application : applications) {
+            if (application == null) {
+                throw new IllegalArgumentException("Application list cannot contain null values.");
             }
-            lines.add(escape(entry.getShortCode()) + ","
-                    + escape(entry.getOriginalUrl()) + ","
-                    + escape(entry.getCreatedAt().toString()) + ","
-                    + entry.getHitCount());
+            if (!ids.add(application.getId())) {
+                throw new IllegalArgumentException("Duplicate application ID: " + application.getId());
+            }
+            lines.add(application.getId() + ","
+                    + escape(application.getCompany()) + ","
+                    + escape(application.getRole()) + ","
+                    + application.getApplicationDate() + ","
+                    + application.getStatus().name() + ","
+                    + escape(application.getNotes()));
         }
+
         Path parent = path.toAbsolutePath().getParent();
         if (parent != null) {
             Files.createDirectories(parent);
@@ -101,6 +120,7 @@ public class FileUrlStore {
         StringBuilder current = new StringBuilder();
         boolean inQuotes = false;
         boolean quoteClosed = false;
+
         for (int index = 0; index < line.length(); index++) {
             char character = line.charAt(index);
             if (inQuotes) {
@@ -134,6 +154,7 @@ public class FileUrlStore {
                 current.append(character);
             }
         }
+
         if (inQuotes) {
             throw new IOException("Unclosed quoted field on line " + lineNumber + ".");
         }
@@ -142,7 +163,7 @@ public class FileUrlStore {
     }
 
     private String escape(String value) throws IOException {
-        if (value.contains("\r") || value.contains("\n")) {
+        if (value.contains("\n") || value.contains("\r")) {
             throw new IOException("CSV values cannot contain line breaks.");
         }
         if (value.contains(",") || value.contains("\"") || !value.equals(value.trim())) {

@@ -140,6 +140,8 @@ public class JdbcTaskRepository implements TaskRepository {
                     Task.Status.valueOf(results.getString("status")));
         } catch (IllegalArgumentException exception) {
             throw new SQLException("Database contains an invalid task value.", exception);
+        } catch (NullPointerException exception) {
+            throw new SQLException("Database contains a null required task value.", exception);
         }
     }
 

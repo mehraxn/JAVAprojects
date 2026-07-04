@@ -1026,4 +1026,29 @@ class Dummy {
         
         try {
             int v = st.pop();
-            System.out.println("
+            System.out.println("   Popped value: " + v);
+            return v;
+        } catch (EmptyStackException e) {
+            // Handle the exception internally and return a default value
+            System.out.println("   Caught and handled: " + e.getMessage());
+            return -1;
+        }
+    }
+
+    public static void main(String[] args) {
+        Dummy d = new Dummy();
+        int result = d.foo();   // the stack is empty, so foo() handles it internally
+        System.out.println("foo() returned: " + result);
+    }
+}
+```
+
+**Output:**
+```
+   foo() called
+   Caught and handled: Stack is empty
+foo() returned: -1
+```
+
+The exception is caught **inside** `foo()`, which then returns a safe default (`-1`) instead of
+letting the error propagate to the caller.

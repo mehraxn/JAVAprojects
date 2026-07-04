@@ -946,4 +946,23 @@ public class TestBankAccount {
         System.out.printf("%-15s | %-25s | %-10s | %s%n", 
             "Account No.", "Account Holder", "Type", "Balance");
         System.out.println("=".repeat(85));
-        for (Bank
+        for (BankAccount account : accounts) {
+            System.out.println(account);
+        }
+    }
+}
+```
+
+**Output (accounts sorted by balance, highest first):**
+```
+Bank Accounts sorted by balance (highest first):
+Account No.     | Account Holder            | Type       | Balance
+ACC004          | Alice Brown               | BUSINESS   | $  125,000.00
+ACC006          | Diana Davis               | BUSINESS   | $   67,500.40
+ACC002          | Jane Smith                | SAVINGS    | $   45,230.75
+ACC001          | John Doe                  | CHECKING   | $   15,000.50
+ACC005          | Charlie Wilson            | SAVINGS    | $    8,920.80
+ACC003          | Bob Johnson               | CHECKING   | $    5,680.25
+```
+
+*(`compareTo` returns `Double.compare(obj.balance, this.balance)`, so higher balances come first.)*

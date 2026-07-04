@@ -37,6 +37,10 @@ Use explicit arrival and departure times for repeatable fee tests. Inspect both 
 | Invalid receipt | Use blank spot, negative fee, or reversed dates | IllegalArgumentException |
 | Duplicate configuration | Reuse level number or spot ID | IllegalArgumentException |
 
+## Expected results
+
+Spot occupancy, availability counts, active parking, and receipts must describe the same state. Invalid exits must not release a vehicle.
+
 ## Manual testing checklist
 
 - [ ] Compile and run Main.

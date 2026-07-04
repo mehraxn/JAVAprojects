@@ -2,7 +2,7 @@
 
 ## Description
 
-Student Grade Manager is a small, in-memory Java console project for recording students and grades. It calculates useful statistics without databases, external libraries, or a graphical interface.
+Student Grade Manager is a small, in-memory Java console project for recording students and grades. It calculates useful statistics through clear object-oriented code and collection-based storage.
 
 ## Features
 

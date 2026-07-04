@@ -38,6 +38,10 @@ Create events with small capacities so capacity and cancellation behavior can be
 | Unknown event/cancellation | Use missing IDs | IllegalArgumentException |
 | Full registration | Register beyond capacity | IllegalStateException |
 
+## Expected results
+
+Participant count must never exceed capacity. Failed or duplicate registrations must leave participant and available-place counts unchanged.
+
 ## Manual testing checklist
 
 - [ ] Compile and run Main.

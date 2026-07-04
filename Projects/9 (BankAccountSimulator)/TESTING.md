@@ -36,6 +36,10 @@ Use exact BigDecimal strings in a small test driver and inspect balances and tra
 | Unknown account | Use a missing account number | IllegalArgumentException |
 | Duplicate/blank account | Reuse or omit account number | IllegalArgumentException |
 
+## Expected results
+
+Balances and histories must match each successful operation exactly. Rejected money operations must preserve every affected account.
+
 ## Manual testing checklist
 
 - [ ] Use BigDecimal values created from strings.

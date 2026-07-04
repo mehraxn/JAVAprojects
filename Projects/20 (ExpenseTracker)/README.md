@@ -1,43 +1,29 @@
-# Expense Tracker with CSV JSON Storage
-
-## Description
-Track expenses and persist them to CSV and JSON files with simple reporting. It practices file formats and parsing.
-
-## Difficulty
-Intermediate Plus
-
-## Main Features
-- Add and list expenses
-- Categorize expenses
-- Monthly totals
-- Save and load CSV and JSON
-- Simple report
-
-## Main Skills Practiced
-- OOP
-- File IO
-- CSV/JSON parsing
-- Collections
-- Exceptions
-
-## Planned Technologies
-- Java
-- File IO
-- CSV/JSON handling (planned)
-- JUnit (planned)
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- Expense class
-- ExpenseStore class
-- CsvStore class
-- JsonStore class
-- Main class
-- data files (created later)
-
-*(These folders and files are not created yet.)*
+# Expense Tracker
 
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Java skeleton created. Core expense and persistence logic is not implemented yet.
+
+## Planned features
+
+- Add, remove, and list expenses.
+- Categorize expenses.
+- Calculate monthly and category totals.
+- Save and load UTF-8 CSV files.
+- Validate IDs, dates, categories, and positive money values.
+
+## Current classes
+
+- Expense: expense model.
+- ExpenseService: in-memory operations and reports.
+- ExpenseStore: storage contract.
+- CsvExpenseStore: standard-Java CSV adapter.
+- Main: demonstration entry point.
+
+## Constraints
+
+The project uses standard Java only. Manual JSON support is deferred; no JSON library is used.
+
+## Source layout
+
+Source files are under src/expensetracker.

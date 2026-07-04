@@ -1,30 +1,53 @@
 # Testing Hospital Queue Management
 
-The project has no external test dependencies. Use explicit arrival/current times for deterministic waiting-time checks.
+## Testing approach
 
-## Manual test cases
+Use fixed arrival and current times for deterministic ordering and waiting-time results.
 
-1. Add patients at all four triage levels and verify emergency is served first.
-2. Add patients with the same priority and verify earlier arrival is served first.
-3. Add patients with equal priority and arrival time and verify patient ID breaks the tie.
-4. Mark a waiting patient as emergency and verify queue order changes.
-5. Update a waiting patient's priority and verify it is requeued correctly.
-6. Serve a patient and verify status becomes `IN_TREATMENT` and the patient leaves the waiting queue.
-7. Update the served patient to `DISCHARGED` and verify the record remains available.
-8. Change a non-waiting patient back to `WAITING` and verify it returns to the queue.
-9. Call `serveNextPatient()` on an empty queue; expect `IllegalStateException`.
-10. Verify `viewQueue()` does not remove or reorder the actual queue.
-11. Calculate average wait for known arrival/current times and verify the result.
-12. Calculate average wait for an empty queue; expect `0.0`.
-13. Use a current time before an arrival; expect `IllegalArgumentException`.
-14. Add a duplicate patient ID or blank/null patient data; expect `IllegalArgumentException`.
-15. Update an unknown patient or apply a null status/priority; expect `IllegalArgumentException`.
-16. Try changing priority for a non-waiting patient; expect `IllegalStateException`.
-17. Try modifying returned queue or record lists; expect `UnsupportedOperationException`.
+## Normal test cases
 
-## Validation review additions
+| Test | Action | Expected result |
+|---|---|---|
+| Add patients | Add unique patient IDs | Records and queue contain patients |
+| Priority order | Add all triage levels | Emergency is served first |
+| Arrival tie-break | Add equal priority at different times | Earlier arrival is first |
+| Emergency override | Upgrade waiting patient | Patient moves to queue front |
+| Serve | Serve next patient | Patient leaves queue and enters treatment |
+| Discharge | Update treated patient | Status becomes discharged; record remains |
 
-- Try changing a `DISCHARGED` patient back to waiting or treatment; expect `IllegalStateException`.
-- Return an `IN_TREATMENT` patient to `WAITING` and verify priority ordering is restored.
-- Verify rejected status transitions preserve both the current status and queue membership.
-- Add patients with duplicate names but distinct IDs; verify both records are retained.
+## Edge-case test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Empty queue | Calculate average waiting time | 0.0 |
+| Equal time/priority | Add different IDs | ID determines order |
+| Shared name | Add different IDs with same name | Both records are accepted |
+| Requeue treatment | Change in-treatment patient to waiting | Patient returns in priority order |
+| Queue snapshot | Call viewQueue repeatedly | Real queue remains unchanged |
+| Same status | Apply current status again | No state change |
+
+## Invalid input test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Serve empty | Call serveNextPatient with no waiting patients | IllegalStateException |
+| Duplicate ID | Add same patient ID | IllegalArgumentException |
+| Invalid data | Use blank identity, null priority, or null time | IllegalArgumentException |
+| Invalid clock | Current time before patient arrival | IllegalArgumentException |
+| Invalid priority update | Change non-waiting patient priority | IllegalStateException |
+| Terminal status | Move discharged patient to another status | IllegalStateException |
+| Unknown patient | Update missing patient ID | IllegalArgumentException |
+
+## Expected results
+
+Queue order must follow priority, arrival, and ID. Status and queue membership must remain consistent after both accepted and rejected transitions.
+
+## Manual testing checklist
+
+- [ ] Compile and run Main.
+- [ ] Verify all four priority levels.
+- [ ] Verify both tie-break rules.
+- [ ] Verify emergency override reorders the queue.
+- [ ] Verify serving changes status and preserves the record.
+- [ ] Verify rejected transitions preserve status and queue membership.
+- [ ] Verify returned queue and record lists cannot be modified.

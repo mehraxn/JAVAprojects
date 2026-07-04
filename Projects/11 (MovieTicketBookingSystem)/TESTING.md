@@ -37,6 +37,10 @@ Build small showtimes with known seat maps. Check both returned bookings and ind
 | Invalid Booking | Construct with blank/duplicate labels or invalid price | IllegalArgumentException |
 | Unknown cancellation | Cancel a missing booking ID | IllegalArgumentException |
 
+## Expected results
+
+Booking is all-or-nothing: either every requested seat is reserved and stored, or no requested seat changes. Cancellation must restore every stored seat.
+
 ## Manual testing checklist
 
 - [ ] Compile and run Main.

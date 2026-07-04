@@ -1,40 +1,31 @@
 # Contacts REST API
 
-## Description
-Design a REST-style API for managing contacts, including the data model and endpoints, described conceptually without Spring Boot. It practices REST design and layering.
-
-## Difficulty
-Intermediate Plus
-
-## Main Features
-- CRUD endpoints (design)
-- Request and response models
-- Validation
-- In-memory or database storage
-- Pagination (design)
-
-## Main Skills Practiced
-- REST concepts
-- OOP layering
-- JSON
-- Exceptions
-
-## Planned Technologies
-- Java
-- REST concepts (planned)
-- JSON
-- SQL concepts (planned)
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- Contact class
-- ContactService class
-- ContactController (design)
-- Main class
-
-*(These folders and files are not created yet.)*
-
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Model, repository, service, manual JSON, and built-in HttpServer skeleton created.
+
+## Planned features
+
+- Create, read, update, and delete contacts.
+- Search contacts.
+- Apply offset/limit pagination.
+- Validate identifiers and contact fields.
+- Return manually generated JSON responses.
+- Expose endpoints with Java HttpServer.
+
+## Current classes
+
+- Contact: contact model.
+- InMemoryContactRepository: temporary storage boundary.
+- ContactService: application and validation logic.
+- JsonUtil: small manual JSON utility.
+- ContactHttpServer: HTTP adapter.
+- Main: safe runner that does not start the server automatically.
+
+## Constraints
+
+No JSON library is used. JsonUtil will support only the documented contact request and response shapes.
+
+## Source layout
+
+Source files are under src/contactsrestapi.

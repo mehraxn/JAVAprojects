@@ -35,6 +35,10 @@ The project uses no test framework. Compile the source and run Main, or create a
 | Unknown student | Record a grade for an unknown ID | IllegalArgumentException |
 | Null student | Add null to GradeBook | IllegalArgumentException |
 
+## Expected results
+
+Valid operations should produce the documented statistics. Invalid operations should throw the stated exception and leave existing students and grades unchanged.
+
 ## Manual testing checklist
 
 - [ ] Compile all source files without external dependencies.

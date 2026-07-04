@@ -1,41 +1,31 @@
 # Mini E-Commerce Backend
 
-## Description
-Backend for products, carts and orders with basic checkout logic, described as services and data models. It practices layered backend design.
-
-## Difficulty
-Advanced
-
-## Main Features
-- Product catalog
-- Cart operations
-- Checkout and order creation
-- Stock checks
-- Order history
-
-## Main Skills Practiced
-- OOP layering
-- Collections
-- REST / JDBC concepts
-- SQL concepts
-- Exceptions
-
-## Planned Technologies
-- Java
-- REST / JDBC concepts (planned)
-- SQL concepts (planned)
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- Product class
-- Cart class
-- Order class
-- service classes
-- Main class
-
-*(These folders and files are not created yet.)*
-
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Product, cart, order, service, and built-in HttpServer skeleton created.
+
+## Planned features
+
+- Manage an in-memory product catalog.
+- Create carts and update quantities.
+- Validate stock before checkout.
+- Calculate totals with BigDecimal.
+- Create orders and maintain order history.
+- Expose optional local HTTP endpoints.
+
+## Current classes
+
+- Product: catalog model.
+- Cart: product quantities for one shopping session.
+- Order: immutable checkout summary and status.
+- ShopService: catalog, cart, stock, and checkout logic.
+- ShopHttpServer: optional HTTP adapter.
+- Main: safe runner that does not bind a port.
+
+## Scope
+
+The initial implementation remains in memory so stock and checkout rules can be developed before adding persistence.
+
+## Source layout
+
+Source files are under src/miniecommercebackend.

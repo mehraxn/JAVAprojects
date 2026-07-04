@@ -1,40 +1,30 @@
 # URL Shortener Backend
 
-## Description
-Backend logic to shorten URLs and resolve short codes back to their originals. It practices encoding and lookup design.
-
-## Difficulty
-Intermediate Plus
-
-## Main Features
-- Create a short code
-- Resolve a code to the original URL
-- Handle code collisions
-- Hit counter
-- In-memory or database store
-
-## Main Skills Practiced
-- OOP
-- Hashing/encoding
-- Collections
-- REST concepts
-- Exceptions
-
-## Planned Technologies
-- Java
-- REST concepts (planned)
-- SQL / store concepts (planned)
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- UrlEntry class
-- ShortenerService class
-- CodeGenerator class
-- Main class
-
-*(These folders and files are not created yet.)*
-
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Java service, file-storage, and built-in HttpServer skeleton created. Core logic is not implemented.
+
+## Planned features
+
+- Validate and shorten URLs.
+- Generate collision-safe short codes.
+- Resolve codes and count hits.
+- Save and load mappings from a file.
+- Expose local HTTP endpoints with Java HttpServer.
+
+## Current classes
+
+- UrlEntry: URL mapping model.
+- CodeGenerator: short-code generation boundary.
+- ShortenerService: in-memory application logic.
+- FileUrlStore: planned standard-Java persistence.
+- UrlShortenerHttpServer: optional HTTP adapter.
+- Main: safe runner that does not start a server automatically.
+
+## Constraints
+
+Only standard Java is planned. HTTP uses com.sun.net.httpserver.HttpServer and response bodies will use manually created strings.
+
+## Source layout
+
+Source files are under src/urlshortenerbackend.

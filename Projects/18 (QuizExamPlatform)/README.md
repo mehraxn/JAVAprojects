@@ -1,37 +1,56 @@
 # Quiz Exam Platform
 
-An in-memory Java application for multiple-choice quizzes, attempts, answers, and results.
+## Description
 
-## Implemented features
+Quiz Exam Platform is an in-memory Java project for building multiple-choice quizzes, recording answers, grading attempts, and presenting results.
 
-- Create validated questions with at least two unique options.
-- Mark one valid option as correct using a zero-based index.
-- Build quizzes and start participant attempts.
-- Record or change one answer per question before finishing.
-- Require every question to be answered before completion.
-- Calculate correct-answer count, integer percentage, and pass/fail result.
-- Show selected answers, correct answers, and per-question correctness.
-- Record participant percentages in a sorted scoreboard.
+## Features
 
-The passing score is 60%. This project intentionally uses no file I/O.
+- Create questions with unique prompts and at least two options.
+- Reject duplicate option text.
+- Mark one valid option as correct.
+- Build a quiz and start participant attempts.
+- Record or replace answers before completion.
+- Require every question to be answered.
+- Show selected, correct, and incorrect answers.
+- Calculate correct count, percentage, and pass/fail result.
+- Record percentages in a sorted scoreboard.
 
-## Structure
+## Java concepts practiced
 
-- `Question` stores prompt, options, and the correct answer.
-- `Quiz` owns the question bank and starts attempts.
-- `QuizAttempt` records selected answers.
-- `AnswerResult` describes one graded answer.
-- `QuizResult` calculates and summarizes the final result.
-- `ScoreBoard` stores participant percentages.
-- `Main` demonstrates a complete quiz attempt.
+- Classes and object composition
+- List, Map, and Set collections
+- Encapsulation of attempt state
+- Validation of indexes and collection sizes
+- Sorting and unmodifiable result data
 
-Source files are under `src/quizexamplatform` and use only standard Java.
+## Main classes
 
-## Run
+- Question: stores prompt, answer options, and correct option.
+- Quiz: owns the question set and starts attempts.
+- QuizAttempt: records participant answers.
+- AnswerResult: describes one graded response.
+- QuizResult: calculates score, percentage, and final result.
+- ScoreBoard: stores participant percentages.
+- Main: demonstrates a complete quiz.
 
-```powershell
+## How the program works
+
+Questions use zero-based option indexes. Quiz starts a QuizAttempt, which accepts one answer per question until finish is called. Finishing requires a complete answer set and creates immutable answer details and a final pass/fail summary. The passing percentage is 60.
+
+## Example usage
+
+~~~powershell
 javac -d out src\quizexamplatform\*.java
 java -cp out quizexamplatform.Main
-```
+~~~
 
-See `TESTING.md` for manual test cases.
+The demo answers three questions, prints correct/incorrect detail, shows the final result, and updates a scoreboard.
+
+## Possible future improvements
+
+- Add question categories and difficulty.
+- Randomize question and option order.
+- Add configurable passing percentages.
+- Add timed attempts.
+- Save result summaries to a file.

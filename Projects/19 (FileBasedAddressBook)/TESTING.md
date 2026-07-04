@@ -1,32 +1,61 @@
 # Testing File-Based Address Book
 
-The project has no external test dependencies. Use a disposable path when manually testing persistence.
+## Testing approach
 
-## Manual test cases
+Use a disposable file path. Verify both in-memory contact state and the exact result after saving and loading.
 
-1. Add several uniquely identified contacts and verify sorted listing.
-2. Add a duplicate contact ID; expect `IllegalArgumentException`.
-3. Search by partial ID, name, phone, and email with different letter case.
-4. Use a blank search and verify all contacts are returned in sorted order.
-5. Update a contact and verify all changed details.
-6. Submit one invalid update field and verify no contact fields change.
-7. Delete an existing contact, then delete it again; expect `true` followed by `false`.
-8. Save contacts and load them into a list; verify every field survives the round trip.
-9. Save an empty list and load it; expect an empty list.
-10. Load a missing file; expect an empty list without an exception.
-11. Load a file containing only blank lines; expect an empty list.
-12. Load a malformed row with the wrong field count; expect `IOException`.
-13. Load duplicate IDs or invalid contact data; expect `IOException`.
-14. Import contacts with no conflicts and verify they are added.
-15. Import when one ID already exists; expect `IllegalArgumentException` and no imported contacts.
-16. Export an address book and verify records are ordered by name and ID.
-17. Use null paths, lists, contacts, or address books; expect `IllegalArgumentException`.
-18. Use blank fields, invalid email, tabs, or line breaks; expect `IllegalArgumentException`.
-19. Try modifying returned contact or loaded-contact lists; expect `UnsupportedOperationException`.
+## Normal test cases
 
-## Validation review additions
+| Test | Action | Expected result |
+|---|---|---|
+| Add contacts | Add unique IDs | Contacts appear in sorted listing |
+| Search | Search each supported field | Case-insensitive matches are returned |
+| Update | Replace valid details | All fields change together |
+| Delete | Remove existing ID | Method returns true and contact disappears |
+| Save/load | Round-trip several contacts | Every field is preserved |
+| Export/import | Export then import into empty book | Contacts are added in sorted order |
 
-- Confirm missing files, zero-byte files, and blank-line-only files all load as empty immutable lists.
-- Verify a malformed or duplicate-ID import changes none of the existing address book.
-- Save an empty address book and confirm a subsequent load safely returns no contacts.
-- Verify duplicate contact names are allowed when IDs differ, while duplicate IDs remain rejected.
+## Edge-case test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Missing file | Load path that does not exist | Empty immutable list |
+| Zero-byte file | Load empty file | Empty immutable list |
+| Blank lines | Load blank-line-only file | Empty immutable list |
+| Empty address book | Save then load | Empty list |
+| Shared name | Add different IDs with same name | Both contacts are accepted |
+| Delete twice | Delete the same ID twice | True then false |
+
+## Invalid input test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Duplicate ID | Add/import existing ID | IllegalArgumentException |
+| Invalid contact | Use blank values, invalid email, tab, or newline | IllegalArgumentException |
+| Null input | Use null path, list, contact, or book | IllegalArgumentException |
+| Malformed row | Load wrong number of fields | IOException |
+| Duplicate file IDs | Load repeated ID | IOException |
+| Directory path | Load a directory as contact file | IOException |
+| Atomic import | Import containing one conflicting ID | No contacts from that import are added |
+
+## Expected file format
+
+Each non-blank line must contain exactly:
+
+~~~text
+contact-id<TAB>name<TAB>phone<TAB>email
+~~~
+
+## Expected results
+
+Successful save/load operations must preserve all fields. Missing and empty files must return no contacts, while malformed data must fail without partial import.
+
+## Manual testing checklist
+
+- [ ] Compile and run Main without a file path.
+- [ ] Run Main with a disposable file path.
+- [ ] Inspect saved UTF-8 tab-separated lines.
+- [ ] Test missing, empty, and blank-only files.
+- [ ] Test malformed and duplicate-ID files.
+- [ ] Verify failed imports preserve existing contacts.
+- [ ] Verify returned contact lists cannot be modified.

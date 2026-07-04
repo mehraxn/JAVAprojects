@@ -37,6 +37,10 @@ Use fixed LocalDate values. Check availability before booking, after booking, an
 | Invalid rate | Use negative or null money value | IllegalArgumentException |
 | Unknown room/booking | Use missing identifiers | IllegalArgumentException |
 
+## Expected results
+
+Availability, booking lists, price, and occupancy must follow check-in-inclusive/check-out-exclusive date rules. Rejected overlaps must not create bookings.
+
 ## Manual testing checklist
 
 - [ ] Compile and run Main.

@@ -38,6 +38,10 @@ Build routes and trains with small known seat sets. Inspect seat availability an
 | Empty train | Add train without seats | IllegalArgumentException |
 | Unknown cancellation | Cancel missing reservation | IllegalArgumentException |
 
+## Expected results
+
+Each active reservation must correspond to one reserved seat. Failed reservations and cancellations must leave seat state unchanged.
+
 ## Manual testing checklist
 
 - [ ] Compile and run Main.

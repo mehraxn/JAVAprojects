@@ -36,6 +36,10 @@ Run Main for a basic demonstration, then call Library methods directly for valid
 | Wrong return | Return through another member | IllegalStateException |
 | Blank/null data | Use blank fields, null search, or null objects | IllegalArgumentException |
 
+## Expected results
+
+Book availability and member borrowing records must always agree. Rejected borrowing or return operations must not partially update either object.
+
 ## Manual testing checklist
 
 - [ ] Compile and run Main.

@@ -1,29 +1,53 @@
 # Testing Restaurant Ordering System
 
-The project has no external test dependencies. Compile and run `Main`, or call the classes from a small Java driver.
+## Testing approach
 
-## Manual test cases
+Use known BigDecimal prices and quantities so subtotals, discount thresholds, and totals can be checked exactly.
 
-1. Add several uniquely identified menu items and verify `listMenu()`.
-2. Add a duplicate menu item ID or negative price; expect `IllegalArgumentException`.
-3. Create named and walk-in orders and verify unique generated order IDs.
-4. Add one item, then add it again; verify the quantity increases.
-5. Add several different items and verify each item subtotal and the order subtotal.
-6. Remove an existing item and verify totals update.
-7. Remove an item not present in the order; expect `IllegalArgumentException`.
-8. Use zero, negative, or overflowing quantities; expect `IllegalArgumentException`.
-9. Verify subtotal below `50.00` receives no discount.
-10. Verify subtotal exactly `50.00` or above receives a 10% discount.
-11. Verify the summary contains customer, items, subtotal, discount, total, and status.
-12. Follow `CREATED -> PREPARING -> READY -> SERVED` and verify each status.
-13. Cancel from `CREATED` or `PREPARING` and verify the final status.
-14. Try an invalid status transition or editing a non-created order; expect `IllegalStateException`.
-15. Use an unknown menu item or order ID; expect `IllegalArgumentException`.
-16. Try modifying returned menu, order, or item lists; expect `UnsupportedOperationException`.
+## Normal test cases
 
-## Validation review additions
+| Test | Action | Expected result |
+|---|---|---|
+| Add menu | Add unique items | Items appear in listMenu |
+| Create order | Create named and walk-in orders | Unique IDs are generated |
+| Add item | Add one menu item | Order contains quantity and subtotal |
+| Increase quantity | Add same item again | Existing quantity increases |
+| Remove item | Remove existing item | Totals update |
+| Status workflow | Advance created, preparing, ready, served | Every valid transition succeeds |
 
-- Add different menu item IDs with the same case-insensitive name; expect `IllegalArgumentException`.
-- Move an empty order to `PREPARING`; expect `IllegalStateException`.
-- Verify rejected empty-order or status transitions preserve the original order status.
-- Verify zero-priced menu items are allowed, while negative or null prices remain rejected.
+## Edge-case test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Discount boundary | Subtotal exactly 50.00 | 10% discount is applied |
+| Below boundary | Subtotal below 50.00 | Discount is zero |
+| Free item | Add item priced 0 | Item is accepted |
+| Empty order | Move to PREPARING | IllegalStateException |
+| Shared item request | Add same ID multiple times | One OrderItem with combined quantity |
+| Cancel | Cancel from CREATED or PREPARING | Status becomes CANCELLED |
+
+## Invalid input test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Duplicate menu | Reuse ID or case-insensitive name | IllegalArgumentException |
+| Invalid money | Use negative or null price | IllegalArgumentException |
+| Invalid quantity | Use zero, negative, or overflowing quantity | IllegalArgumentException |
+| Unknown item/order | Use missing ID | IllegalArgumentException |
+| Remove missing item | Remove item not in order | IllegalArgumentException |
+| Invalid transition | Skip/reverse status or change final status | IllegalStateException |
+| Edit final order | Add or remove after CREATED | IllegalStateException |
+
+## Expected results
+
+Item quantities, subtotal, discount, total, and status must agree. Rejected edits or transitions must preserve the existing order.
+
+## Manual testing checklist
+
+- [ ] Compile and run Main.
+- [ ] Verify item subtotals and order subtotal.
+- [ ] Test discount immediately below, at, and above 50.00.
+- [ ] Verify empty orders cannot be prepared.
+- [ ] Verify cancellation and normal status paths.
+- [ ] Verify rejected edits preserve order contents and status.
+- [ ] Verify returned lists cannot be modified.

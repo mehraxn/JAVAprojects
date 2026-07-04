@@ -37,6 +37,10 @@ Create products with known prices and quantities. Verify both Product state and 
 | Invalid sort | Use null ProductSortField | IllegalArgumentException |
 | Unknown/blank SKU | Update missing or blank SKU | IllegalArgumentException |
 
+## Expected results
+
+Queries must return correctly ordered read-only lists. Failed updates must preserve product quantities, prices, and inventory membership.
+
 ## Manual testing checklist
 
 - [ ] Compile and run Main.

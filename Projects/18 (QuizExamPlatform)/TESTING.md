@@ -1,29 +1,53 @@
 # Testing Quiz Exam Platform
 
-The project has no external test dependencies. Compile and run `Main`, or call the classes from a small Java driver.
+## Testing approach
 
-## Manual test cases
+Use small quizzes with known answers. Remember that question and option indexes are zero-based.
 
-1. Create a question with several unique options and a valid correct index.
-2. Try fewer than two options, duplicate options, blank text, or an invalid correct index; expect `IllegalArgumentException`.
-3. Add questions to a quiz and verify the question count and read-only question list.
-4. Start a quiz with a participant name and record one answer for every question.
-5. Change an answer before finishing and verify the latest answer is graded.
-6. Try an invalid question or option index; expect `IllegalArgumentException`.
-7. Finish with unanswered questions; expect `IllegalStateException`.
-8. Start a quiz with no questions; expect `IllegalStateException`.
-9. Finish a fully answered quiz and verify correct count and percentage.
-10. Verify every answer result shows selected option, correct option, and correctness.
-11. Verify 60% or more passes and below 60% fails.
-12. Try recording another answer or finishing again after completion; expect `IllegalStateException`.
-13. Call `getResult()` before finishing; expect `IllegalStateException`.
-14. Record several scoreboard results and verify descending score order.
-15. Record an invalid scoreboard percentage or blank participant; expect `IllegalArgumentException`.
-16. Try modifying returned option, question, result, or summary lists; expect `UnsupportedOperationException`.
+## Normal test cases
 
-## Validation review additions
+| Test | Action | Expected result |
+|---|---|---|
+| Create question | Use unique prompt/options and valid answer | Question is created |
+| Build quiz | Add several unique questions | Question count matches |
+| Start attempt | Start populated quiz | Open QuizAttempt is returned |
+| Record answers | Answer every question | Answer count matches quiz size |
+| Finish | Complete attempt | QuizResult is created |
+| Scoreboard | Record several results | Highest percentage appears first |
 
-- Add duplicate question prompts with different letter case; expect `IllegalArgumentException`.
-- Verify duplicate option text is rejected case-insensitively.
-- Submit an empty, short, long, null-containing, or out-of-range answer list; expect `IllegalArgumentException`.
-- Verify failed or incomplete finishing leaves the attempt open for corrected answers.
+## Edge-case test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Change answer | Record same question twice before finish | Latest answer is graded |
+| Passing boundary | Produce exactly 60% | Result is PASS |
+| Empty quiz | Start before adding questions | IllegalStateException |
+| Incomplete attempt | Finish before all answers | IllegalStateException; attempt remains open |
+| Duplicate prompt | Add prompt with different letter case | IllegalArgumentException |
+| Score tie | Record equal percentages | Participant name orders the tie |
+
+## Invalid input test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Invalid options | Use fewer than two, blank, or duplicate options | IllegalArgumentException |
+| Invalid correct index | Use index outside options | IllegalArgumentException |
+| Invalid answer index | Use unknown question/option index | IllegalArgumentException |
+| Invalid answer list | Use wrong size, null, or null elements | IllegalArgumentException |
+| Repeat finish/edit | Finish or answer after completion | IllegalStateException |
+| Invalid score | Record below 0 or above 100 | IllegalArgumentException |
+| Blank participant/title | Use empty identity text | IllegalArgumentException |
+
+## Expected results
+
+Each graded answer must show the selected and correct option. Final counts, percentage, pass/fail status, and scoreboard entry must agree.
+
+## Manual testing checklist
+
+- [ ] Compile and run Main.
+- [ ] Verify zero-based option indexing.
+- [ ] Test all-correct, all-incorrect, and mixed results.
+- [ ] Verify selected and correct option text.
+- [ ] Verify incomplete attempts can still be corrected.
+- [ ] Verify pass/fail around 60%.
+- [ ] Verify returned options, questions, and results cannot be modified.

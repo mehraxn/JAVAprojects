@@ -1,40 +1,35 @@
 # Event Registration System
 
-## Description
-Register attendees for events with capacity limits and waitlists. It practices collections and business rules.
+An in-memory Java application for events, participants, capacity, and searching.
 
-## Difficulty
-Intermediate
+## Implemented features
 
-## Main Features
-- Create events
-- Register and cancel attendees
-- Capacity limit with waitlist
-- List attendees
-- Search events
+- Add events with unique IDs, dates, categories, and positive capacities.
+- Register participants and generate event-specific registration IDs.
+- Prevent duplicate participant registration for the same event.
+- Reject registrations when an event reaches capacity.
+- Cancel registrations and restore available capacity.
+- Show participants and registrations for each event.
+- Search events by partial name, exact date, or partial category.
+- Return events ordered by date and then name.
 
-## Main Skills Practiced
-- OOP
-- Collections (Queue for waitlist)
-- Business rules
-- Exceptions
+Full events reject additional registrations; this version does not create a waitlist.
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- Maven (build tool, as used in existing projects)
+## Structure
 
-*(Planned only. None of these are implemented yet.)*
+- `Attendee` stores participant identity and basic email validation.
+- `Registration` records an attendee and registration time.
+- `Event` owns capacity and participant registrations.
+- `EventRegistrationSystem` manages events and search operations.
+- `Main` demonstrates registration, searching, and cancellation.
 
-## Planned Structure
-- Event class
-- Attendee class
-- Registration class
-- Main class
+Source files are under `src/eventregistrationsystem` and use only standard Java.
 
-*(These folders and files are not created yet.)*
+## Run
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+```powershell
+javac -d out src\eventregistrationsystem\*.java
+java -cp out eventregistrationsystem.Main
+```
+
+See `TESTING.md` for manual test cases.

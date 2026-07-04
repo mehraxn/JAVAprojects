@@ -1,40 +1,40 @@
 # Parking Garage System
 
-## Description
-Model a parking garage that assigns spots to vehicles and tracks occupancy across levels. It practices collections and simple state management.
+An in-memory Java application that assigns vehicles to typed parking spots and calculates exit fees.
 
-## Difficulty
-Beginner Plus
+## Implemented features
 
-## Main Features
-- Park and remove vehicles
-- Find a free spot
-- Show current occupancy
-- Support multiple levels
-- Basic fee calculation
+- Configure multiple parking levels and uniquely identified spots.
+- Support motorcycle, car, and truck spot types.
+- Park a vehicle in the first available compatible spot.
+- Prevent duplicate entry for the same normalized license plate.
+- Remove vehicles and return a receipt containing times, spot, and fee.
+- Track total and per-type available spots.
+- Reject unknown vehicles, incompatible spots, full-garage entry, and invalid times.
 
-## Main Skills Practiced
-- OOP
-- Collections
-- Enums
-- Exceptions
+## Fee policy
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- Maven (build tool, as used in existing projects)
+- Rate: `5.00` per started hour.
+- Minimum charge: one hour.
+- Partial hours round up.
+- A departure before arrival is invalid.
 
-*(Planned only. None of these are implemented yet.)*
+## Structure
 
-## Planned Structure
-- Vehicle class
-- ParkingSpot class
-- Garage class
-- Main class
+- `Vehicle` and `VehicleType` represent incoming vehicles.
+- `ParkingSpot` owns occupancy and compatibility state.
+- `ParkingLevel` groups spots and reports availability.
+- `Garage` assigns spots, tracks active parking, and calculates fees.
+- `ParkingReceipt` describes a completed parking stay.
+- `Main` runs a deterministic demonstration.
 
-*(These folders and files are not created yet.)*
+Source files are under `src/parkinggaragesystem` and use only standard Java.
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+## Run
+
+```powershell
+javac -d out src\parkinggaragesystem\*.java
+java -cp out parkinggaragesystem.Main
+```
+
+See `TESTING.md` for manual test cases.

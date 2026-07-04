@@ -1,40 +1,33 @@
 # Bank Account Simulator
 
-## Description
-Simulate simple bank accounts with deposits, withdrawals and balance checks. It practices encapsulation and input validation.
+An in-memory Java application for accounts, balances, transfers, and transaction history.
 
-## Difficulty
-Beginner
+## Implemented features
 
-## Main Features
-- Create accounts
-- Deposit and withdraw with validation
-- Check balance
-- Keep an in-memory transaction history
-- Simple menu
+- Create accounts with unique account numbers.
+- Deposit and withdraw positive monetary amounts.
+- Reject overdrafts and zero or negative amounts.
+- Transfer money between different accounts.
+- Validate both accounts and source funds before a transfer changes balances.
+- Record deposits, withdrawals, transfer-ins, and transfer-outs.
+- Return read-only transaction history and account lists.
 
-## Main Skills Practiced
-- OOP and encapsulation
-- Input validation
-- Exceptions
-- Collections
+All monetary values use `BigDecimal`. The simulator does not provide overdrafts, interest, persistence, or concurrency support.
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- Maven (build tool, as used in existing projects)
+## Structure
 
-*(Planned only. None of these are implemented yet.)*
+- `Account` owns its balance and transaction history.
+- `Transaction` represents an immutable history entry.
+- `Bank` creates accounts and coordinates transfers.
+- `Main` demonstrates deposits, withdrawal, transfer, balances, and history.
 
-## Planned Structure
-- Account class
-- Bank class
-- Transaction class
-- Main class
+Source files are under `src/bankaccountsimulator` and use only standard Java.
 
-*(These folders and files are not created yet.)*
+## Run
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+```powershell
+javac -d out src\bankaccountsimulator\*.java
+java -cp out bankaccountsimulator.Main
+```
+
+See `TESTING.md` for manual test cases.

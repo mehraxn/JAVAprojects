@@ -1,40 +1,32 @@
 # Library Management System
 
-## Description
-Track books and members and handle borrowing and returning in memory. It focuses on modeling entities and their relationships with collections.
+An in-memory Java application for tracking books, members, borrowing, and returns.
 
-## Difficulty
-Beginner
+## Implemented features
 
-## Main Features
-- Add books and members
-- Borrow and return books
-- List available books
-- Search by title or author
-- Track who borrowed what
+- Add books with unique ISBNs.
+- Register members with unique IDs.
+- Borrow and return books while keeping book and member state consistent.
+- Prevent borrowing an unavailable book.
+- Prevent returns by the wrong member.
+- Search case-insensitively by title or author.
+- List currently available books.
+- Validate blank, duplicate, and unknown identifiers.
 
-## Main Skills Practiced
-- OOP and relationships
-- Collections
-- Encapsulation
-- Exceptions
+## Structure
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- Maven (build tool, as used in existing projects)
+- `Book` owns bibliographic and availability state.
+- `Member` tracks ISBNs currently borrowed by that member.
+- `Library` coordinates books and members.
+- `Main` demonstrates adding, borrowing, searching, and returning.
 
-*(Planned only. None of these are implemented yet.)*
+Source files are under `src/librarymanagementsystem` and use only standard Java.
 
-## Planned Structure
-- Book class
-- Member class
-- Library class
-- Main class
+## Run
 
-*(These folders and files are not created yet.)*
+```powershell
+javac -d out src\librarymanagementsystem\*.java
+java -cp out librarymanagementsystem.Main
+```
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+See `TESTING.md` for manual test cases.

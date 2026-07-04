@@ -5,6 +5,9 @@ public class Seat {
     private boolean reserved;
 
     public Seat(int number) {
+        if (number <= 0) {
+            throw new IllegalArgumentException("Seat number must be greater than zero");
+        }
         this.number = number;
     }
 
@@ -12,12 +15,16 @@ public class Seat {
     public boolean isReserved() { return reserved; }
 
     public void reserve() {
-        // TODO: Prevent double reservation before changing the state.
-        throw new UnsupportedOperationException("TODO: reserve a seat");
+        if (reserved) {
+            throw new IllegalStateException("Seat is already reserved: " + number);
+        }
+        reserved = true;
     }
 
     public void release() {
-        // TODO: Validate and clear the reservation state.
-        throw new UnsupportedOperationException("TODO: release a seat");
+        if (!reserved) {
+            throw new IllegalStateException("Seat is not reserved: " + number);
+        }
+        reserved = false;
     }
 }

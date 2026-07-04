@@ -1,41 +1,32 @@
 # Student Grade Manager
 
-## Description
-A console application to record students and their grades, then compute averages and simple statistics. It practices core OOP and collections by modeling students and courses in memory.
+A small in-memory Java application for managing students and their grades.
 
-## Difficulty
-Beginner
+## Implemented features
 
-## Main Features
-- Add and remove students
-- Record grades per subject
-- Compute average, highest and lowest grade
-- List students sorted by average
-- Simple text menu loop
+- Add and remove students with unique IDs.
+- Record multiple grades per subject.
+- Calculate each student's overall average.
+- Show pass/fail status using a 60-point passing grade.
+- Find each student's highest and lowest grade.
+- Sort students from highest to lowest average.
+- Reject blank data, duplicate student IDs, unknown students, and grades outside 0–100.
 
-## Main Skills Practiced
-- OOP and encapsulation
-- Collections (List, Map)
-- Loops and conditionals
-- Basic input handling
-- Exceptions
+## Structure
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- Maven (build tool, as used in existing projects)
+- `Student` owns identity and grade data and calculates statistics.
+- `GradeBook` manages students and delegates grade operations.
+- `Main` runs a small demonstration.
 
-*(Planned only. None of these are implemented yet.)*
+Source files are under `src/studentgrademanager` and use only standard Java.
 
-## Planned Structure
-- src/main/java/ (source, created later)
-- Student class
-- GradeBook class
-- Main class with menu
+## Run
 
-*(These folders and files are not created yet.)*
+From this project folder:
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+```powershell
+javac -d out src\studentgrademanager\*.java
+java -cp out studentgrademanager.Main
+```
+
+See `TESTING.md` for manual test cases.

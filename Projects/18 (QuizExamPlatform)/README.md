@@ -1,42 +1,37 @@
 # Quiz Exam Platform
 
-## Description
-Run multiple-choice quizzes, score answers and show results. It practices modeling questions and scoring, optionally loading questions from a file.
+An in-memory Java application for multiple-choice quizzes, attempts, answers, and results.
 
-## Difficulty
-Intermediate
+## Implemented features
 
-## Main Features
-- Question bank
-- Run a quiz
-- Score answers
-- Optional timing (logical)
-- Results summary
+- Create validated questions with at least two unique options.
+- Mark one valid option as correct using a zero-based index.
+- Build quizzes and start participant attempts.
+- Record or change one answer per question before finishing.
+- Require every question to be answered before completion.
+- Calculate correct-answer count, integer percentage, and pass/fail result.
+- Show selected answers, correct answers, and per-question correctness.
+- Record participant percentages in a sorted scoreboard.
 
-## Main Skills Practiced
-- OOP
-- Collections
-- File IO (optional)
-- Exceptions
+The passing score is 60%. This project intentionally uses no file I/O.
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- File IO
-- Maven (build tool, as used in existing projects)
+## Structure
 
-*(Planned only. None of these are implemented yet.)*
+- `Question` stores prompt, options, and the correct answer.
+- `Quiz` owns the question bank and starts attempts.
+- `QuizAttempt` records selected answers.
+- `AnswerResult` describes one graded answer.
+- `QuizResult` calculates and summarizes the final result.
+- `ScoreBoard` stores participant percentages.
+- `Main` demonstrates a complete quiz attempt.
 
-## Planned Structure
-- Question class
-- Quiz class
-- ScoreBoard class
-- Main class
-- questions data file (created later)
+Source files are under `src/quizexamplatform` and use only standard Java.
 
-*(These folders and files are not created yet.)*
+## Run
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+```powershell
+javac -d out src\quizexamplatform\*.java
+java -cp out quizexamplatform.Main
+```
+
+See `TESTING.md` for manual test cases.

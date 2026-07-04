@@ -6,7 +6,13 @@ public class ParkingSpot {
     private Vehicle parkedVehicle;
 
     public ParkingSpot(String id, VehicleType supportedType) {
-        this.id = id;
+        if (id == null || id.trim().isEmpty()) {
+            throw new IllegalArgumentException("Parking spot ID must not be blank");
+        }
+        if (supportedType == null) {
+            throw new IllegalArgumentException("Supported vehicle type must not be null");
+        }
+        this.id = id.trim();
         this.supportedType = supportedType;
     }
 
@@ -14,17 +20,41 @@ public class ParkingSpot {
         return id;
     }
 
+    public VehicleType getSupportedType() {
+        return supportedType;
+    }
+
+    public Vehicle getParkedVehicle() {
+        return parkedVehicle;
+    }
+
     public boolean isAvailable() {
         return parkedVehicle == null;
     }
 
+    public boolean supports(VehicleType vehicleType) {
+        return supportedType == vehicleType;
+    }
+
     public void assignVehicle(Vehicle vehicle) {
-        // TODO: Check compatibility and availability before assigning the vehicle.
-        throw new UnsupportedOperationException("TODO: assign a vehicle");
+        if (vehicle == null) {
+            throw new IllegalArgumentException("Vehicle must not be null");
+        }
+        if (!isAvailable()) {
+            throw new IllegalStateException("Parking spot is occupied: " + id);
+        }
+        if (!supports(vehicle.getType())) {
+            throw new IllegalArgumentException("Spot " + id + " does not support " + vehicle.getType());
+        }
+        parkedVehicle = vehicle;
     }
 
     public Vehicle releaseVehicle() {
-        // TODO: Clear and return the currently parked vehicle.
-        throw new UnsupportedOperationException("TODO: release a vehicle");
+        if (isAvailable()) {
+            throw new IllegalStateException("Parking spot is already empty: " + id);
+        }
+        Vehicle releasedVehicle = parkedVehicle;
+        parkedVehicle = null;
+        return releasedVehicle;
     }
 }

@@ -1,39 +1,34 @@
 # Hospital Queue Management
 
-## Description
-Manage patient queues by triage priority and serve them in the correct order. It practices priority queues.
+An in-memory Java application for triage priority, patient service, and simple records.
 
-## Difficulty
-Intermediate
+## Implemented features
 
-## Main Features
-- Add patients with a priority
-- Serve the next patient
-- View the queue
-- Emergency override
-- Simple statistics
+- Add validated patients with unique IDs, arrival times, and triage levels.
+- Order waiting patients with a `PriorityQueue`.
+- Serve emergency patients first, followed by urgent, standard, and non-urgent patients.
+- Resolve equal priority by arrival time and then patient ID.
+- Update the priority of waiting patients, including emergency override.
+- Show the waiting queue without changing it.
+- Update status between waiting, in treatment, and discharged.
+- Retain patient records after they leave the waiting queue.
+- Calculate average waiting time, returning `0.0` for an empty queue.
 
-## Main Skills Practiced
-- OOP
-- Collections (PriorityQueue)
-- Enums
-- Exceptions
+## Structure
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- Maven (build tool, as used in existing projects)
+- `Patient` stores identity, priority, arrival time, and status.
+- `TriageLevel` defines explicit service priority.
+- `PatientStatus` defines the patient workflow.
+- `TriageQueue` owns the priority queue and patient records.
+- `Main` demonstrates priority update, service, and discharge.
 
-*(Planned only. None of these are implemented yet.)*
+Source files are under `src/hospitalqueuemanagement` and use only standard Java.
 
-## Planned Structure
-- Patient class
-- TriageQueue class
-- Main class
+## Run
 
-*(These folders and files are not created yet.)*
+```powershell
+javac -d out src\hospitalqueuemanagement\*.java
+java -cp out hospitalqueuemanagement.Main
+```
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+See `TESTING.md` for manual test cases.

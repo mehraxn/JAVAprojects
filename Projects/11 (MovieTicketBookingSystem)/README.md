@@ -1,41 +1,34 @@
 # Movie Ticket Booking System
 
-## Description
-Book seats for movie showings while preventing double-booking. It practices modeling seats, showtimes and reservations with collections.
+An in-memory Java application for movies, showtimes, seats, and bookings.
 
-## Difficulty
-Beginner Plus
+## Implemented features
 
-## Main Features
-- List showings
-- View a seat map
-- Book and cancel seats
-- Prevent double booking
-- Simple pricing
+- Add movies with unique IDs.
+- Add showtimes for registered movies.
+- Configure uniquely labelled seats for each showtime.
+- Book one or more seats in a single validated operation.
+- Prevent duplicate labels within a request and double-booking across bookings.
+- Cancel bookings and release their seats.
+- Show all available seats for a showtime.
+- Calculate a simple total using a fixed `12.00` price per seat.
 
-## Main Skills Practiced
-- OOP
-- Collections
-- 2D data handling
-- Exceptions
+## Structure
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- Maven (build tool, as used in existing projects)
+- `Movie` stores movie details.
+- `Seat` owns its booked/available state.
+- `Showtime` connects a movie, start time, and seat map.
+- `Booking` is an immutable booking summary.
+- `BookingSystem` manages movies, showtimes, and bookings.
+- `Main` demonstrates booking and cancellation.
 
-*(Planned only. None of these are implemented yet.)*
+Source files are under `src/movieticketbookingsystem` and use only standard Java.
 
-## Planned Structure
-- Movie class
-- Showtime class
-- Seat class
-- Booking class
-- Main class
+## Run
 
-*(These folders and files are not created yet.)*
+```powershell
+javac -d out src\movieticketbookingsystem\*.java
+java -cp out movieticketbookingsystem.Main
+```
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+See `TESTING.md` for manual test cases.

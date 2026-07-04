@@ -1,41 +1,34 @@
 # Hotel Room Booking System
 
-## Description
-Book hotel rooms for date ranges while avoiding overlaps. It practices date handling and validation.
+An in-memory Java application for room availability and date-range bookings.
 
-## Difficulty
-Intermediate
+## Implemented features
 
-## Main Features
-- List rooms
-- Book a room for a date range
-- Prevent overlapping bookings
-- Cancel a booking
-- Occupancy report
+- Add rooms with unique numbers, types, and non-negative nightly rates.
+- Search available rooms for a valid check-in/check-out range.
+- Book rooms and generate simple booking IDs.
+- Prevent overlapping bookings for the same room.
+- Allow adjacent stays where one booking starts on another booking's check-out date.
+- Cancel bookings and make rooms available again.
+- Calculate nights, total price, and occupancy percentage.
 
-## Main Skills Practiced
-- OOP
-- Collections
-- Date/time (java.time)
-- Exceptions
+Date ranges use check-in inclusive and check-out exclusive semantics.
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- java.time
-- Maven (build tool, as used in existing projects)
+## Structure
 
-*(Planned only. None of these are implemented yet.)*
+- `Room` stores room details and price.
+- `Guest` stores basic guest identity.
+- `Booking` owns stay dates, overlap rules, and total-price calculation.
+- `Hotel` manages rooms, availability, bookings, cancellation, and occupancy.
+- `Main` demonstrates the complete booking lifecycle.
 
-## Planned Structure
-- Room class
-- Guest class
-- Booking class
-- Main class
+Source files are under `src/hotelroombookingsystem` and use only standard Java.
 
-*(These folders and files are not created yet.)*
+## Run
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+```powershell
+javac -d out src\hotelroombookingsystem\*.java
+java -cp out hotelroombookingsystem.Main
+```
+
+See `TESTING.md` for manual test cases.

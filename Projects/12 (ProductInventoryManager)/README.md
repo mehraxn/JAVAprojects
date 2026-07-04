@@ -1,39 +1,35 @@
 # Product Inventory Manager
 
-## Description
-Manage products, quantities and simple stock operations in memory. It practices maps and basic reporting.
+An in-memory Java application for products, stock updates, searching, sorting, and reports.
 
-## Difficulty
-Beginner Plus
+## Implemented features
 
-## Main Features
-- Add, update and remove products
-- Adjust stock levels
-- Low-stock report
-- Search products
-- Total inventory value
+- Add products with unique SKUs.
+- Change product names and non-negative prices.
+- Set an absolute stock quantity or apply a relative stock adjustment.
+- Prevent stock from becoming negative or overflowing an integer.
+- Remove products and retrieve products by SKU.
+- Search case-insensitively by SKU or name.
+- Sort by name, price, or quantity in ascending or descending order.
+- Report products at or below a configurable low-stock threshold.
+- Calculate total inventory value with `BigDecimal`.
 
-## Main Skills Practiced
-- OOP
-- Collections (Map)
-- Basic streams
-- Exceptions
+The default low-stock threshold is `5` units.
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- Maven (build tool, as used in existing projects)
+## Structure
 
-*(Planned only. None of these are implemented yet.)*
+- `Product` owns product details, stock validation, and stock value.
+- `ProductSortField` lists supported sorting choices.
+- `Inventory` manages products and inventory reports.
+- `Main` demonstrates stock updates, sorting, warnings, and total value.
 
-## Planned Structure
-- Product class
-- Inventory class
-- Main class
+Source files are under `src/productinventorymanager` and use only standard Java.
 
-*(These folders and files are not created yet.)*
+## Run
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+```powershell
+javac -d out src\productinventorymanager\*.java
+java -cp out productinventorymanager.Main
+```
+
+See `TESTING.md` for manual test cases.

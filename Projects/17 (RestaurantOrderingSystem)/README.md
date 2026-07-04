@@ -1,40 +1,34 @@
 # Restaurant Ordering System
 
-## Description
-Take orders from a menu, compute totals and track order status. It practices modeling orders and items.
+An in-memory Java application for menu items, customer orders, discounts, and order status.
 
-## Difficulty
-Intermediate
+## Implemented features
 
-## Main Features
-- Manage a menu
-- Create orders
-- Add and remove items
-- Compute the bill
-- Track order status
+- Add and remove uniquely identified menu items.
+- Create customer or walk-in orders with generated IDs.
+- Add new items or increase an existing item's quantity.
+- Remove items while an order is editable.
+- Calculate item subtotals and order subtotal.
+- Apply a 10% discount when subtotal is at least `50.00`.
+- Calculate final total and produce a readable order summary.
+- Enforce simple order status transitions.
+- Prevent editing after an order leaves `CREATED` status.
 
-## Main Skills Practiced
-- OOP
-- Collections
-- Streams
-- Exceptions
+## Structure
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- Maven (build tool, as used in existing projects)
+- `MenuItem` stores menu identity and price.
+- `OrderItem` combines a menu item and positive quantity.
+- `Order` owns items, discount calculation, summary, and status.
+- `Restaurant` manages the menu and customer orders.
+- `Main` demonstrates ordering, discount, summary, and status updates.
 
-*(Planned only. None of these are implemented yet.)*
+Source files are under `src/restaurantorderingsystem` and use only standard Java.
 
-## Planned Structure
-- MenuItem class
-- Order class
-- Restaurant class
-- Main class
+## Run
 
-*(These folders and files are not created yet.)*
+```powershell
+javac -d out src\restaurantorderingsystem\*.java
+java -cp out restaurantorderingsystem.Main
+```
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+See `TESTING.md` for manual test cases.

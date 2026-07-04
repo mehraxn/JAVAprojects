@@ -7,9 +7,9 @@ public class Book {
     private String borrowedByMemberId;
 
     public Book(String isbn, String title, String author) {
-        this.isbn = isbn;
-        this.title = title;
-        this.author = author;
+        this.isbn = requireText(isbn, "ISBN");
+        this.title = requireText(title, "Title");
+        this.author = requireText(author, "Author");
     }
 
     public String getIsbn() {
@@ -24,17 +24,32 @@ public class Book {
         return author;
     }
 
+    public String getBorrowedByMemberId() {
+        return borrowedByMemberId;
+    }
+
     public boolean isAvailable() {
         return borrowedByMemberId == null;
     }
 
     public void borrowTo(String memberId) {
-        // TODO: Reject unavailable books and record the borrowing member.
-        throw new UnsupportedOperationException("TODO: borrow a book");
+        if (!isAvailable()) {
+            throw new IllegalStateException("Book is already borrowed: " + isbn);
+        }
+        borrowedByMemberId = requireText(memberId, "Member ID");
     }
 
     public void returnToLibrary() {
-        // TODO: Clear the current borrower after validating the state.
-        throw new UnsupportedOperationException("TODO: return a book");
+        if (isAvailable()) {
+            throw new IllegalStateException("Book is not currently borrowed: " + isbn);
+        }
+        borrowedByMemberId = null;
+    }
+
+    private static String requireText(String value, String fieldName) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        }
+        return value.trim();
     }
 }

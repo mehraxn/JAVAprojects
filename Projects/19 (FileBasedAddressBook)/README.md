@@ -1,42 +1,45 @@
 # File-Based Address Book
 
-## Description
-Store and search contacts, persisting them to a text or CSV file. It practices file IO together with OOP.
+An in-memory Java address book with optional UTF-8 file persistence.
 
-## Difficulty
-Intermediate
+## Implemented features
 
-## Main Features
-- Add, edit and delete contacts
-- Search contacts
-- Save and load from a file
-- List contacts sorted
-- Import and export
+- Add contacts with unique IDs.
+- Search case-insensitively across ID, name, phone, and email.
+- Update contact details after validating all new values.
+- Delete contacts and list contacts sorted by name and ID.
+- Save and load contacts with standard `java.nio.file` APIs.
+- Return an empty list when the file is missing or contains no contact rows.
+- Reject malformed rows and duplicate IDs in stored data.
+- Import without partially modifying the address book when IDs conflict.
 
-## Main Skills Practiced
-- OOP
-- Collections
-- File IO
-- Exceptions
+## File format
 
-## Planned Technologies
-- Java
-- OOP
-- Collections
-- Exceptions
-- File IO
-- Maven (build tool, as used in existing projects)
+Each UTF-8 line contains four tab-separated fields:
 
-*(Planned only. None of these are implemented yet.)*
+```text
+contact-id<TAB>name<TAB>phone<TAB>email
+```
 
-## Planned Structure
-- Contact class
-- AddressBook class
-- FileStore class
-- Main class
-- data file (created later)
+Contact fields therefore reject tabs and line breaks.
 
-*(These folders and files are not created yet.)*
+## Structure
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+- `Contact` owns validated contact details and search matching.
+- `AddressBook` manages contacts and sorted searches.
+- `FileStore` handles loading, saving, importing, and exporting.
+- `Main` demonstrates contact operations and optionally file persistence.
+
+Source files are under `src/filebasedaddressbook` and use only standard Java.
+
+## Run
+
+```powershell
+javac -d out src\filebasedaddressbook\*.java
+java -cp out filebasedaddressbook.Main
+java -cp out filebasedaddressbook.Main contacts.tsv
+```
+
+The first command performs no file writes. Pass a path to demonstrate persistence.
+
+See `TESTING.md` for manual test cases.

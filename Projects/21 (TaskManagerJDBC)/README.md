@@ -12,7 +12,7 @@ A small task manager demonstrating repository-based design with both a database-
 - Run the console demonstration without a database or JDBC driver.
 - Study or configure JDBC CRUD operations using prepared statements and generated keys.
 
-## Repository structure
+## Main classes and repository structure
 
 - `Task` — validated task model and status enum.
 - `TaskRepository` — common CRUD and query contract.
@@ -28,6 +28,10 @@ The service depends on `TaskRepository`, so switching storage does not change ta
 TaskService -> TaskRepository -> InMemoryTaskRepository
                               -> JdbcTaskRepository -> DatabaseConnection
 ```
+
+## How the program works
+
+`TaskService` validates application operations and talks only to `TaskRepository`. The default `Main` supplies `InMemoryTaskRepository`, which assigns IDs and stores defensive task copies. `JdbcTaskRepository` provides the same operations with prepared SQL statements and maps database rows back into `Task` objects.
 
 ## Runnable without a database
 
@@ -70,6 +74,36 @@ Identity-column syntax differs between database products, so adjust the schema f
 - `LocalDate` and nullable due dates
 - JDBC connections, prepared statements, generated keys, result sets, and SQL exceptions
 - Try-with-resources and input validation
+
+## Backend and database concepts practiced
+
+- Repository interfaces and interchangeable storage implementations
+- CRUD operations, generated keys, parameter binding, and row mapping
+- JDBC connection failures and checked `SQLException` propagation
+- Database-independent service logic and a database-free fallback
+
+## Example usage
+
+Compile and run the in-memory version:
+
+```text
+javac -d out src/taskmanagerjdbc/*.java
+java -cp out taskmanagerjdbc.Main
+```
+
+JDBC execution is intentionally not started by `Main`.
+
+## Storage approach
+
+- `InMemoryTaskRepository`: runnable storage that lasts only for the current process.
+- `JdbcTaskRepository`: JDBC-style learning implementation requiring a user-supplied driver, JDBC URL, database, and compatible `tasks` table.
+
+## Limitations
+
+- No JDBC driver, database, or schema migration tool is included
+- SQL identity syntax and generated-key behavior can vary by database product
+- In-memory records disappear when the process exits
+- No transactions are needed for the current single-operation service methods
 
 ## Possible future improvements
 

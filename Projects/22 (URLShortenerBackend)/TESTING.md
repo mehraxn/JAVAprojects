@@ -14,7 +14,7 @@ Use temporary paths for persistence tests and an unused local port for HTTP test
 | Defensive results | Modify a returned `UrlEntry` | Stored entry remains unchanged |
 | CSV round trip | Save and load mappings | URL, code, timestamp, and hits are preserved |
 
-## Edge and invalid-input tests
+## Edge-case and invalid input test cases
 
 | Test | Input or action | Expected result |
 |---|---|---|
@@ -50,6 +50,19 @@ Use temporary paths for persistence tests and an unused local port for HTTP test
 | Start with invalid port or start twice | Validation exception |
 | Stop twice | Safe no-op |
 
+## Example HTTP requests
+
+After starting `urlshortenerbackend.Main server 8080`:
+
+```text
+curl -i -X POST -d "url=https%3A%2F%2Fexample.com%2Fguide&code=guide" http://localhost:8080/links
+curl -i http://localhost:8080/r/guide
+curl -i http://localhost:8080/links
+curl -i http://localhost:8080/r/unknown
+```
+
+Expected results are 201 for creation, 302 for the known redirect, 200 for listing, and 404 for the unknown code.
+
 ## Manual testing checklist
 
 - [ ] Compile all source files.
@@ -60,3 +73,11 @@ Use temporary paths for persistence tests and an unused local port for HTTP test
 - [ ] Confirm redirects increment the displayed hit count.
 - [ ] Test missing, empty, header-only, duplicate, and malformed CSV files.
 - [ ] Stop the server with Ctrl+C.
+
+## Phase 2 validation review additions
+
+| Test | Action | Expected result |
+|---|---|---|
+| Invalid URL port | Shorten `https://example.com:70000/path` | Rejected because the port exceeds 65535 |
+| Null restored map key | Replace entries with a map containing a null key | `IllegalArgumentException`, not `NullPointerException` |
+| Directory storage path | Load or save using an existing directory | `IOException` identifies a non-regular file |

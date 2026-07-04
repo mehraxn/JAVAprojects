@@ -19,9 +19,15 @@ public class DatabaseConnection {
     }
 
     public Connection open() throws SQLException {
-        if (username.trim().isEmpty()) {
-            return DriverManager.getConnection(jdbcUrl);
+        try {
+            if (username.trim().isEmpty()) {
+                return DriverManager.getConnection(jdbcUrl);
+            }
+            return DriverManager.getConnection(jdbcUrl, username, password);
+        } catch (SQLException exception) {
+            throw new SQLException(
+                    "Could not open the JDBC connection. Check that the driver, URL, database, and credentials are available.",
+                    exception.getSQLState(), exception.getErrorCode(), exception);
         }
-        return DriverManager.getConnection(jdbcUrl, username, password);
     }
 }

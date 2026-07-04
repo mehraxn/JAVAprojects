@@ -47,7 +47,11 @@ public class JdbcTaskRepository implements TaskRepository {
                 if (!keys.next()) {
                     throw new SQLException("Database did not return a generated task ID.");
                 }
-                return new Task(keys.getLong(1), task.getTitle(), task.getDescription(),
+                long generatedId = keys.getLong(1);
+                if (keys.wasNull() || generatedId <= 0) {
+                    throw new SQLException("Database returned an invalid generated task ID.");
+                }
+                return new Task(generatedId, task.getTitle(), task.getDescription(),
                         task.getDueDate(), task.getStatus());
             }
         }

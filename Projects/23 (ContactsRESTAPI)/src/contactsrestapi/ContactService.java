@@ -80,9 +80,6 @@ public class ContactService {
     }
 
     private String requireId(String contactId) {
-        if (contactId == null || contactId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Contact ID cannot be empty.");
-        }
-        return contactId.trim();
+        return Contact.validateId(contactId == null ? null : contactId.trim());
     }
 }

@@ -75,6 +75,9 @@ public class UrlEntry {
                     || uri.getHost() == null) {
                 throw new IllegalArgumentException("URL must be an absolute HTTP or HTTPS URL with a host.");
             }
+            if (uri.getPort() > 65_535) {
+                throw new IllegalArgumentException("URL port cannot exceed 65535.");
+            }
             return value;
         } catch (URISyntaxException exception) {
             throw new IllegalArgumentException("URL is malformed: " + exception.getMessage(), exception);

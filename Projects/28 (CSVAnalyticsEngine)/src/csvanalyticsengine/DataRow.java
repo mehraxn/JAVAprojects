@@ -27,6 +27,14 @@ public class DataRow {
         return Collections.unmodifiableMap(new LinkedHashMap<String, String>(values));
     }
 
+    public DataRow copy() {
+        DataRow copy = new DataRow();
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            copy.put(entry.getKey(), entry.getValue());
+        }
+        return copy;
+    }
+
     private String requireColumn(String column) {
         if (column == null || column.trim().isEmpty()) {
             throw new IllegalArgumentException("Column name cannot be empty.");

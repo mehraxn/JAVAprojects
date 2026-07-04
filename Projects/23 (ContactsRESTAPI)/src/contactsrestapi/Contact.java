@@ -8,11 +8,7 @@ public class Contact {
     private String notes;
 
     public Contact(String id, String name, String email, String phone, String notes) {
-        if (id == null || !id.matches("[A-Za-z0-9_-]{1,40}")) {
-            throw new IllegalArgumentException(
-                    "Contact ID must contain 1-40 letters, numbers, underscores, or hyphens.");
-        }
-        this.id = id;
+        this.id = validateId(id);
         updateDetails(name, email, phone, notes);
     }
 
@@ -40,7 +36,13 @@ public class Contact {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Name cannot be empty.");
         }
+        if (name.trim().length() > 100) {
+            throw new IllegalArgumentException("Name cannot exceed 100 characters.");
+        }
         String validEmail = email == null ? "" : email.trim();
+        if (validEmail.length() > 254) {
+            throw new IllegalArgumentException("Email address cannot exceed 254 characters.");
+        }
         if (!validEmail.isEmpty() && !validEmail.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) {
             throw new IllegalArgumentException("Email address is invalid.");
         }
@@ -48,10 +50,22 @@ public class Contact {
         if (!validPhone.isEmpty() && !validPhone.matches("[0-9+() .-]{3,30}")) {
             throw new IllegalArgumentException("Phone number contains unsupported characters.");
         }
+        String validNotes = notes == null ? "" : notes.trim();
+        if (validNotes.length() > 5_000) {
+            throw new IllegalArgumentException("Notes cannot exceed 5000 characters.");
+        }
         this.name = name.trim();
         this.email = validEmail;
         this.phone = validPhone;
-        this.notes = notes == null ? "" : notes.trim();
+        this.notes = validNotes;
+    }
+
+    static String validateId(String id) {
+        if (id == null || !id.matches("[A-Za-z0-9_-]{1,40}")) {
+            throw new IllegalArgumentException(
+                    "Contact ID must contain 1-40 letters, numbers, underscores, or hyphens.");
+        }
+        return id;
     }
 
     public Contact copy() {

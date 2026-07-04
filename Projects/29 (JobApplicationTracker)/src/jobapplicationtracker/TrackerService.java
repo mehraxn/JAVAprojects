@@ -24,14 +24,20 @@ public class TrackerService {
 
     public JobApplication addApplication(String company, String role, LocalDate applicationDate,
             JobApplication.Status status, String notes) {
+        if (nextId <= 0) {
+            throw new IllegalStateException("No more positive application IDs are available.");
+        }
         JobApplication application = new JobApplication(
                 nextId, company, role, applicationDate, status, notes);
         applications.put(nextId, application);
-        nextId++;
-        return application;
+        nextId = nextId == Long.MAX_VALUE ? 0 : nextId + 1;
+        return application.copy();
     }
 
     public boolean updateStatus(long applicationId, JobApplication.Status status) {
+        if (status == null) {
+            throw new IllegalArgumentException("Application status cannot be null.");
+        }
         requireId(applicationId);
         JobApplication application = applications.get(applicationId);
         if (application == null) {
@@ -42,7 +48,11 @@ public class TrackerService {
     }
 
     public List<JobApplication> listApplications() {
-        return Collections.unmodifiableList(new ArrayList<JobApplication>(applications.values()));
+        List<JobApplication> result = new ArrayList<JobApplication>();
+        for (JobApplication application : applications.values()) {
+            result.add(application.copy());
+        }
+        return Collections.unmodifiableList(result);
     }
 
     public List<JobApplication> searchByCompanyOrRole(String searchText) {
@@ -54,7 +64,7 @@ public class TrackerService {
         for (JobApplication application : applications.values()) {
             if (application.getCompany().toLowerCase(Locale.ROOT).contains(query)
                     || application.getRole().toLowerCase(Locale.ROOT).contains(query)) {
-                matches.add(application);
+                matches.add(application.copy());
             }
         }
         return Collections.unmodifiableList(matches);
@@ -67,7 +77,7 @@ public class TrackerService {
         List<JobApplication> matches = new ArrayList<JobApplication>();
         for (JobApplication application : applications.values()) {
             if (application.getStatus() == status) {
-                matches.add(application);
+                matches.add(application.copy());
             }
         }
         return Collections.unmodifiableList(matches);
@@ -99,10 +109,12 @@ public class TrackerService {
         Map<Long, JobApplication> checked = new LinkedHashMap<Long, JobApplication>();
         long newNextId = 1;
         for (JobApplication application : loaded) {
-            if (checked.put(application.getId(), application) != null) {
+            if (checked.put(application.getId(), application.copy()) != null) {
                 throw new IOException("Duplicate application ID: " + application.getId());
             }
-            if (application.getId() >= newNextId) {
+            if (application.getId() == Long.MAX_VALUE) {
+                newNextId = 0;
+            } else if (newNextId > 0 && application.getId() >= newNextId) {
                 newNextId = application.getId() + 1;
             }
         }

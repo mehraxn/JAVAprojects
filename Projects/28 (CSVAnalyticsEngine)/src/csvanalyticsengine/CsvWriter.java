@@ -15,6 +15,9 @@ public class CsvWriter {
         if (dataSet == null) {
             throw new IllegalArgumentException("Data set cannot be null.");
         }
+        if (Files.exists(path) && !Files.isRegularFile(path)) {
+            throw new IOException("CSV path is not a regular file: " + path);
+        }
 
         List<String> lines = new ArrayList<String>();
         if (!dataSet.getColumns().isEmpty()) {

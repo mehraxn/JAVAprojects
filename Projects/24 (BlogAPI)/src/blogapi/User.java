@@ -25,7 +25,11 @@ public class User {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(fieldName + " cannot be empty.");
         }
-        return value.trim();
+        String result = value.trim();
+        if (result.length() > 100) {
+            throw new IllegalArgumentException(fieldName + " cannot exceed 100 characters.");
+        }
+        return result;
     }
 
     @Override

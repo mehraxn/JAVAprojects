@@ -23,6 +23,13 @@ A standard-Java console project that reads tabular CSV data and performs small, 
 - CSV state-based parsing
 - Validation, defensive copies, and exception handling
 
+## Backend concepts practiced
+
+- File ingestion and tabular data validation
+- Separating parsing, data models, analytics, and output responsibilities
+- Graceful handling of missing and invalid numeric cells
+- Grouping, filtering, and summary result objects
+
 ## Main classes
 
 - `DataRow` — one ordered mapping of columns to values.
@@ -64,6 +71,17 @@ Tea,Food,
 ```
 
 This reports four rows, statistics based on the two valid amounts, one invalid amount, one missing amount, and group sizes for `category`.
+
+## Storage approach
+
+`CsvReader` loads a complete UTF-8 CSV file into an in-memory `DataSet`. `CsvWriter` can write a data set back to a file. Rows are defensively copied so later caller changes cannot corrupt stored table structure.
+
+## Limitations
+
+- Entire files are loaded into memory
+- Only comma delimiters and single-line fields are supported
+- Numeric inference is requested by column rather than detected automatically
+- Statistics are limited to basic decimal summaries
 
 ## Possible future improvements
 

@@ -62,8 +62,16 @@ public class Post {
     }
 
     private void setText(String title, String content) {
-        this.title = requireText(title, "Post title");
-        this.content = requireText(content, "Post content");
+        String validTitle = requireText(title, "Post title");
+        String validContent = requireText(content, "Post content");
+        if (validTitle.length() > 200) {
+            throw new IllegalArgumentException("Post title cannot exceed 200 characters.");
+        }
+        if (validContent.length() > 50_000) {
+            throw new IllegalArgumentException("Post content cannot exceed 50000 characters.");
+        }
+        this.title = validTitle;
+        this.content = validContent;
     }
 
     private String requireText(String value, String fieldName) {

@@ -21,7 +21,13 @@ public class CsvExpenseStore implements ExpenseStore {
         if (path == null) {
             throw new IllegalArgumentException("Path cannot be null.");
         }
-        if (!Files.exists(path) || Files.size(path) == 0) {
+        if (!Files.exists(path)) {
+            return Collections.emptyList();
+        }
+        if (!Files.isRegularFile(path)) {
+            throw new IOException("Expense CSV path is not a regular file: " + path);
+        }
+        if (Files.size(path) == 0) {
             return Collections.emptyList();
         }
 
@@ -77,6 +83,9 @@ public class CsvExpenseStore implements ExpenseStore {
         }
         if (expenses == null) {
             throw new IllegalArgumentException("Expense list cannot be null.");
+        }
+        if (Files.exists(path) && !Files.isRegularFile(path)) {
+            throw new IOException("Expense CSV path is not a regular file: " + path);
         }
 
         List<String> lines = new ArrayList<String>();

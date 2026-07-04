@@ -70,7 +70,8 @@ public class ShortenerService {
         }
         Map<String, UrlEntry> checked = new LinkedHashMap<String, UrlEntry>();
         for (Map.Entry<String, UrlEntry> item : loadedEntries.entrySet()) {
-            if (item.getValue() == null || !item.getKey().equals(item.getValue().getShortCode())) {
+            if (item.getKey() == null || item.getValue() == null
+                    || !item.getKey().equals(item.getValue().getShortCode())) {
                 throw new IllegalArgumentException("Every map key must match a non-null URL entry.");
             }
             if (checked.put(item.getKey(), item.getValue().copy()) != null) {

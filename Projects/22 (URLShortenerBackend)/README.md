@@ -23,6 +23,10 @@ A standard-Java URL shortener with in-memory storage, hit tracking, optional CSV
 - `UrlShortenerHttpServer` — optional built-in HTTP adapter.
 - `Main` — console demonstration or explicit server launcher.
 
+## How the program works
+
+`ShortenerService` validates a long URL, generates or accepts a short code, and stores a `UrlEntry`. Resolving a code looks it up directly and increments its hit counter. HTTP handlers translate local requests into service calls, while `FileUrlStore` remains an optional persistence boundary.
+
 ## In-memory storage
 
 `ShortenerService` stores entries in a `LinkedHashMap` keyed by short code. This gives direct code lookup and stable creation order. Service methods are synchronized because the optional HTTP server can process multiple requests. Returned entries are copies, so callers cannot alter stored hit counts. Data is lost when the process exits unless `FileUrlStore` is used explicitly.
@@ -67,7 +71,7 @@ shortCode,originalUrl,createdAt,hitCount
 
 It supports commas and quotation marks in quoted fields. Multiline fields are intentionally unsupported. Persistence is kept separate from the service so the basic demonstration remains entirely in memory.
 
-## Compile and run
+## Example usage
 
 ```text
 javac -d out src/urlshortenerbackend/*.java
@@ -84,6 +88,24 @@ The normal command demonstrates service logic without starting a server or creat
 - File I/O and manual CSV parsing
 - Built-in HTTP handlers, status codes, redirects, and headers
 - Manual JSON escaping and URL-encoded form parsing
+
+## Backend concepts practiced
+
+- Service-layer validation and in-memory key/value lookup
+- Collision handling and custom identifier uniqueness
+- HTTP routing, status codes, redirects, headers, and bounded request bodies
+- Optional file persistence kept separate from request handling
+
+## Storage approach
+
+The active service uses an insertion-ordered in-memory map. `FileUrlStore` can explicitly save or load UTF-8 CSV snapshots containing codes, URLs, timestamps, and hit counts. It is not invoked automatically by the HTTP server.
+
+## Limitations
+
+- Links are lost on restart unless file storage is integrated by the caller
+- The HTTP server has no authentication, TLS configuration, or rate limiting
+- Generated codes are sequential rather than unpredictable
+- CSV persistence does not support multiline values or concurrent writers
 
 ## Possible future improvements
 

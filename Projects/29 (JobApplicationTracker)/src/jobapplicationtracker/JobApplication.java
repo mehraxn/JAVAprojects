@@ -30,6 +30,9 @@ public class JobApplication {
         if (applicationDate == null) {
             throw new IllegalArgumentException("Application date cannot be null.");
         }
+        if (applicationDate.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Application date cannot be in the future.");
+        }
         this.applicationDate = applicationDate;
         setStatus(status);
         setNotes(notes);
@@ -72,6 +75,10 @@ public class JobApplication {
             throw new IllegalArgumentException("Notes cannot contain line breaks.");
         }
         this.notes = safeNotes;
+    }
+
+    public JobApplication copy() {
+        return new JobApplication(id, company, role, applicationDate, status, notes);
     }
 
     private String requireText(String value, String fieldName) {

@@ -15,7 +15,7 @@ The service tests need no server. HTTP tests should use an unused local port and
 | Search | Search partial name/email/notes text with different casing | Matching records returned |
 | Pagination | Search with offset 1 and limit 2 | Correct two-record page returned |
 
-## Edge and invalid-input tests
+## Edge-case and invalid input test cases
 
 | Test | Input or action | Expected result |
 |---|---|---|
@@ -52,6 +52,20 @@ The service tests need no server. HTTP tests should use an unused local port and
 | Invalid port or second start | Validation exception |
 | Stop twice | Safe no-op |
 
+## Example HTTP requests
+
+After starting `contactsrestapi.Main server 8081`:
+
+```text
+curl -i -X POST -d "name=Ada+Lovelace&email=ada%40example.com&phone=%2B49+123&notes=Developer" http://localhost:8081/contacts
+curl -i "http://localhost:8081/contacts?q=ada&offset=0&limit=10"
+curl -i http://localhost:8081/contacts/C-1
+curl -i -X PUT -d "name=Ada+Lovelace&email=ada%40example.com&phone=%2B49+456&notes=Updated" http://localhost:8081/contacts/C-1
+curl -i -X DELETE http://localhost:8081/contacts/C-1
+```
+
+Expected results are 201, 200, 200, 200, and 204. A later GET for `C-1` should return 404.
+
 ## Manual testing checklist
 
 - [ ] Compile all files under `src/contactsrestapi`.
@@ -63,3 +77,13 @@ The service tests need no server. HTTP tests should use an unused local port and
 - [ ] Test validation errors and unsupported methods.
 - [ ] Verify JSON escaping with quotation marks and line breaks in notes.
 - [ ] Restart the process and confirm storage is intentionally empty.
+
+## Phase 2 validation review additions
+
+| Test | Action | Expected result |
+|---|---|---|
+| Malformed contact ID | Find/update/delete ID containing spaces or `/` | Rejected consistently before repository lookup |
+| Oversized name | Use more than 100 characters | Rejected without creating/updating a contact |
+| Oversized email | Use more than 254 characters | Rejected |
+| Oversized notes | Use more than 5000 characters | Rejected atomically; old details remain unchanged |
+| Trimmed repository ID | Directly find ` C-1 ` | Resolves the same stored contact as `C-1` |

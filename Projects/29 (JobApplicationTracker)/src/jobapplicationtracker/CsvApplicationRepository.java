@@ -18,7 +18,13 @@ public class CsvApplicationRepository implements ApplicationRepository {
     @Override
     public List<JobApplication> load(Path path) throws IOException {
         requirePath(path);
-        if (!Files.exists(path) || Files.size(path) == 0) {
+        if (!Files.exists(path)) {
+            return Collections.emptyList();
+        }
+        if (!Files.isRegularFile(path)) {
+            throw new IOException("Application CSV path is not a regular file: " + path);
+        }
+        if (Files.size(path) == 0) {
             return Collections.emptyList();
         }
 
@@ -73,6 +79,9 @@ public class CsvApplicationRepository implements ApplicationRepository {
         requirePath(path);
         if (applications == null) {
             throw new IllegalArgumentException("Application list cannot be null.");
+        }
+        if (Files.exists(path) && !Files.isRegularFile(path)) {
+            throw new IOException("Application CSV path is not a regular file: " + path);
         }
 
         List<String> lines = new ArrayList<String>();

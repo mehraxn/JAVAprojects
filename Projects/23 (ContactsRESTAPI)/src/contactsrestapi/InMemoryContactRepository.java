@@ -28,14 +28,13 @@ public class InMemoryContactRepository {
     }
 
     public synchronized Contact findById(String contactId) {
-        requireId(contactId);
-        Contact contact = contacts.get(contactId);
+        String id = requireId(contactId);
+        Contact contact = contacts.get(id);
         return contact == null ? null : contact.copy();
     }
 
     public synchronized boolean containsId(String contactId) {
-        requireId(contactId);
-        return contacts.containsKey(contactId);
+        return contacts.containsKey(requireId(contactId));
     }
 
     public synchronized List<Contact> findAll() {
@@ -47,8 +46,7 @@ public class InMemoryContactRepository {
     }
 
     public synchronized boolean deleteById(String contactId) {
-        requireId(contactId);
-        return contacts.remove(contactId) != null;
+        return contacts.remove(requireId(contactId)) != null;
     }
 
     private void requireContact(Contact contact) {
@@ -57,9 +55,7 @@ public class InMemoryContactRepository {
         }
     }
 
-    private void requireId(String contactId) {
-        if (contactId == null || contactId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Contact ID cannot be empty.");
-        }
+    private String requireId(String contactId) {
+        return Contact.validateId(contactId == null ? null : contactId.trim());
     }
 }

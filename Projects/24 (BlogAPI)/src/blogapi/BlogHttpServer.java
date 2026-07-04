@@ -53,7 +53,6 @@ public class BlogHttpServer {
             } else if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
                 Map<String, String> form = parseParameters(readBody(exchange));
                 User user = service.createUser(form.get("name"));
-                exchange.getResponseHeaders().set("Location", "/users/" + user.getId());
                 send(exchange, 201, BlogJson.user(user));
             } else {
                 exchange.getResponseHeaders().set("Allow", "GET, POST");

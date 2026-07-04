@@ -39,7 +39,7 @@ public class DataSet {
         if (!row.asMap().keySet().equals(new java.util.LinkedHashSet<String>(columns))) {
             throw new IllegalArgumentException("Row columns must exactly match the data set columns.");
         }
-        rows.add(row);
+        rows.add(row.copy());
     }
 
     public List<String> getColumns() {
@@ -47,7 +47,11 @@ public class DataSet {
     }
 
     public List<DataRow> getRows() {
-        return Collections.unmodifiableList(new ArrayList<DataRow>(rows));
+        List<DataRow> copies = new ArrayList<DataRow>();
+        for (DataRow row : rows) {
+            copies.add(row.copy());
+        }
+        return Collections.unmodifiableList(copies);
     }
 
     public int getRowCount() {

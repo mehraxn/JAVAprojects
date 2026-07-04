@@ -13,7 +13,25 @@ public class NumericStatistics {
 
     public NumericStatistics(String column, int validValueCount, int missingValueCount,
             int invalidValueCount, BigDecimal minimum, BigDecimal maximum, BigDecimal average) {
-        this.column = column;
+        if (column == null || column.trim().isEmpty()) {
+            throw new IllegalArgumentException("Statistics column cannot be empty.");
+        }
+        if (validValueCount < 0 || missingValueCount < 0 || invalidValueCount < 0) {
+            throw new IllegalArgumentException("Statistics counts cannot be negative.");
+        }
+        if (validValueCount == 0 && (minimum != null || maximum != null || average != null)) {
+            throw new IllegalArgumentException("Empty numeric statistics cannot contain values.");
+        }
+        if (validValueCount > 0 && (minimum == null || maximum == null || average == null)) {
+            throw new IllegalArgumentException("Nonempty numeric statistics require min, max, and average.");
+        }
+        if (minimum != null && maximum != null && minimum.compareTo(maximum) > 0) {
+            throw new IllegalArgumentException("Minimum cannot exceed maximum.");
+        }
+        if (average != null && (average.compareTo(minimum) < 0 || average.compareTo(maximum) > 0)) {
+            throw new IllegalArgumentException("Average must be between minimum and maximum.");
+        }
+        this.column = column.trim();
         this.validValueCount = validValueCount;
         this.missingValueCount = missingValueCount;
         this.invalidValueCount = invalidValueCount;

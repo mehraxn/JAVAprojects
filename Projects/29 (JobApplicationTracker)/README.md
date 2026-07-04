@@ -15,7 +15,7 @@ A standard-Java application for recording job applications, searching and filter
 - Handle missing, empty, whitespace-only, and header-only files safely.
 - Reject malformed CSV, duplicate IDs, invalid dates/statuses, and empty required fields.
 
-## Repository structure
+## Main classes and repository structure
 
 - `JobApplication` — validated application model and status enum.
 - `ApplicationRepository` — file-persistence contract.
@@ -24,6 +24,10 @@ A standard-Java application for recording job applications, searching and filter
 - `Main` — console demonstration with optional CSV save/load.
 
 `TrackerService` owns the active in-memory collection and delegates file operations to `ApplicationRepository`. Loading validates the entire file before replacing the current collection.
+
+## How the program works
+
+The service generates positive IDs, stores active application records, performs searches and status summaries, and delegates explicit save/load operations to the CSV repository. A failed load is validated before it can replace current in-memory records.
 
 ## CSV format
 
@@ -66,6 +70,24 @@ id,company,role,applicationDate,status,notes
 - File I/O with `Path`, `Files`, and UTF-8
 - Manual CSV parsing and escaping
 - Defensive collection views and exception handling
+
+## Backend concepts practiced
+
+- Service and repository separation
+- File-backed persistence with transactional-style load validation
+- Search, filtering, status summaries, and generated identifiers
+- Defensive copies around mutable application status and notes
+
+## Storage approach
+
+Applications live in an insertion-ordered in-memory map during execution. `CsvApplicationRepository` optionally saves and loads UTF-8 CSV using the documented fixed header. Missing and empty files represent an empty tracker.
+
+## Limitations
+
+- No automatic save, concurrent writer protection, or atomic replacement
+- Multiline CSV values are not supported
+- Status transitions are not constrained to a workflow
+- No reminders, attachments, contacts, or external integrations
 
 ## Possible future improvements
 

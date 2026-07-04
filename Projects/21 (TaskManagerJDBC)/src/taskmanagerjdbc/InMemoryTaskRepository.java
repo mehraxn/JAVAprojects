@@ -14,6 +14,9 @@ public class InMemoryTaskRepository implements TaskRepository {
     @Override
     public Task add(Task task) {
         requireTask(task);
+        if (task.getId() == 0 && nextId <= 0) {
+            throw new IllegalStateException("No more positive task IDs are available.");
+        }
         long id = task.getId() == 0 ? nextId : task.getId();
         if (tasks.containsKey(id)) {
             throw new IllegalArgumentException("A task with ID " + id + " already exists.");
@@ -21,7 +24,9 @@ public class InMemoryTaskRepository implements TaskRepository {
 
         Task storedTask = copyWithId(task, id);
         tasks.put(id, storedTask);
-        if (id >= nextId) {
+        if (id == Long.MAX_VALUE) {
+            nextId = 0;
+        } else if (nextId > 0 && id >= nextId) {
             nextId = id + 1;
         }
         return copy(storedTask);

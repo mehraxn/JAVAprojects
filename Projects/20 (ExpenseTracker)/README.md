@@ -22,6 +22,13 @@ A console-based Java application for recording expenses, reviewing spending, and
 - Checked and unchecked exceptions
 - Defensive, unmodifiable collection views
 
+## Backend concepts practiced
+
+- Separating business logic from persistence through `ExpenseService` and `ExpenseStore`
+- Validating data at model, service, and file boundaries
+- UTF-8 CSV serialization, parsing, and error reporting
+- Returning stable read-only query results
+
 ## Main classes
 
 - `Expense` — validated expense model.
@@ -61,6 +68,17 @@ id,title,amount,category,date
 E-001,Groceries,42.75,Food,2026-07-02
 E-002,"Lunch, coffee",18.50,Food,2026-07-03
 ```
+
+## Storage approach
+
+Expenses are held in a `LinkedHashMap` while the program runs. `CsvExpenseStore` optionally saves and restores them using the fixed header `id,title,amount,category,date`. Missing and empty files load as an empty collection; malformed nonempty files are rejected.
+
+## Limitations
+
+- No interactive editing workflow or automatic save operation
+- Data is process-local unless CSV persistence is called explicitly
+- The educational CSV parser does not support multiline fields
+- Currency codes, locale formatting, and recurring expenses are not modeled
 
 ## Possible future improvements
 

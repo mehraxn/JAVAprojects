@@ -59,3 +59,13 @@ Use a temporary CSV path for file tests so existing application records are not 
 - [ ] Test missing, empty, header-only, and malformed files.
 - [ ] Confirm a failed load preserves existing in-memory records.
 - [ ] Confirm adding after a load uses an ID above the largest loaded ID.
+
+## Phase 2 validation review additions
+
+| Test | Action | Expected result |
+|---|---|---|
+| Future application date | Add or load a date after today | Rejected as invalid application data |
+| Directory CSV path | Load or save using an existing directory | `IOException` identifies a non-regular file |
+| Mutate returned application | Change status/notes on an object returned by add/list/search/filter | Stored application remains unchanged |
+| Maximum loaded ID | Load `Long.MAX_VALUE`, then add another application | Load succeeds, but add reports ID exhaustion without overflow |
+| Null status on unknown ID | Update an absent application using null status | Null status is rejected before the not-found result |

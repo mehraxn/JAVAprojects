@@ -118,13 +118,13 @@ public class ShopService {
     }
 
     public synchronized boolean updateOrderStatus(String orderId, Order.Status status) {
+        if (status == null) {
+            throw new IllegalArgumentException("Order status cannot be null.");
+        }
         String id = requireText(orderId, "Order ID");
         Order order = orders.get(id);
         if (order == null) {
             return false;
-        }
-        if (status == null) {
-            throw new IllegalArgumentException("Order status cannot be null.");
         }
         if (status == Order.Status.CANCELLED && order.getStatus() == Order.Status.CREATED) {
             for (Map.Entry<String, Integer> item : order.getItems().entrySet()) {

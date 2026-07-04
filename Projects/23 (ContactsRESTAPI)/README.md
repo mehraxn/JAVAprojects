@@ -23,6 +23,10 @@ A beginner/intermediate contact manager with in-memory storage and an optional R
 - `ContactHttpServer` — request routing and HTTP response handling.
 - `Main` — console demonstration or explicit server launcher.
 
+## How the program works
+
+`ContactService` generates IDs and coordinates CRUD, search, and pagination. `InMemoryContactRepository` owns stored copies. In server mode, `ContactHttpServer` parses URL-encoded fields, calls the service, and serializes responses through `JsonUtil`.
+
 ## In-memory storage
 
 Contacts are keyed by ID in a `LinkedHashMap`, preserving creation order. The repository copies contacts when saving and reading so callers cannot mutate stored records directly. Repository methods are synchronized for HTTP use. Data exists only while the process runs; restarting the application starts with an empty contact list.
@@ -61,7 +65,7 @@ curl -i -X PUT -d "name=Ada+Lovelace&email=ada%40example.com&phone=%2B49+456&not
 curl -i -X DELETE http://localhost:8081/contacts/C-1
 ```
 
-## Compile and run
+## Example usage
 
 ```text
 javac -d out src/contactsrestapi/*.java
@@ -78,6 +82,24 @@ The normal command runs a short service demonstration and does not start a serve
 - Synchronization for shared in-memory data
 - Built-in HTTP routing, headers, methods, and status codes
 - URL decoding and manual JSON generation
+
+## Backend concepts practiced
+
+- CRUD service and repository separation
+- REST-style resource routes and HTTP status handling
+- Search and bounded offset/limit pagination
+- Request-size limits, validation errors, and manually serialized responses
+
+## Storage approach
+
+Contacts are stored only in a synchronized in-memory `LinkedHashMap`. Defensive copies protect repository state, but all contacts are intentionally lost when the process stops.
+
+## Limitations
+
+- No persistent storage or concurrent multi-process coordination
+- Request bodies use URL-encoded fields rather than a general JSON parser
+- Email and phone validation is intentionally basic
+- No authentication, authorization, TLS configuration, or rate limiting
 
 ## Possible future improvements
 

@@ -16,6 +16,9 @@ public class CsvReader {
         if (!Files.exists(path)) {
             throw new IOException("CSV file does not exist: " + path);
         }
+        if (!Files.isRegularFile(path)) {
+            throw new IOException("CSV path is not a regular file: " + path);
+        }
         if (Files.size(path) == 0) {
             return new DataSet(Collections.<String>emptyList());
         }

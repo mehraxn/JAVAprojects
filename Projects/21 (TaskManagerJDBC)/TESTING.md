@@ -14,7 +14,7 @@ The in-memory tests require only Java. Database tests are optional and require a
 | Missing delete | Delete an unknown positive ID | Returns `false` |
 | Empty repository | List and filter before adding | Empty lists are returned |
 
-## Validation and edge-case tests
+## Edge-case and invalid input test cases
 
 | Test | Input | Expected result |
 |---|---|---|
@@ -42,6 +42,10 @@ The in-memory tests require only Java. Database tests are optional and require a
 | Invalid database status | Read an unknown status string | `SQLException` reports invalid stored data |
 | Unavailable driver | Open a JDBC URL without its driver | `SQLException`; in-memory functionality remains usable |
 
+## Conceptual JDBC tests without a driver
+
+When no JDBC driver and database are installed, the JDBC table tests above are conceptual static-review cases. Verify that SQL uses `PreparedStatement`, resources use try-with-resources, generated keys are checked, and `SQLException` is propagated with useful context. Do not mark insert/query/update/delete database cases as executed. The in-memory cases remain independently runnable with only a JDK.
+
 ## Manual testing checklist
 
 - [ ] Compile all files in `src/taskmanagerjdbc`.
@@ -52,3 +56,12 @@ The in-memory tests require only Java. Database tests are optional and require a
 - [ ] Before JDBC tests, supply a compatible driver and create the documented table.
 - [ ] Confirm the selected database supports generated keys for the insert statement.
 - [ ] Remove the driver/database configuration after testing if it should not be committed.
+
+## Phase 2 validation review additions
+
+| Test | Action | Expected result |
+|---|---|---|
+| Missing JDBC driver | Open a URL whose driver is absent | `SQLException` names driver/URL/database configuration without exposing credentials |
+| Database unavailable | Use a valid driver with an unreachable database | Clear wrapped `SQLException`; in-memory repository remains usable |
+| Invalid generated key | Simulate a null, zero, or negative generated ID | JDBC repository rejects it with `SQLException` |
+| ID exhaustion | Store explicit `Long.MAX_VALUE`, then request an automatic ID | `IllegalStateException`; no negative ID is generated |

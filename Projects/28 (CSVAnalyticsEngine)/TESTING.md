@@ -54,3 +54,15 @@ Use temporary input files for these manual tests. The examples assume the progra
 - [ ] Test empty, header-only, inconsistent, and malformed files.
 - [ ] Confirm unknown columns fail clearly.
 - [ ] Write and reread a temporary data set to verify CSV escaping.
+
+## Phase 2 validation review additions
+
+| Test | Action | Expected result |
+|---|---|---|
+| Directory CSV path | Read or write an existing directory | `IOException` identifies a non-regular file |
+| Mutate original row | Add row, then add another field to the original object | Stored data-set row remains unchanged |
+| Mutate returned row | Change a row returned by `getRows()` | Stored data set remains unchanged |
+| Negative statistics count | Construct statistics with any negative count | Rejected |
+| Inconsistent empty statistics | Valid count zero with min/max/average values | Rejected |
+| Inconsistent populated statistics | Positive valid count with missing min/max/average | Rejected |
+| Impossible average | Average below minimum or above maximum | Rejected |

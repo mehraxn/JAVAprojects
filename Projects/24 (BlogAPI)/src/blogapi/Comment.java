@@ -17,7 +17,11 @@ public class Comment {
             throw new IllegalArgumentException("Comment author cannot be null.");
         }
         this.author = author.copy();
-        this.body = requireText(body, "Comment body");
+        String validBody = requireText(body, "Comment body");
+        if (validBody.length() > 5_000) {
+            throw new IllegalArgumentException("Comment body cannot exceed 5000 characters.");
+        }
+        this.body = validBody;
         if (createdAt == null) {
             throw new IllegalArgumentException("Comment creation time cannot be null.");
         }

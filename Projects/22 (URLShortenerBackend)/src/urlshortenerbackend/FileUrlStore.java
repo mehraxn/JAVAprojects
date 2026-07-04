@@ -17,7 +17,13 @@ public class FileUrlStore {
 
     public Map<String, UrlEntry> load(Path path) throws IOException {
         requirePath(path);
-        if (!Files.exists(path) || Files.size(path) == 0) {
+        if (!Files.exists(path)) {
+            return Collections.emptyMap();
+        }
+        if (!Files.isRegularFile(path)) {
+            throw new IOException("URL storage path is not a regular file: " + path);
+        }
+        if (Files.size(path) == 0) {
             return Collections.emptyMap();
         }
         List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
@@ -61,6 +67,9 @@ public class FileUrlStore {
         requirePath(path);
         if (entries == null) {
             throw new IllegalArgumentException("Entry map cannot be null.");
+        }
+        if (Files.exists(path) && !Files.isRegularFile(path)) {
+            throw new IOException("URL storage path is not a regular file: " + path);
         }
         List<String> lines = new ArrayList<String>();
         lines.add(HEADER);

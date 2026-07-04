@@ -49,3 +49,10 @@ These are manual tests for the current console and public class APIs. Use a temp
 - [ ] Test missing, empty, header-only, and malformed files.
 - [ ] Confirm returned lists cannot be modified.
 - [ ] Confirm invalid values fail with clear messages.
+
+## Phase 2 validation review additions
+
+| Test | Action | Expected result |
+|---|---|---|
+| Directory used as input | Load an existing directory path | `IOException` says the path is not a regular file |
+| Directory used as output | Save to an existing directory path | `IOException`; no expense data is changed |

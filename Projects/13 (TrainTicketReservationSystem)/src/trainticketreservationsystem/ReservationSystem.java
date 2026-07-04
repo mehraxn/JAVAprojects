@@ -19,6 +19,12 @@ public class ReservationSystem {
         if (routes.containsKey(route.getId())) {
             throw new IllegalArgumentException("Route ID already exists: " + route.getId());
         }
+        for (Route existingRoute : routes.values()) {
+            if (existingRoute.matches(route.getOrigin(), route.getDestination())) {
+                throw new IllegalArgumentException("Route already exists from "
+                        + route.getOrigin() + " to " + route.getDestination());
+            }
+        }
         routes.put(route.getId(), route);
     }
 
@@ -35,7 +41,11 @@ public class ReservationSystem {
         if (train == null) {
             throw new IllegalArgumentException("Train must not be null");
         }
-        getRoute(train.getRoute().getId());
+        Route registeredRoute = getRoute(train.getRoute().getId());
+        if (registeredRoute != train.getRoute()) {
+            throw new IllegalArgumentException(
+                    "Train must reference the registered Route instance");
+        }
         if (trains.containsKey(train.getId())) {
             throw new IllegalArgumentException("Train ID already exists: " + train.getId());
         }
@@ -55,9 +65,14 @@ public class ReservationSystem {
     }
 
     public List<Train> searchByRoute(String origin, String destination) {
+        String validOrigin = requireText(origin, "Origin");
+        String validDestination = requireText(destination, "Destination");
+        if (validOrigin.equalsIgnoreCase(validDestination)) {
+            throw new IllegalArgumentException("Origin and destination must be different");
+        }
         List<Train> matchingTrains = new ArrayList<>();
         for (Train train : trains.values()) {
-            if (train.getRoute().matches(origin, destination)) {
+            if (train.getRoute().matches(validOrigin, validDestination)) {
                 matchingTrains.add(train);
             }
         }
@@ -65,12 +80,13 @@ public class ReservationSystem {
     }
 
     public Reservation reserveSeat(String trainId, String passengerName) {
+        String validPassengerName = requireText(passengerName, "Passenger name");
         Train train = getTrain(trainId);
         Seat seat = train.findAvailableSeat();
         if (seat == null) {
             throw new IllegalStateException("No seats are available on train " + train.getId());
         }
-        return reserveSeat(trainId, seat.getNumber(), passengerName);
+        return reserveSeat(trainId, seat.getNumber(), validPassengerName);
     }
 
     public Reservation reserveSeat(String trainId, int seatNumber, String passengerName) {

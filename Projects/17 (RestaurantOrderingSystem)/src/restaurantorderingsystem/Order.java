@@ -74,6 +74,10 @@ public class Order {
         if (newStatus == null) {
             throw new IllegalArgumentException("Order status must not be null");
         }
+        if (status == OrderStatus.CREATED && newStatus == OrderStatus.PREPARING
+                && items.isEmpty()) {
+            throw new IllegalStateException("Cannot prepare an empty order");
+        }
         if (!isValidTransition(status, newStatus)) {
             throw new IllegalStateException("Invalid order status transition: "
                     + status + " -> " + newStatus);

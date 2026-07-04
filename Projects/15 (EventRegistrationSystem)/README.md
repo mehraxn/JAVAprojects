@@ -1,35 +1,53 @@
 # Event Registration System
 
-An in-memory Java application for events, participants, capacity, and searching.
+## Description
 
-## Implemented features
+Event Registration System is an in-memory Java project for dated events, participant registration, capacity enforcement, cancellation, and searching.
 
-- Add events with unique IDs, dates, categories, and positive capacities.
-- Register participants and generate event-specific registration IDs.
-- Prevent duplicate participant registration for the same event.
-- Reject registrations when an event reaches capacity.
-- Cancel registrations and restore available capacity.
-- Show participants and registrations for each event.
-- Search events by partial name, exact date, or partial category.
-- Return events ordered by date and then name.
+## Features
 
-Full events reject additional registrations; this version does not create a waitlist.
+- Add events with IDs, names, dates, categories, and capacities.
+- Reject duplicate IDs and duplicate event definitions.
+- Register participants with generated registration IDs.
+- Prevent duplicate registration within one event.
+- Reject registrations when capacity is full.
+- Cancel registrations and restore capacity.
+- List event participants.
+- Search by partial name, exact date, or partial category.
 
-## Structure
+## Java concepts practiced
 
-- `Attendee` stores participant identity and basic email validation.
-- `Registration` records an attendee and registration time.
-- `Event` owns capacity and participant registrations.
-- `EventRegistrationSystem` manages events and search operations.
-- `Main` demonstrates registration, searching, and cancellation.
+- LocalDate and LocalDateTime
+- Map and List collections
+- Capacity and duplicate validation
+- Searching, sorting, and generated IDs
+- Object composition and unmodifiable query results
 
-Source files are under `src/eventregistrationsystem` and use only standard Java.
+## Main classes
 
-## Run
+- Attendee: stores participant identity and email.
+- Registration: stores attendee and registration time.
+- Event: owns capacity and registrations.
+- EventRegistrationSystem: manages events and searches.
+- Main: demonstrates registration, search, and cancellation.
 
-```powershell
+## How the program works
+
+Events are stored by ID. Event owns its participant registrations and checks duplicates and capacity before adding one. Full events reject additional participants; this version intentionally has no waitlist.
+
+## Example usage
+
+~~~powershell
 javac -d out src\eventregistrationsystem\*.java
 java -cp out eventregistrationsystem.Main
-```
+~~~
 
-See `TESTING.md` for manual test cases.
+The demo fills a two-person workshop, searches by category, then cancels one registration.
+
+## Possible future improvements
+
+- Add a waitlist.
+- Add event times and locations.
+- Add participant check-in.
+- Add cancellation deadlines.
+- Save events and registrations to files.

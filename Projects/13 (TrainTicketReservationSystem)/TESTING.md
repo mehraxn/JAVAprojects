@@ -1,21 +1,49 @@
 # Testing Train Ticket Reservation System
 
-The project has no external test dependencies. Compile and run `Main`, or call the classes from a small Java driver.
+## Testing approach
 
-## Manual test cases
+Build routes and trains with small known seat sets. Inspect seat availability and reservation lists after each operation.
 
-1. Add a route and a train with several unique seats; verify both system lists.
-2. Reserve a specific seat and verify it is removed from the available-seat list.
-3. Reserve without specifying a seat and verify the first available seat is chosen.
-4. Try reserving an already reserved seat; expect `IllegalStateException`.
-5. Include one seat only once and verify one active reservation is created.
-6. Cancel a reservation and verify its exact seat becomes available again.
-7. Cancel an unknown reservation; expect `IllegalArgumentException`.
-8. Fill every seat and request another automatic reservation; expect `IllegalStateException`.
-9. Search using different letter case for origin and destination; verify matching trains are returned.
-10. Search the reverse route or a different destination; verify no match.
-11. Add duplicate route, train, or seat IDs/numbers; expect `IllegalArgumentException`.
-12. Add a train for an unregistered route or a train with no seats; expect `IllegalArgumentException`.
-13. Try a blank passenger name, unknown train, unknown seat, or non-positive seat number; expect `IllegalArgumentException`.
-14. Create a route with the same origin and destination; expect `IllegalArgumentException`.
-15. Try modifying returned route, train, seat, or reservation lists; expect `UnsupportedOperationException`.
+## Normal test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Add route | Register a unique station pair | Route appears in listRoutes |
+| Add train | Add train with registered route and seats | Train appears in listTrains |
+| Specific seat | Reserve an available number | Seat becomes reserved |
+| Automatic seat | Reserve without a number | First available seat is selected |
+| Search route | Search matching stations | Matching trains are returned |
+| Cancel | Cancel an active reservation | Exact seat becomes available |
+
+## Edge-case test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Full train | Reserve after every seat is used | IllegalStateException |
+| Search case | Change station letter case | Same trains are returned |
+| Reverse route | Search destination-to-origin | No match |
+| Empty system | List routes and trains | Empty unmodifiable lists |
+| Passenger validation | Use blank passenger on full train | Passenger error occurs before capacity error |
+| Duplicate route pair | Use another ID for same station pair | IllegalArgumentException |
+
+## Invalid input test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Double reservation | Reserve an occupied seat | IllegalStateException |
+| Invalid seat | Use non-positive or unknown number | IllegalArgumentException |
+| Invalid stations | Use blank or identical stations | IllegalArgumentException |
+| Duplicate IDs | Reuse route, train, or seat identity | IllegalArgumentException |
+| Unregistered route | Add train with unknown/different Route object | IllegalArgumentException |
+| Empty train | Add train without seats | IllegalArgumentException |
+| Unknown cancellation | Cancel missing reservation | IllegalArgumentException |
+
+## Manual testing checklist
+
+- [ ] Compile and run Main.
+- [ ] Test specific and automatic seat selection.
+- [ ] Fill a train and verify capacity handling.
+- [ ] Verify search is case-insensitive but direction-sensitive.
+- [ ] Verify failed reservations leave seats available.
+- [ ] Verify cancellation releases the recorded seat.
+- [ ] Verify returned lists cannot be modified.

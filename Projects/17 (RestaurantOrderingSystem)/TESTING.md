@@ -20,3 +20,10 @@ The project has no external test dependencies. Compile and run `Main`, or call t
 14. Try an invalid status transition or editing a non-created order; expect `IllegalStateException`.
 15. Use an unknown menu item or order ID; expect `IllegalArgumentException`.
 16. Try modifying returned menu, order, or item lists; expect `UnsupportedOperationException`.
+
+## Validation review additions
+
+- Add different menu item IDs with the same case-insensitive name; expect `IllegalArgumentException`.
+- Move an empty order to `PREPARING`; expect `IllegalStateException`.
+- Verify rejected empty-order or status transitions preserve the original order status.
+- Verify zero-priced menu items are allowed, while negative or null prices remain rejected.

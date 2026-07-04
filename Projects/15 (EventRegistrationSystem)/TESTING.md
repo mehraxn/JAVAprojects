@@ -1,21 +1,49 @@
 # Testing Event Registration System
 
-The project has no external test dependencies. Compile and run `Main`, or call the classes from a small Java driver.
+## Testing approach
 
-## Manual test cases
+Create events with small capacities so capacity and cancellation behavior can be checked directly.
 
-1. Add multiple events with different names, dates, categories, and capacities.
-2. Register participants until capacity is reached and verify available places decrease.
-3. Try registering another participant when full; expect `IllegalStateException` and no overbooking.
-4. Register the same attendee twice for one event; expect `IllegalArgumentException`.
-5. Register the same attendee for two different events; verify both registrations succeed.
-6. Cancel a registration and verify capacity becomes available again.
-7. Cancel an unknown attendee registration; expect `IllegalArgumentException`.
-8. Verify participant and registration lists contain the expected records.
-9. Search by partial event name with different letter case.
-10. Search by exact event date and verify all events on that date are returned.
-11. Search by partial category with different letter case.
-12. Verify search results are ordered by date and then name.
-13. Add a duplicate event ID, zero capacity, or negative capacity; expect `IllegalArgumentException`.
-14. Use blank attendee fields, invalid email, null date, or unknown event ID; expect `IllegalArgumentException`.
-15. Try modifying returned event, participant, or registration lists; expect `UnsupportedOperationException`.
+## Normal test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Create event | Add valid unique event | Event appears in listEvents |
+| Register | Add participant below capacity | Registration and participant are stored |
+| Fill event | Register exactly capacity participants | Available places become zero |
+| Cancel | Cancel registered attendee | Participant is removed and place is restored |
+| Search name | Use partial name | Matching events are returned |
+| Search date/category | Use exact date or partial category | Correct sorted results are returned |
+
+## Edge-case test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Empty system | Run all valid searches | Empty unmodifiable lists |
+| Shared attendee | Register same ID in different events | Both registrations succeed |
+| Duplicate names | Register distinct IDs with same name | Both participants are accepted |
+| Capacity boundary | Add exactly the final place | Registration succeeds |
+| Full event | Add one participant beyond capacity | State remains unchanged |
+| Search case | Change name/category letter case | Same events are returned |
+
+## Invalid input test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Invalid capacity | Use zero or negative capacity | IllegalArgumentException |
+| Duplicate event | Reuse ID or name/date/category definition | IllegalArgumentException |
+| Duplicate participant | Register same attendee twice in one event | IllegalArgumentException |
+| Invalid attendee | Use blank fields or email without @ | IllegalArgumentException |
+| Null date | Create/search with null date | IllegalArgumentException |
+| Unknown event/cancellation | Use missing IDs | IllegalArgumentException |
+| Full registration | Register beyond capacity | IllegalStateException |
+
+## Manual testing checklist
+
+- [ ] Compile and run Main.
+- [ ] Fill an event exactly to capacity.
+- [ ] Verify the next registration is rejected.
+- [ ] Verify cancellation restores one place.
+- [ ] Test all three search modes.
+- [ ] Verify search order is date then name.
+- [ ] Verify returned lists cannot be modified.

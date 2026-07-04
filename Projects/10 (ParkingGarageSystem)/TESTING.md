@@ -1,19 +1,48 @@
 # Testing Parking Garage System
 
-The project has no external test dependencies. Use explicit times with `parkVehicle(vehicle, arrival)` and `exitVehicle(plate, departure)` for repeatable checks.
+## Testing approach
 
-## Manual test cases
+Use explicit arrival and departure times for repeatable fee tests. Inspect both Garage counts and ParkingSpot state.
 
-1. Add a level with motorcycle, car, and truck spots; verify total and per-type availability.
-2. Park each supported vehicle type and verify it receives a matching spot.
-3. Verify available counts decrease on entry and increase on exit.
-4. Park for exactly one hour; expect a fee of `5.00`.
-5. Park for one hour and one second; expect a fee of `10.00`.
-6. Park for zero elapsed time; expect the one-hour minimum fee of `5.00`.
-7. Try departing before arrival; expect `IllegalArgumentException` and verify the vehicle remains parked.
-8. Fill every car spot and try parking another car; expect `IllegalStateException`.
-9. Try parking the same license plate twice with different letter case; expect `IllegalStateException`.
-10. Try removing an unknown license plate; expect `IllegalArgumentException`.
-11. Assign a car directly to a motorcycle spot; expect `IllegalArgumentException`.
-12. Add duplicate level numbers or duplicate spot IDs on one level; expect `IllegalArgumentException`.
-13. Verify a returned `ParkingReceipt` contains the vehicle, spot ID, arrival, departure, and fee.
+## Normal test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Configure garage | Add levels and typed spots | Counts match configured spots |
+| Park vehicle | Park a compatible type | Matching spot becomes occupied |
+| Exit vehicle | Exit a parked plate | Spot becomes available and receipt is returned |
+| Count availability | Park and remove vehicles | Counts decrease and increase correctly |
+| One-hour fee | Stay exactly one hour | Fee is 5.00 |
+| Partial-hour fee | Stay 90 minutes | Fee is 10.00 |
+
+## Edge-case test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Zero duration | Exit at arrival time | Minimum fee is 5.00 |
+| Full type | Fill every car spot | Further car entry is rejected |
+| No levels | Park before configuration | IllegalStateException |
+| Plate case | Reuse plate with different letter case | Duplicate entry is rejected |
+| Global spot ID | Reuse spot ID on another level | IllegalArgumentException |
+| Invalid exit | Use departure before arrival | Vehicle remains parked |
+
+## Invalid input test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Invalid level/spot | Use negative level or blank spot ID | IllegalArgumentException |
+| Wrong vehicle type | Assign car to motorcycle spot | IllegalArgumentException |
+| Unknown exit | Remove a plate not parked | IllegalArgumentException |
+| Null values | Use null vehicle, type, or time | IllegalArgumentException |
+| Invalid receipt | Use blank spot, negative fee, or reversed dates | IllegalArgumentException |
+| Duplicate configuration | Reuse level number or spot ID | IllegalArgumentException |
+
+## Manual testing checklist
+
+- [ ] Compile and run Main.
+- [ ] Test every vehicle type.
+- [ ] Verify availability before entry, after entry, and after exit.
+- [ ] Test fee boundaries at 0, 1 hour, and 1 hour plus 1 second.
+- [ ] Verify invalid exit times preserve active parking.
+- [ ] Verify duplicate plates and spot IDs are rejected.
+- [ ] Verify receipt fields match the completed stay.

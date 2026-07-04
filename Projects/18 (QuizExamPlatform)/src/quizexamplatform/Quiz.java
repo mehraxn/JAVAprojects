@@ -22,6 +22,12 @@ public class Quiz {
         if (question == null) {
             throw new IllegalArgumentException("Question must not be null");
         }
+        for (Question existingQuestion : questions) {
+            if (existingQuestion.getPrompt().equalsIgnoreCase(question.getPrompt())) {
+                throw new IllegalArgumentException(
+                        "Question prompt already exists: " + question.getPrompt());
+            }
+        }
         questions.add(question);
     }
 

@@ -18,6 +18,12 @@ public class Restaurant {
         if (menu.containsKey(item.getId())) {
             throw new IllegalArgumentException("Menu item ID already exists: " + item.getId());
         }
+        for (MenuItem existingItem : menu.values()) {
+            if (existingItem.getName().equalsIgnoreCase(item.getName())) {
+                throw new IllegalArgumentException(
+                        "Menu item name already exists: " + item.getName());
+            }
+        }
         menu.put(item.getId(), item);
     }
 

@@ -20,3 +20,10 @@ The project has no external test dependencies. Compile and run `Main`, or call t
 14. Record several scoreboard results and verify descending score order.
 15. Record an invalid scoreboard percentage or blank participant; expect `IllegalArgumentException`.
 16. Try modifying returned option, question, result, or summary lists; expect `UnsupportedOperationException`.
+
+## Validation review additions
+
+- Add duplicate question prompts with different letter case; expect `IllegalArgumentException`.
+- Verify duplicate option text is rejected case-insensitively.
+- Submit an empty, short, long, null-containing, or out-of-range answer list; expect `IllegalArgumentException`.
+- Verify failed or incomplete finishing leaves the attempt open for corrected answers.

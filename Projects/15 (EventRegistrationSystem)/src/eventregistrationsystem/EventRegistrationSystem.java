@@ -19,6 +19,14 @@ public class EventRegistrationSystem {
         if (events.containsKey(event.getId())) {
             throw new IllegalArgumentException("Event ID already exists: " + event.getId());
         }
+        for (Event existingEvent : events.values()) {
+            if (existingEvent.getName().equalsIgnoreCase(event.getName())
+                    && existingEvent.getDate().equals(event.getDate())
+                    && existingEvent.getCategory().equalsIgnoreCase(event.getCategory())) {
+                throw new IllegalArgumentException(
+                        "An event with the same name, date, and category already exists");
+            }
+        }
         events.put(event.getId(), event);
     }
 

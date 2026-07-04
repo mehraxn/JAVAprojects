@@ -1,18 +1,48 @@
 # Testing Movie Ticket Booking System
 
-The project has no external test dependencies. Compile and run `Main`, or call the classes from a small Java driver.
+## Testing approach
 
-## Manual test cases
+Build small showtimes with known seat maps. Check both returned bookings and individual Seat state after every operation.
 
-1. Add a movie and a showtime with several seats; verify both appear in their system lists.
-2. Book one seat and verify it disappears from the available-seat list.
-3. Book several distinct seats together and verify the total equals `12.00` per seat.
-4. Try booking an already booked seat; expect `IllegalStateException` and no other seat changes.
-5. Include the same seat label twice in one request; expect `IllegalArgumentException`.
-6. Include one valid and one unknown seat; expect `IllegalArgumentException` and verify the valid seat remains available.
-7. Cancel a booking and verify all its seats become available again.
-8. Cancel an unknown booking; expect `IllegalArgumentException`.
-9. Add duplicate movie, showtime, or seat IDs/labels; expect `IllegalArgumentException`.
-10. Add a showtime for an unregistered movie or with no seats; expect `IllegalArgumentException`.
-11. Try invalid movie duration or non-positive seat coordinates; expect `IllegalArgumentException`.
-12. Verify the seat-label list returned by a booking cannot be modified.
+## Normal test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Add movie | Register a unique Movie | Movie appears in listMovies |
+| Add showtime | Add registered movie with seats | Showtime appears in listShowtimes |
+| Single booking | Book one available label | Seat becomes booked |
+| Group booking | Book several distinct labels | One Booking contains every label |
+| Price | Book three seats | Total is 36.00 |
+| Cancel | Cancel an existing booking | Every booked seat becomes available |
+
+## Edge-case test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Empty selection | Submit an empty label list | IllegalArgumentException |
+| Duplicate request | Repeat a label in one request | IllegalArgumentException and no seats change |
+| Mixed request | Include valid and unknown labels | Request fails and valid seats remain available |
+| Empty showtime | Add a showtime without seats | IllegalArgumentException |
+| Registered identity | Use another Movie object with the same ID | IllegalArgumentException |
+| Read-only booking | Modify returned seat-label list | UnsupportedOperationException |
+
+## Invalid input test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Double booking | Book an occupied seat | IllegalStateException |
+| Invalid seat | Use zero/negative coordinates or unknown label | IllegalArgumentException |
+| Invalid movie | Use blank values or non-positive duration | IllegalArgumentException |
+| Duplicate IDs | Reuse movie, showtime, or seat identity | IllegalArgumentException |
+| Invalid Booking | Construct with blank/duplicate labels or invalid price | IllegalArgumentException |
+| Unknown cancellation | Cancel a missing booking ID | IllegalArgumentException |
+
+## Manual testing checklist
+
+- [ ] Compile and run Main.
+- [ ] Verify available-seat count before and after booking.
+- [ ] Verify multi-seat booking is all-or-nothing.
+- [ ] Verify duplicate labels are rejected case-insensitively.
+- [ ] Verify cancellation releases every stored seat.
+- [ ] Verify price equals seat count multiplied by 12.00.
+- [ ] Verify returned booking data cannot be modified.

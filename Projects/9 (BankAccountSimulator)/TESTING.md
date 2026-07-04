@@ -1,17 +1,47 @@
 # Testing Bank Account Simulator
 
-The project has no external test dependencies. Compile and run `Main`, or call the classes from a small Java driver.
+## Testing approach
 
-## Manual test cases
+Use exact BigDecimal strings in a small test driver and inspect balances and transaction history after each operation.
 
-1. Create two accounts with unique numbers and verify both start at zero.
-2. Deposit `100.00`; verify the balance and a `DEPOSIT` transaction.
-3. Withdraw `40.00`; verify the balance is `60.00` and a `WITHDRAWAL` transaction exists.
-4. Transfer `25.00` between accounts; verify both balances and matching transfer-out/transfer-in entries.
-5. Try a withdrawal larger than the balance; expect `IllegalStateException` and no balance change.
-6. Try a transfer larger than the source balance; expect `IllegalStateException` and no account changes.
-7. Try deposits, withdrawals, and transfers with zero, negative, or null amounts; expect `IllegalArgumentException`.
-8. Try transferring an account to itself; expect `IllegalArgumentException`.
-9. Try an unknown source or destination account; expect `IllegalArgumentException`.
-10. Create a duplicate account number; expect `IllegalArgumentException`.
-11. Try modifying the list returned by `getTransactionHistory()`; expect `UnsupportedOperationException`.
+## Normal test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Create account | Create two unique account numbers | Both start at zero |
+| Deposit | Deposit 100.00 | Balance is 100.00 and history has DEPOSIT |
+| Withdraw | Withdraw 40.00 | Balance is 60.00 and history has WITHDRAWAL |
+| Transfer | Transfer 25.00 between accounts | Both balances update correctly |
+| Transfer history | Inspect both accounts | TRANSFER_OUT and TRANSFER_IN are recorded |
+| List accounts | Request account list | Accounts appear in creation order |
+
+## Edge-case test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Exact balance | Withdraw the complete balance | Balance becomes zero |
+| Fractional amount | Deposit a positive decimal amount | Exact BigDecimal value is preserved |
+| Shared owner | Create two accounts for one owner | Both are accepted |
+| Failed operation | Trigger an overdraft or invalid transfer | No balance or history changes |
+| Empty history | Inspect a new account | Empty unmodifiable list |
+
+## Invalid input test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Invalid money | Use zero, negative, or null amount | IllegalArgumentException |
+| Overdraft | Withdraw more than the balance | IllegalStateException |
+| Underfunded transfer | Transfer more than source balance | IllegalStateException |
+| Self-transfer | Use the same source and destination | IllegalArgumentException |
+| Unknown account | Use a missing account number | IllegalArgumentException |
+| Duplicate/blank account | Reuse or omit account number | IllegalArgumentException |
+
+## Manual testing checklist
+
+- [ ] Use BigDecimal values created from strings.
+- [ ] Verify each successful operation adds one expected history entry.
+- [ ] Verify a transfer adds one entry to each account.
+- [ ] Verify failed operations preserve balances and histories.
+- [ ] Test exact-balance withdrawal.
+- [ ] Test duplicate and blank account data.
+- [ ] Verify returned histories cannot be modified.

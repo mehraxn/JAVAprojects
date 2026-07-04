@@ -76,6 +76,10 @@ public class TriageQueue {
         if (patient.getStatus() == newStatus) {
             return;
         }
+        if (!isValidStatusTransition(patient.getStatus(), newStatus)) {
+            throw new IllegalStateException("Invalid patient status transition: "
+                    + patient.getStatus() + " -> " + newStatus);
+        }
 
         waitingPatients.remove(patient);
         patient.setStatus(newStatus);
@@ -118,6 +122,19 @@ public class TriageQueue {
             totalMinutes += waitMinutes;
         }
         return (double) totalMinutes / waitingPatients.size();
+    }
+
+    private static boolean isValidStatusTransition(PatientStatus current, PatientStatus next) {
+        switch (current) {
+            case WAITING:
+                return next == PatientStatus.IN_TREATMENT || next == PatientStatus.DISCHARGED;
+            case IN_TREATMENT:
+                return next == PatientStatus.WAITING || next == PatientStatus.DISCHARGED;
+            case DISCHARGED:
+                return false;
+            default:
+                return false;
+        }
     }
 
     private static String requireText(String value, String fieldName) {

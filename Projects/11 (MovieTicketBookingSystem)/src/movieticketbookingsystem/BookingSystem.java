@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,7 +41,11 @@ public class BookingSystem {
         if (showtime == null) {
             throw new IllegalArgumentException("Showtime must not be null");
         }
-        getMovie(showtime.getMovie().getId());
+        Movie registeredMovie = getMovie(showtime.getMovie().getId());
+        if (registeredMovie != showtime.getMovie()) {
+            throw new IllegalArgumentException(
+                    "Showtime must reference the registered Movie instance");
+        }
         if (showtimes.containsKey(showtime.getId())) {
             throw new IllegalArgumentException("Showtime ID already exists: " + showtime.getId());
         }
@@ -69,7 +74,7 @@ public class BookingSystem {
         List<Seat> selectedSeats = new ArrayList<>();
         for (String label : seatLabels) {
             String validLabel = requireText(label, "Seat label");
-            String normalizedLabel = validLabel.toUpperCase();
+            String normalizedLabel = validLabel.toUpperCase(Locale.ROOT);
             if (!uniqueLabels.add(normalizedLabel)) {
                 throw new IllegalArgumentException("Duplicate seat in booking: " + validLabel);
             }

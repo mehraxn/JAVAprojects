@@ -1,34 +1,54 @@
 # Movie Ticket Booking System
 
-An in-memory Java application for movies, showtimes, seats, and bookings.
+## Description
 
-## Implemented features
+Movie Ticket Booking System is an in-memory Java project for configuring movies and showtimes, reserving seats, and cancelling bookings.
+
+## Features
 
 - Add movies with unique IDs.
-- Add showtimes for registered movies.
-- Configure uniquely labelled seats for each showtime.
-- Book one or more seats in a single validated operation.
-- Prevent duplicate labels within a request and double-booking across bookings.
+- Add showtimes for registered Movie objects.
+- Configure unique row-number seat labels.
+- Book one or several seats together.
+- Reject duplicate selections and already-booked seats.
 - Cancel bookings and release their seats.
-- Show all available seats for a showtime.
-- Calculate a simple total using a fixed `12.00` price per seat.
+- Show available seats.
+- Calculate a fixed 12.00 price per seat.
 
-## Structure
+## Java concepts practiced
 
-- `Movie` stores movie details.
-- `Seat` owns its booked/available state.
-- `Showtime` connects a movie, start time, and seat map.
-- `Booking` is an immutable booking summary.
-- `BookingSystem` manages movies, showtimes, and bookings.
-- `Main` demonstrates booking and cancellation.
+- Composition between movies, showtimes, seats, and bookings
+- Map, List, and Set collections
+- BigDecimal price calculation
+- Pre-validation before state changes
+- Defensive copies and unmodifiable lists
 
-Source files are under `src/movieticketbookingsystem` and use only standard Java.
+## Main classes
 
-## Run
+- Movie: stores title and duration.
+- Seat: owns booked or available state.
+- Showtime: connects a movie, start time, and seat map.
+- Booking: immutable booking details.
+- BookingSystem: manages movies, showtimes, booking, and cancellation.
+- Main: demonstrates the complete booking lifecycle.
 
-```powershell
+## How the program works
+
+Register a Movie, create a Showtime with seats, and add it to BookingSystem. A booking request validates every label and seat before reserving anything. Cancellation validates the stored booking and releases all of its seats.
+
+## Example usage
+
+~~~powershell
 javac -d out src\movieticketbookingsystem\*.java
 java -cp out movieticketbookingsystem.Main
-```
+~~~
 
-See `TESTING.md` for manual test cases.
+The demo books seats 1-1 and 1-2, prints availability, cancels the booking, and prints restored availability.
+
+## Possible future improvements
+
+- Add different ticket categories and prices.
+- Add customer details to bookings.
+- Add auditorium layouts and accessibility information.
+- Search showtimes by movie or date.
+- Save booking history to a file.

@@ -1,35 +1,52 @@
 # Product Inventory Manager
 
-An in-memory Java application for products, stock updates, searching, sorting, and reports.
+## Description
 
-## Implemented features
+Product Inventory Manager is an in-memory Java project for products, stock changes, searching, sorting, and inventory reports.
 
-- Add products with unique SKUs.
-- Change product names and non-negative prices.
-- Set an absolute stock quantity or apply a relative stock adjustment.
-- Prevent stock from becoming negative or overflowing an integer.
-- Remove products and retrieve products by SKU.
-- Search case-insensitively by SKU or name.
-- Sort by name, price, or quantity in ascending or descending order.
-- Report products at or below a configurable low-stock threshold.
-- Calculate total inventory value with `BigDecimal`.
+## Features
 
-The default low-stock threshold is `5` units.
+- Add products with unique SKU values.
+- Update names, prices, and stock quantities.
+- Apply relative stock adjustments.
+- Prevent negative stock and integer overflow.
+- Remove and search products.
+- Sort by name, price, or quantity.
+- Report products at or below a low-stock threshold.
+- Calculate total inventory value with BigDecimal.
 
-## Structure
+## Java concepts practiced
 
-- `Product` owns product details, stock validation, and stock value.
-- `ProductSortField` lists supported sorting choices.
-- `Inventory` manages products and inventory reports.
-- `Main` demonstrates stock updates, sorting, warnings, and total value.
+- Encapsulation and mutable domain objects
+- Map and List collections
+- Enums and Comparator-based sorting
+- BigDecimal arithmetic
+- Validation, overflow checks, and unmodifiable results
 
-Source files are under `src/productinventorymanager` and use only standard Java.
+## Main classes
 
-## Run
+- Product: owns product details, stock validation, and stock value.
+- ProductSortField: defines supported sorting choices.
+- Inventory: manages products, searching, sorting, and reports.
+- Main: demonstrates updates, sorting, warnings, and total value.
 
-```powershell
+## How the program works
+
+Inventory stores Product objects by SKU. Stock can be set directly or adjusted by a signed change. Queries create sorted, read-only result lists without changing the inventory's insertion order.
+
+## Example usage
+
+~~~powershell
 javac -d out src\productinventorymanager\*.java
 java -cp out productinventorymanager.Main
-```
+~~~
 
-See `TESTING.md` for manual test cases.
+The demo updates stock, prints products sorted by price, reports low stock, and calculates total value.
+
+## Possible future improvements
+
+- Add product categories.
+- Add stock movement history.
+- Add reorder quantities and supplier information.
+- Import and export inventory files.
+- Add richer reports for zero stock and high-value items.

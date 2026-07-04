@@ -1,33 +1,52 @@
 # Bank Account Simulator
 
-An in-memory Java application for accounts, balances, transfers, and transaction history.
+## Description
 
-## Implemented features
+Bank Account Simulator is an in-memory Java project for accounts, balances, transfers, and transaction history. BigDecimal is used for money to avoid floating-point rounding errors.
+
+## Features
 
 - Create accounts with unique account numbers.
-- Deposit and withdraw positive monetary amounts.
-- Reject overdrafts and zero or negative amounts.
-- Transfer money between different accounts.
-- Validate both accounts and source funds before a transfer changes balances.
+- Deposit and withdraw positive amounts.
+- Prevent overdrafts.
+- Transfer funds between different accounts.
+- Reject invalid, self, and underfunded transfers.
 - Record deposits, withdrawals, transfer-ins, and transfer-outs.
-- Return read-only transaction history and account lists.
+- Return read-only account and transaction lists.
 
-All monetary values use `BigDecimal`. The simulator does not provide overdrafts, interest, persistence, or concurrency support.
+## Java concepts practiced
 
-## Structure
+- Encapsulation of financial state
+- BigDecimal arithmetic and comparison
+- List and Map collections
+- Immutable transaction records
+- Validation and exception handling
+- Coordinating atomic-style operations between objects
 
-- `Account` owns its balance and transaction history.
-- `Transaction` represents an immutable history entry.
-- `Bank` creates accounts and coordinates transfers.
-- `Main` demonstrates deposits, withdrawal, transfer, balances, and history.
+## Main classes
 
-Source files are under `src/bankaccountsimulator` and use only standard Java.
+- Account: owns balance and transaction history.
+- Transaction: represents a dated financial operation.
+- Bank: creates accounts and coordinates transfers.
+- Main: demonstrates deposits, withdrawal, transfer, and history.
 
-## Run
+## How the program works
 
-```powershell
+Account performs validated credits and debits. Bank validates both accounts, the amount, and available funds before applying a transfer. Successful operations append Transaction records; failed operations leave balances and history unchanged.
+
+## Example usage
+
+~~~powershell
 javac -d out src\bankaccountsimulator\*.java
 java -cp out bankaccountsimulator.Main
-```
+~~~
 
-See `TESTING.md` for manual test cases.
+The demo prints final balances and each account's transaction history.
+
+## Possible future improvements
+
+- Add account closing rules.
+- Add transaction filtering by type or date.
+- Add statement export to a text file.
+- Add configurable transfer limits.
+- Add currency and rounding policies.

@@ -1,40 +1,54 @@
 # Parking Garage System
 
-An in-memory Java application that assigns vehicles to typed parking spots and calculates exit fees.
+## Description
 
-## Implemented features
+Parking Garage System is an in-memory Java project that assigns typed parking spots, tracks active vehicles, and calculates an exit fee.
 
-- Configure multiple parking levels and uniquely identified spots.
-- Support motorcycle, car, and truck spot types.
-- Park a vehicle in the first available compatible spot.
-- Prevent duplicate entry for the same normalized license plate.
-- Remove vehicles and return a receipt containing times, spot, and fee.
-- Track total and per-type available spots.
-- Reject unknown vehicles, incompatible spots, full-garage entry, and invalid times.
+## Features
 
-## Fee policy
+- Configure multiple parking levels.
+- Add globally unique parking spots.
+- Support motorcycle, car, and truck types.
+- Assign the first available compatible spot.
+- Prevent duplicate vehicle entry.
+- Track total and per-type availability.
+- Calculate 5.00 per started hour with a one-hour minimum.
+- Return a validated receipt when a vehicle exits.
 
-- Rate: `5.00` per started hour.
-- Minimum charge: one hour.
-- Partial hours round up.
-- A departure before arrival is invalid.
+## Java concepts practiced
 
-## Structure
+- Classes, enums, and composition
+- List and Map collections
+- Date/time calculations with Duration and LocalDateTime
+- BigDecimal monetary calculations
+- State validation and exception handling
 
-- `Vehicle` and `VehicleType` represent incoming vehicles.
-- `ParkingSpot` owns occupancy and compatibility state.
-- `ParkingLevel` groups spots and reports availability.
-- `Garage` assigns spots, tracks active parking, and calculates fees.
-- `ParkingReceipt` describes a completed parking stay.
-- `Main` runs a deterministic demonstration.
+## Main classes
 
-Source files are under `src/parkinggaragesystem` and use only standard Java.
+- Vehicle and VehicleType: describe an entering vehicle.
+- ParkingSpot: owns compatibility and occupancy.
+- ParkingLevel: groups spots and reports availability.
+- Garage: assigns spots, tracks entries, and calculates fees.
+- ParkingReceipt: describes a completed stay.
+- Main: demonstrates entry, availability, exit, and receipt output.
 
-## Run
+## How the program works
 
-```powershell
+Levels and spots are configured first. Garage searches levels for a compatible free spot and records the arrival time. On exit, it validates departure time, rounds duration up to started hours, releases the spot, and returns a ParkingReceipt.
+
+## Example usage
+
+~~~powershell
 javac -d out src\parkinggaragesystem\*.java
 java -cp out parkinggaragesystem.Main
-```
+~~~
 
-See `TESTING.md` for manual test cases.
+The demo parks a car for 90 minutes and reports a two-hour fee.
+
+## Possible future improvements
+
+- Add configurable rates per vehicle type.
+- Add lost-ticket handling.
+- Add reserved or accessible spots.
+- Add daily maximum charges.
+- Save completed parking records to a file.

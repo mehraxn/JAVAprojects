@@ -1,34 +1,52 @@
 # Hotel Room Booking System
 
-An in-memory Java application for room availability and date-range bookings.
+## Description
 
-## Implemented features
+Hotel Room Booking System is an in-memory Java project for room availability, date-range booking, cancellation, pricing, and occupancy.
 
-- Add rooms with unique numbers, types, and non-negative nightly rates.
-- Search available rooms for a valid check-in/check-out range.
-- Book rooms and generate simple booking IDs.
+## Features
+
+- Add rooms with unique numbers and nightly rates.
+- Search available rooms for a date range.
+- Book rooms using generated booking IDs.
 - Prevent overlapping bookings for the same room.
-- Allow adjacent stays where one booking starts on another booking's check-out date.
-- Cancel bookings and make rooms available again.
+- Allow adjacent stays on a checkout/check-in boundary.
+- Cancel bookings.
 - Calculate nights, total price, and occupancy percentage.
 
-Date ranges use check-in inclusive and check-out exclusive semantics.
+## Java concepts practiced
 
-## Structure
+- LocalDate and date-range logic
+- BigDecimal price calculations
+- Map and List collections
+- Object composition
+- Validation, overlap detection, and defensive lists
 
-- `Room` stores room details and price.
-- `Guest` stores basic guest identity.
-- `Booking` owns stay dates, overlap rules, and total-price calculation.
-- `Hotel` manages rooms, availability, bookings, cancellation, and occupancy.
-- `Main` demonstrates the complete booking lifecycle.
+## Main classes
 
-Source files are under `src/hotelroombookingsystem` and use only standard Java.
+- Room: stores room number, type, and nightly rate.
+- Guest: stores basic guest identity.
+- Booking: owns dates, overlap checks, and price calculation.
+- Hotel: manages rooms, availability, bookings, and occupancy.
+- Main: demonstrates booking and cancellation.
 
-## Run
+## How the program works
 
-```powershell
+Hotel stores Room objects by number and Booking objects by generated ID. Date ranges are check-in inclusive and check-out exclusive. A room is available only when none of its existing bookings overlaps the requested range.
+
+## Example usage
+
+~~~powershell
 javac -d out src\hotelroombookingsystem\*.java
 java -cp out hotelroombookingsystem.Main
-```
+~~~
 
-See `TESTING.md` for manual test cases.
+The demo books a double room for three nights, prints price and occupancy, then cancels the booking.
+
+## Possible future improvements
+
+- Add room amenities and capacity.
+- Add guest registration and booking history.
+- Add seasonal pricing.
+- Search by room type or price range.
+- Save reservations to a file.

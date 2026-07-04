@@ -1,21 +1,48 @@
 # Testing Product Inventory Manager
 
-The project has no external test dependencies. Compile and run `Main`, or call the classes from a small Java driver.
+## Testing approach
 
-## Manual test cases
+Create products with known prices and quantities. Verify both Product state and Inventory query results after each operation.
 
-1. Add several products with unique SKUs and verify `listProducts()` contains them.
-2. Add a duplicate SKU; expect `IllegalArgumentException`.
-3. Increase and decrease stock while keeping the result non-negative.
-4. Set stock to zero and verify it is accepted.
-5. Try a negative absolute quantity or an adjustment below zero; expect `IllegalArgumentException` and no stock change.
-6. Try an adjustment that exceeds `Integer.MAX_VALUE`; expect `IllegalArgumentException`.
-7. Search by partial SKU, partial name, and different letter case.
-8. Sort by name, price, and quantity and verify ascending order.
-9. Repeat each sort in descending order.
-10. Verify products at or below the threshold appear in the low-stock report.
-11. Try a negative low-stock threshold; expect `IllegalArgumentException`.
-12. Verify total inventory value equals the sum of price multiplied by quantity.
-13. Remove an existing product, then remove it again; expect `true` followed by `false`.
-14. Try blank product data, a negative price, or an unknown SKU; expect `IllegalArgumentException`.
-15. Try modifying a returned product list; expect `UnsupportedOperationException`.
+## Normal test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Add products | Add several unique SKUs | Products appear in listProducts |
+| Adjust stock | Add and subtract valid quantities | Quantity changes correctly |
+| Set stock | Set an absolute quantity | Product stores that value |
+| Search | Search partial SKU or name | Case-insensitive matches are returned |
+| Sort | Sort by each supported field | Results follow selected order |
+| Total value | Sum known products | Total equals price times quantity sum |
+
+## Edge-case test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Zero values | Use zero stock or zero price | Both are accepted |
+| Empty inventory | Run lists, search, sort, and report | Empty lists and total zero |
+| Low-stock boundary | Quantity equals threshold | Product is included |
+| Shared name | Use different SKUs with same name | Both products are accepted |
+| Remove twice | Remove the same SKU twice | True then false |
+| Descending sort | Sort each field descending | Highest value appears first |
+
+## Invalid input test cases
+
+| Test | Action | Expected result |
+|---|---|---|
+| Duplicate SKU | Add an existing SKU | IllegalArgumentException |
+| Negative data | Use negative price, stock, or threshold | IllegalArgumentException |
+| Stock underflow | Subtract below zero | IllegalArgumentException and quantity unchanged |
+| Stock overflow | Exceed Integer.MAX_VALUE | IllegalArgumentException and quantity unchanged |
+| Invalid sort | Use null ProductSortField | IllegalArgumentException |
+| Unknown/blank SKU | Update missing or blank SKU | IllegalArgumentException |
+
+## Manual testing checklist
+
+- [ ] Compile and run Main.
+- [ ] Test absolute and relative stock updates.
+- [ ] Verify failed updates preserve quantity.
+- [ ] Verify all three sort fields in both directions.
+- [ ] Test low-stock values below, equal to, and above threshold.
+- [ ] Recalculate total after stock changes and removal.
+- [ ] Verify returned lists cannot be modified.

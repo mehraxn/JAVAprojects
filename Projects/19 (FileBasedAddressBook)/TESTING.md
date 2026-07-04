@@ -23,3 +23,10 @@ The project has no external test dependencies. Use a disposable path when manual
 17. Use null paths, lists, contacts, or address books; expect `IllegalArgumentException`.
 18. Use blank fields, invalid email, tabs, or line breaks; expect `IllegalArgumentException`.
 19. Try modifying returned contact or loaded-contact lists; expect `UnsupportedOperationException`.
+
+## Validation review additions
+
+- Confirm missing files, zero-byte files, and blank-line-only files all load as empty immutable lists.
+- Verify a malformed or duplicate-ID import changes none of the existing address book.
+- Save an empty address book and confirm a subsequent load safely returns no contacts.
+- Verify duplicate contact names are allowed when IDs differ, while duplicate IDs remain rejected.

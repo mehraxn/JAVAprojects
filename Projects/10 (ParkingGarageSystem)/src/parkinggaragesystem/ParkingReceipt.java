@@ -12,8 +12,23 @@ public class ParkingReceipt {
 
     public ParkingReceipt(Vehicle vehicle, String spotId, LocalDateTime arrival,
             LocalDateTime departure, BigDecimal fee) {
+        if (vehicle == null) {
+            throw new IllegalArgumentException("Vehicle must not be null");
+        }
+        if (spotId == null || spotId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Parking spot ID must not be blank");
+        }
+        if (arrival == null || departure == null) {
+            throw new IllegalArgumentException("Arrival and departure times must not be null");
+        }
+        if (departure.isBefore(arrival)) {
+            throw new IllegalArgumentException("Departure must not be before arrival");
+        }
+        if (fee == null || fee.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Parking fee must not be negative");
+        }
         this.vehicle = vehicle;
-        this.spotId = spotId;
+        this.spotId = spotId.trim();
         this.arrival = arrival;
         this.departure = departure;
         this.fee = fee;

@@ -1,33 +1,54 @@
 # Train Ticket Reservation System
 
-An in-memory Java application for routes, trains, seats, and passenger reservations.
+## Description
 
-## Implemented features
+Train Ticket Reservation System is an in-memory Java project for routes, trains, numbered seats, and passenger reservations.
 
-- Add routes with unique IDs and different origin/destination stations.
-- Add trains with unique IDs, registered routes, and uniquely numbered seats.
-- Reserve a requested seat or automatically choose the first available seat.
-- Prevent duplicate reservation of the same seat.
-- Cancel reservations and release their seats.
-- Show available seats and active reservations for a train.
-- Search trips by exact origin and destination, case-insensitively.
+## Features
 
-## Structure
+- Add unique routes and reject duplicate station pairs.
+- Add trains that reference registered routes.
+- Configure unique positive seat numbers.
+- Reserve a chosen seat or the first available seat.
+- Prevent double reservation.
+- Cancel reservations and release seats.
+- Search trips by origin and destination.
+- List available seats and active train reservations.
 
-- `Route` represents an origin/destination pair.
-- `Seat` owns its reservation state.
-- `Train` groups a route and numbered seats.
-- `Reservation` is an immutable passenger reservation.
-- `ReservationSystem` manages routes, trains, and reservations.
-- `Main` demonstrates route search, reservation, and cancellation.
+## Java concepts practiced
 
-Source files are under `src/trainticketreservationsystem` and use only standard Java.
+- Object composition and identity consistency
+- Map and List collections
+- Search and validation
+- State transitions for seats
+- Generated IDs and unmodifiable query results
 
-## Run
+## Main classes
 
-```powershell
+- Route: stores route ID, origin, and destination.
+- Seat: owns reservation state.
+- Train: combines a route with numbered seats.
+- Reservation: immutable passenger reservation details.
+- ReservationSystem: manages routes, trains, and reservations.
+- Main: demonstrates search, reservation, and cancellation.
+
+## How the program works
+
+Register a Route, build a Train using that same Route object, add seats, and register the train. ReservationSystem validates train, passenger, and seat before reserving. Cancellation finds the exact seat recorded by the reservation and releases it.
+
+## Example usage
+
+~~~powershell
 javac -d out src\trainticketreservationsystem\*.java
 java -cp out trainticketreservationsystem.Main
-```
+~~~
 
-See `TESTING.md` for manual test cases.
+The demo reserves seat 3, performs a case-insensitive route search, then cancels the reservation.
+
+## Possible future improvements
+
+- Add departure and arrival times.
+- Add fares and carriage numbers.
+- Add passenger contact details.
+- Search by travel date.
+- Save schedules and reservations to files.

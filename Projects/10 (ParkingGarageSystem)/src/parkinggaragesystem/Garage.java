@@ -23,6 +23,14 @@ public class Garage {
             if (existingLevel.getNumber() == level.getNumber()) {
                 throw new IllegalArgumentException("Parking level already exists: " + level.getNumber());
             }
+            for (ParkingSpot newSpot : level.getSpots()) {
+                for (ParkingSpot existingSpot : existingLevel.getSpots()) {
+                    if (existingSpot.getId().equals(newSpot.getId())) {
+                        throw new IllegalArgumentException(
+                                "Parking spot ID already exists in the garage: " + newSpot.getId());
+                    }
+                }
+            }
         }
         levels.add(level);
     }

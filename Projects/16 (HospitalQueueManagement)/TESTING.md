@@ -21,3 +21,10 @@ The project has no external test dependencies. Use explicit arrival/current time
 15. Update an unknown patient or apply a null status/priority; expect `IllegalArgumentException`.
 16. Try changing priority for a non-waiting patient; expect `IllegalStateException`.
 17. Try modifying returned queue or record lists; expect `UnsupportedOperationException`.
+
+## Validation review additions
+
+- Try changing a `DISCHARGED` patient back to waiting or treatment; expect `IllegalStateException`.
+- Return an `IN_TREATMENT` patient to `WAITING` and verify priority ordering is restored.
+- Verify rejected status transitions preserve both the current status and queue membership.
+- Add patients with duplicate names but distinct IDs; verify both records are retained.

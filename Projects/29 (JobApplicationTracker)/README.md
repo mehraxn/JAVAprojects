@@ -1,40 +1,31 @@
 # Job Application Tracker
 
-## Description
-Track job applications, stages and reminders with persistent storage. It practices CRUD and reporting.
-
-## Difficulty
-Advanced
-
-## Main Features
-- Add applications
-- Track stages
-- Reminders and dates
-- Search and filter
-- Status report with persistence
-
-## Main Skills Practiced
-- OOP
-- JDBC / SQL concepts
-- Date/time
-- Exceptions
-
-## Planned Technologies
-- Java
-- JDBC / SQL concepts (planned)
-- java.time
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- Application class
-- Stage class
-- TrackerService class
-- Dao class
-- Main class
-
-*(These folders and files are not created yet.)*
-
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Application model, JDBC boundary, repository, services, and safe Main skeleton created.
+
+## Planned features
+
+- Add, update, search, and delete applications.
+- Track application stages.
+- Store applied and reminder dates.
+- Find reminders that are due.
+- Filter by stage and search text.
+- Persist records through standard JDBC code.
+
+## Current classes
+
+- JobApplication: application model and stage enum.
+- DatabaseConnection: JDBC configuration boundary.
+- JdbcApplicationRepository: planned CRUD and reminder queries.
+- TrackerService: application operations and stage rules.
+- ReminderService: due-reminder queries.
+- Main: runner that does not connect automatically.
+
+## Runtime requirement
+
+Database execution requires an existing JDBC driver, URL, and schema. No driver is included or installed.
+
+## Source layout
+
+Source files are under src/jobapplicationtracker.

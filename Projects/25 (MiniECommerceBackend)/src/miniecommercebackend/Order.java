@@ -30,4 +30,9 @@ public class Order {
     public BigDecimal getTotal() { return total; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public Status getStatus() { return status; }
+
+    public void setStatus(Status status) {
+        // TODO: Validate allowed order status transitions.
+        throw new UnsupportedOperationException("TODO: update order status");
+    }
 }

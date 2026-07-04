@@ -1,37 +1,30 @@
 # Notification Service
 
-## Description
-A service that queues and dispatches notifications through pluggable channels such as email or SMS abstractions, described conceptually. It practices interfaces and queueing.
-
-## Difficulty
-Advanced
-
-## Main Features
-- Enqueue notifications
-- Channel abstraction (interface)
-- Retry design
-- Status tracking
-- Message templates
-
-## Main Skills Practiced
-- OOP (interfaces, strategy)
-- Collections (queue)
-- Exceptions
-
-## Planned Technologies
-- Java
-- REST / queue concepts (planned)
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- Notification class
-- Channel interface
-- NotificationService class
-- Main class
-
-*(These folders and files are not created yet.)*
-
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Notification model, channel interface, queue service, console channel, and Main skeleton created.
+
+## Planned features
+
+- Enqueue notifications.
+- Dispatch through a registered channel.
+- Track queued, sending, sent, and failed status.
+- Count delivery attempts.
+- Retry failed notifications within a limit.
+- Inspect queue order without removing items.
+
+## Current classes
+
+- Notification: message, channel, status, and attempt model.
+- NotificationChannel: delivery-channel contract.
+- ConsoleNotificationChannel: local demonstration channel.
+- NotificationService: queueing, dispatch, and retry logic.
+- Main: non-delivering demonstration entry point.
+
+## Scope
+
+No real email, SMS, network service, or external queue is used. Additional channels remain abstractions until explicitly implemented.
+
+## Source layout
+
+Source files are under src/notificationservice.

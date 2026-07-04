@@ -1,41 +1,31 @@
 # CSV Analytics Engine
 
-## Description
-Load CSV datasets and compute aggregations, filters and summaries. It practices streams and file processing.
-
-## Difficulty
-Advanced
-
-## Main Features
-- Load CSV files
-- Filter, group and aggregate
-- Summary statistics
-- Export results
-- Column selection
-
-## Main Skills Practiced
-- Java streams
-- File IO
-- Collections
-- Parsing
-- Exceptions
-
-## Planned Technologies
-- Java
-- Streams
-- File IO
-- CSV parsing (planned)
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- CsvReader class
-- data-model classes
-- Analytics class
-- Main class
-
-*(These folders and files are not created yet.)*
-
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Tabular model, CSV reader/writer, analytics service, and Main skeleton created.
+
+## Planned features
+
+- Read UTF-8 CSV with quoted fields.
+- Validate headers and row widths.
+- Select columns and filter rows.
+- Sum and average numeric columns.
+- Group and count categorical values.
+- Export result data sets.
+
+## Current classes
+
+- DataRow: named column values for one row.
+- DataSet: column definitions and rows.
+- CsvReader: planned parser.
+- CsvWriter: planned exporter.
+- AnalyticsService: filtering and aggregation.
+- Main: safe runner that performs no file operation yet.
+
+## Constraints
+
+CSV parsing will be implemented manually with standard Java. No CSV library is used.
+
+## Source layout
+
+Source files are under src/csvanalyticsengine.

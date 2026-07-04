@@ -17,4 +17,9 @@ public class Contact {
     public String getName() { return name; }
     public String getEmail() { return email; }
     public String getPhone() { return phone; }
+
+    public void updateDetails(String name, String email, String phone) {
+        // TODO: Validate every value before changing contact state.
+        throw new UnsupportedOperationException("TODO: update contact details");
+    }
 }

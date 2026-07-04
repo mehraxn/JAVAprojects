@@ -1,40 +1,31 @@
 # Authentication System
 
-## Description
-User registration and login logic with password-hashing and session/token concepts, described conceptually without a framework. It practices security basics.
-
-## Difficulty
-Advanced
-
-## Main Features
-- Register and login
-- Password hashing (planned)
-- Token or session design
-- Role concepts
-- Input validation
-
-## Main Skills Practiced
-- OOP
-- Security basics (hashing)
-- Collections
-- Exceptions
-
-## Planned Technologies
-- Java
-- Hashing concepts (planned)
-- JDBC / SQL concepts (planned)
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- User class
-- AuthService class
-- PasswordHasher class
-- TokenService (design)
-- Main class
-
-*(These folders and files are not created yet.)*
-
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+User, password-hashing, session, service, and optional HttpServer skeleton created.
+
+## Planned features
+
+- Register unique users.
+- Hash passwords with PBKDF2WithHmacSHA256 and random salts.
+- Verify login credentials.
+- Create expiring random session tokens.
+- Authenticate and revoke sessions.
+- Apply simple user/admin roles.
+
+## Current classes
+
+- User: stored authentication identity and role.
+- PasswordHasher: standard-Java hashing boundary.
+- Session: token and expiration model.
+- AuthService: registration, login, authentication, and logout.
+- AuthHttpServer: optional local HTTP adapter.
+- Main: safe runner that does not start a server.
+
+## Security scope
+
+This is an educational skeleton, not a production authentication system. It must not log or store plain-text passwords.
+
+## Source layout
+
+Source files are under src/authenticationsystem.

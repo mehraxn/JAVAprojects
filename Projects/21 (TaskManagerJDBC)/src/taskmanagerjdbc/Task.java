@@ -29,4 +29,14 @@ public class Task {
     public String getDescription() { return description; }
     public LocalDate getDueDate() { return dueDate; }
     public Status getStatus() { return status; }
+
+    public void updateDetails(String title, String description, LocalDate dueDate) {
+        // TODO: Validate and replace editable task details.
+        throw new UnsupportedOperationException("TODO: update task details");
+    }
+
+    public void setStatus(Status status) {
+        // TODO: Validate and apply the new task status.
+        throw new UnsupportedOperationException("TODO: update task status");
+    }
 }

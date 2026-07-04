@@ -18,4 +18,9 @@ public class UrlEntry {
     public String getOriginalUrl() { return originalUrl; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public long getHitCount() { return hitCount; }
+
+    public void recordHit() {
+        // TODO: Increment safely and define overflow behavior.
+        throw new UnsupportedOperationException("TODO: record a URL hit");
+    }
 }

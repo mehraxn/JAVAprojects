@@ -795,6 +795,23 @@ Original: [apple, banana, apricot, cherry, avocado, blueberry]
 Processed: [APPLE, APRICOT]
 ```
 
+### Another pipeline (distinct + skip + limit together)
+
+```java
+import java.util.Comparator;
+import java.util.List;
+
+List<Integer> result = List.of(5, 1, 2, 2, 9, 3, 4, 4).stream()
+    .distinct()                          // [5, 1, 2, 9, 3, 4]
+    .filter(n -> n > 2)                  // [5, 9, 3, 4]
+    .sorted(Comparator.reverseOrder())   // [9, 5, 4, 3]
+    .skip(1)                             // [5, 4, 3]  (drop the largest)
+    .limit(3)                            // [5, 4, 3]
+    .toList();
+
+System.out.println(result); // [5, 4, 3]
+```
+
 ---
 
 ## Key Concepts

@@ -1,0 +1,54 @@
+# Scheduled logical backup CronJob. Runs pg_dump nightly into the backup PVC.
+# SUSPENDED by default (suspend: true) so it does nothing until deliberately
+# enabled with a reviewed destination. Credentials come from the Secret, never
+# from this file. Placeholder image only. NOT deployed / NOT scheduled.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  labels:
+    app: postgres
+    role: backup
+spec:
+  schedule: "0 2 * * *"          # 02:00 daily — pair with RPO (see docs/rpo-rto.md)
+  suspend: true                   # <-- safety: does not run until set to false
+  concurrencyPolicy: Forbid       # never overlap backups
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+          containers:
+            - name: backup
+              image: postgres:16   # provides pg_dump; pin a digest in prod
+              envFrom:
+                - secretRef:
+                    name: postgres-credentials
+              env:
+                - name: PGHOST
+                  value: postgres  # headless Service name of the StatefulSet
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  ts="$(date -u +%Y%m%dT%H%M%SZ)"
+                  out="/backups/${POSTGRES_DB}-${ts}.dump"
+                  pg_dump -h "$PGHOST" -U "$POSTGRES_USER" \
+                    -Fc --no-owner --no-privileges -f "$out" "$POSTGRES_DB"
+                  sha256sum "$out" > "${out}.sha256"
+                  # retention: keep 7 days
+                  find /backups -name "*.dump*" -mtime +7 -delete
+                  echo "backup ok: $out"
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: postgres-backups

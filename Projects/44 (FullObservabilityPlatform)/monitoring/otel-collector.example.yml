@@ -1,14 +1,54 @@
-# Example only. The debug exporter keeps the starter free of real endpoints.
+# OpenTelemetry Collector configuration — EXAMPLE ONLY, NOT run here.
+#
+# The Collector is the central "router" for telemetry. It RECEIVES signals from
+# the app, PROCESSES them (batching, memory limits, attribute scrubbing), and
+# EXPORTS each signal to the right backend:
+#
+#   traces  -> Tempo   (via OTLP)
+#   metrics -> Prometheus (scraped from the collector's :8889 endpoint)
+#   logs    -> Loki    (via the OTLP/Loki path) — debug exporter shown here
+#
+# Using the Collector means the app only speaks OTLP; swapping a backend is a
+# config change here, not an app change.
+
 receivers:
+  # Apps push OTLP over gRPC (4317) or HTTP (4318).
   otlp:
     protocols:
       grpc:
+        endpoint: 0.0.0.0:4317
       http:
+        endpoint: 0.0.0.0:4318
 
 processors:
+  # Guardrail: refuse work if the collector itself is near OOM.
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  # Efficiency: group telemetry into batches before export.
   batch:
+    timeout: 5s
+  # Governance: stamp/scrub attributes. Example drops a would-be PII field.
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: dev
+        action: upsert
+      - key: user.email
+        action: delete
 
 exporters:
+  # Traces to Tempo (see monitoring/tempo.example.yml).
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  # Metrics: expose a /metrics endpoint that Prometheus scrapes (see prometheus.yml).
+  prometheus:
+    endpoint: 0.0.0.0:8889
+  # Logs: debug exporter keeps this example free of a hard Loki dependency.
+  # A real setup would use an OTLP/Loki exporter to ship logs to Loki.
   debug:
     verbosity: basic
 
@@ -16,15 +56,13 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [debug]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp/tempo]
     metrics:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [debug]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
     logs:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, resource, batch]
       exporters: [debug]
-
-# TODO: Select reviewed local backends and add resource filtering/redaction.

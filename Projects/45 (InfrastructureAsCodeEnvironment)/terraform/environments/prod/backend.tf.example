@@ -1,0 +1,14 @@
+# EXAMPLE remote-state backend for PROD — rename to backend.tf to use (NOT done).
+# NOTE the DIFFERENT key/bucket from dev: prod state is fully isolated so a dev
+# apply can never mutate prod. Placeholders only; real names are supplied at
+# `terraform init` time and never committed.
+#
+# terraform {
+#   backend "s3" {
+#     bucket         = "REPLACE-with-your-PROD-tfstate-bucket"
+#     key            = "iac-lab/prod/terraform.tfstate"
+#     region         = "example-region-1"
+#     dynamodb_table = "REPLACE-with-your-PROD-lock-table"
+#     encrypt        = true
+#   }
+# }

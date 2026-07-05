@@ -1,0 +1,7 @@
+---
+# DEV-specific configuration values. Same roles as prod, different settings —
+# this is environment separation on the CONFIGURATION side (mirrors the
+# dev/prod split on the Terraform side).
+app_environment: dev
+app_log_level: DEBUG
+app_replicas: 1

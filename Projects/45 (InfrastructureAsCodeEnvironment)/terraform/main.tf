@@ -1,13 +1,39 @@
-terraform {
-  required_version = ">= 1.6.0, < 2.0.0"
+# Root composition. This wires the reusable modules into one modeled
+# environment. Running `terraform apply` here would only write terraform_data to
+# LOCAL state — no cloud resource is created. Nothing was applied in this repo.
+
+locals {
+  common_labels = merge(
+    var.additional_labels,
+    {
+      managed_by  = "terraform"
+      project     = var.project_name
+      environment = var.environment
+      purpose     = "learning"
+    }
+  )
 }
 
-# Built-in local data only; no cloud provider or external action.
-resource "terraform_data" "environment_design" {
-  input = {
-    name        = var.environment_name
-    description = "Local Phase 4 infrastructure design placeholder"
-  }
+module "network" {
+  source = "./modules/network"
+
+  project_name        = var.project_name
+  environment         = var.environment
+  region              = var.region
+  vpc_cidr            = var.vpc_cidr
+  public_subnet_cidrs = var.public_subnet_cidrs
+  labels              = local.common_labels
 }
 
-# TODO: Add a separately approved disposable provider module later.
+module "compute" {
+  source = "./modules/compute"
+
+  project_name      = var.project_name
+  environment       = var.environment
+  region            = var.region
+  instance_count    = var.instance_count
+  instance_size     = var.instance_size
+  subnet_ids        = module.network.subnet_ids
+  allowed_ssh_cidrs = var.allowed_ssh_cidrs
+  labels            = local.common_labels
+}

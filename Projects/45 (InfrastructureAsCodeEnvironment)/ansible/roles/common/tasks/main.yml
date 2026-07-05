@@ -1,4 +1,25 @@
 ---
-- name: Common role placeholder
-  ansible.builtin.debug:
-    msg: "TODO: add reviewed idempotent package, user, and directory tasks"
+# Baseline configuration applied to every host. Idempotent: safe to run
+# repeatedly. NOT executed in this repo — shown for study.
+
+- name: Install common base packages
+  ansible.builtin.package:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Set the system timezone
+  ansible.builtin.timezone:
+    name: "{{ timezone }}"
+
+- name: Ensure the application group exists
+  ansible.builtin.group:
+    name: "{{ app_group }}"
+    state: present
+
+- name: Ensure the application user exists (no login shell)
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    shell: /usr/sbin/nologin
+    create_home: false
+    system: true

@@ -1,0 +1,7 @@
+{{- if .Values.blue.enabled }}
+{{ include "rollout.deployment" (dict "ctx" . "track" "blue" "tag" .Values.image.blueTag "replicas" .Values.blue.replicas) }}
+{{- end }}
+---
+{{- if .Values.green.enabled }}
+{{ include "rollout.deployment" (dict "ctx" . "track" "green" "tag" .Values.image.greenTag "replicas" .Values.green.replicas) }}
+{{- end }}

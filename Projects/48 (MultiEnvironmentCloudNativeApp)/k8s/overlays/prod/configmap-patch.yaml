@@ -1,0 +1,9 @@
+# PROD config: quiet logs, new UI OFF until it has proven out in staging.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  APP_ENVIRONMENT: "prod"
+  LOG_LEVEL: "WARN"
+  FEATURE_NEW_UI: "false"

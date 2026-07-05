@@ -1,0 +1,34 @@
+# Service template descriptor — the "golden path" input contract.
+# A generator (scripts/new-service.sh) asks for these inputs and substitutes the
+# matching __TOKEN__ placeholders throughout this template. NOTHING is generated,
+# rendered, or deployed in this repo.
+apiVersion: platform/v1
+kind: ServiceTemplate
+metadata:
+  name: java-service
+  title: "Java Service (golden path)"
+  description: "Standard HTTP Java service with Dockerfile, Helm chart, and GitOps wiring."
+  owner: platform-team
+spec:
+  # Each parameter becomes a __TOKEN__ the generator replaces. Constraints keep
+  # generated names valid for Kubernetes, DNS, and Java.
+  parameters:
+    - name: SERVICE_NAME
+      description: "DNS-safe service name (lowercase, digits, hyphens)."
+      pattern: "^[a-z][a-z0-9-]{1,38}[a-z0-9]$"
+      example: payments-api
+    - name: SERVICE_OWNER
+      description: "Owning team (used for catalog + labels)."
+      example: payments-team
+    - name: SERVICE_PORT
+      description: "Container port the app listens on."
+      default: "8080"
+    - name: IMAGE_REPO
+      description: "Container image repository (no tag). Placeholder registry only."
+      example: registry.example.invalid/payments-api
+  # Files the generator would emit for a new service (see examples/new-service/).
+  produces:
+    - "app/ (Java source + Dockerfile)"
+    - "helm values overrides (values-dev.yaml, values-prod.yaml)"
+    - "gitops Application manifests for dev and prod"
+    - "catalog-info (service.yaml)"

@@ -1,0 +1,54 @@
+# Rendered base values for payments-api. `image.repository` is set to the repo
+# supplied at generation time. NEVER put real secrets here.
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: registry.example.invalid/payments-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+containerPort: 8080
+
+config:
+  environment: dev
+  logLevel: INFO
+
+service:
+  type: ClusterIP
+  port: 80
+
+probes:
+  readiness:
+    path: /ready
+    initialDelaySeconds: 3
+    periodSeconds: 10
+  liveness:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 20
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL

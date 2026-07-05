@@ -1,0 +1,20 @@
+# Managed by Ansible — do not edit by hand.
+[Unit]
+Description=Learning application ({{ app_environment }})
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+# Placeholder command. A real unit would launch the app's jar/binary.
+ExecStart=/bin/sh -c 'echo "learning-app running in {{ app_environment }}"; sleep infinity'
+Restart=on-failure
+# Basic hardening.
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

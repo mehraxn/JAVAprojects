@@ -1,0 +1,11 @@
+# Base (non-secret) configuration. Each overlay patches these values so every
+# environment gets its own APP_ENVIRONMENT / LOG_LEVEL / feature flags.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  APP_PORT: "8080"
+  APP_ENVIRONMENT: "base"
+  LOG_LEVEL: "INFO"
+  FEATURE_NEW_UI: "false"

@@ -1,0 +1,14 @@
+# EXAMPLE remote-state backend for DEV — rename to backend.tf to use (NOT done).
+# Separate state per environment is the core of dev/prod isolation. Values are
+# placeholders; the real bucket/table would be provisioned separately and its
+# name supplied at `terraform init` time, never committed.
+#
+# terraform {
+#   backend "s3" {
+#     bucket         = "REPLACE-with-your-dev-tfstate-bucket"
+#     key            = "iac-lab/dev/terraform.tfstate"
+#     region         = "example-region-1"
+#     dynamodb_table = "REPLACE-with-your-dev-lock-table"  # state locking
+#     encrypt        = true                                 # encrypt state at rest
+#   }
+# }

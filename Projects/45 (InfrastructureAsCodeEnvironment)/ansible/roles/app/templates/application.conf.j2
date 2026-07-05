@@ -1,0 +1,7 @@
+# Managed by Ansible — do not edit by hand.
+# Rendered per environment: the SAME template produces different config for dev
+# vs prod because the variables come from group_vars/{dev,prod}.yml.
+app.name={{ app_service_name }}
+app.environment={{ app_environment }}
+app.log_level={{ app_log_level }}
+app.replicas={{ app_replicas }}

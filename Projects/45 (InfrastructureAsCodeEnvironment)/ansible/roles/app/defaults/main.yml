@@ -1,0 +1,6 @@
+---
+# Role defaults (lowest precedence). Overridden by group_vars/dev.yml and
+# group_vars/prod.yml so the same role produces per-environment config.
+app_environment: dev
+app_log_level: INFO
+app_replicas: 1

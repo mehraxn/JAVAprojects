@@ -1,11 +1,38 @@
+# Prometheus scrape configuration for the observability lab.
+# EXAMPLE ONLY — Prometheus is NOT run in this repository.
 global:
-  scrape_interval: 15s
+  scrape_interval: 15s        # how often to pull /metrics from each target
+  evaluation_interval: 15s    # how often to evaluate alerting rules
+  external_labels:
+    stack: full-observability-lab
+
+# Alerting rules live in a separate file (see monitoring/alerts.example.yml).
+rule_files:
+  - alerts.example.yml
 
 scrape_configs:
-  - job_name: java-app
+  # The Java app exposes Prometheus metrics on /metrics.
+  - job_name: observable-java-app
     metrics_path: /metrics
     static_configs:
-      - targets:
-          - app:8080
+      - targets: ["app:8080"]
+        labels:
+          service: observable-java-app
+          env: dev
 
-# TODO: Add rule files after the application metric contract is implemented.
+  # The OpenTelemetry Collector re-exposes app + host metrics on :8889.
+  - job_name: otel-collector
+    static_configs:
+      - targets: ["otel-collector:8889"]
+
+  # Prometheus scraping itself is a common self-monitoring baseline.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+# In a real deployment Alertmanager would be wired here to route firing alerts.
+# Omitted on purpose so nothing tries to notify anyone.
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ["alertmanager:9093"]

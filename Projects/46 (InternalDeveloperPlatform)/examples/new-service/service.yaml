@@ -1,0 +1,13 @@
+# Rendered catalog metadata for payments-api (placeholders substituted).
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: payments-api
+  description: "Java HTTP service generated from the platform golden path."
+  annotations:
+    platform.example/image-repo: registry.example.invalid/payments-api
+spec:
+  type: service
+  lifecycle: experimental
+  owner: payments-team
+  system: platform-learning

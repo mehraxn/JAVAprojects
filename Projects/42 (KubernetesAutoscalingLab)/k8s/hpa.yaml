@@ -2,18 +2,48 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: autoscaling-java-app
+  labels:
+    app: autoscaling-java-app
 spec:
+  # What the HPA scales. Must point at the Deployment in deployment.yaml.
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: autoscaling-java-app
+  # Never scale below 1 pod...
   minReplicas: 1
+  # ...and never above 5, an explicit safety ceiling for this lab.
   maxReplicas: 5
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
+          # Scale on CPU as a PERCENTAGE of the pod's cpu request (250m).
+          # desiredReplicas = ceil(currentReplicas * currentUtil / 60).
+          # Requires metrics-server to be installed (see docs/metrics-server.md);
+          # without it the HPA shows <unknown> and will not scale.
           type: Utilization
           averageUtilization: 60
-  # TODO: Add reviewed scale-up/down behavior after baseline measurement.
+    # Optional second signal. Uncomment to also scale on memory. The HPA takes
+    # the metric that demands the MOST replicas.
+    # - type: Resource
+    #   resource:
+    #     name: memory
+    #     target:
+    #       type: Utilization
+    #       averageUtilization: 75
+  # Stabilization windows damp flapping. Scale up quickly, scale down slowly.
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60

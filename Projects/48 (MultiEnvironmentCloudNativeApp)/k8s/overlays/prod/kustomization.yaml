@@ -1,17 +1,16 @@
-# Design-only production overlay. It contains no real endpoint, secret, or account.
+# Design-only production overlay. Contains no real endpoint, secret, or account.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: app-prod
 resources:
   - ../../base
 nameSuffix: -prod
 commonLabels:
-  environment: prod-design-only
+  environment: prod
 images:
+  # The exact same immutable artifact that passed dev AND staging.
   - name: my-cloud-native-java-app
-    newTag: prod-placeholder
-configMapGenerator:
-  - name: app-config
-    literals:
-      - APP_ENVIRONMENT=prod-design-only
-
-# TODO: Add production controls only after separate approval.
+    newTag: 1.4.0
+patches:
+  - path: deployment-patch.yaml
+  - path: configmap-patch.yaml

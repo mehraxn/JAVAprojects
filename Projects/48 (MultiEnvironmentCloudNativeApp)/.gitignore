@@ -1,0 +1,9 @@
+# Only *.example.yaml secrets are tracked. Never commit a real Secret.
+secret.yaml
+**/secret.yaml
+*.secret.yaml
+!*.example.yaml
+
+# Build output
+out/
+*.class

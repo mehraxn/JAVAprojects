@@ -1,0 +1,11 @@
+# Only *.example.* files are tracked. Never commit real secrets or backups.
+secret.yaml
+**/secret.yaml
+!secret.example.yaml
+*.pgpass
+
+# Backup artifacts must never be committed.
+backups/
+*.dump
+*.dump.sha256
+last_success_epoch

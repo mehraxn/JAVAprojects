@@ -1,14 +1,15 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: app-staging
 resources:
   - ../../base
 nameSuffix: -staging
 commonLabels:
   environment: staging
 images:
+  # Same immutable artifact that passed dev, now promoted to staging.
   - name: my-cloud-native-java-app
-    newTag: staging-placeholder
-configMapGenerator:
-  - name: app-config
-    literals:
-      - APP_ENVIRONMENT=staging
+    newTag: 1.4.0
+patches:
+  - path: deployment-patch.yaml
+  - path: configmap-patch.yaml

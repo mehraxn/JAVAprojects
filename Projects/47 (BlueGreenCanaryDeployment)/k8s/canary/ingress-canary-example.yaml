@@ -1,0 +1,80 @@
+# CONTROLLER-BASED canary using the NGINX Ingress canary annotations. Unlike the
+# replica-ratio approach, this sets an EXACT traffic weight independent of pod
+# counts. Requires a compatible NGINX ingress controller (NOT installed here).
+# Placeholder host only. NOT deployed.
+#
+# This file defines, as separate documents:
+#   1. a stable Service  (track: stable)
+#   2. a canary Service   (track: canary)
+#   3. the main Ingress   -> stable Service
+#   4. the canary Ingress -> canary Service, weighted at 10%
+#
+# Raise `canary-weight` (10 -> 25 -> 50 -> 100) as metrics stay healthy, then
+# fold v2 into stable and remove the canary Ingress.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: java-app-stable
+spec:
+  selector:
+    app: java-app
+    track: stable
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: java-app-canary
+spec:
+  selector:
+    app: java-app
+    track: canary
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# Main (stable) ingress — receives all traffic NOT captured by the canary.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: java-app
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: java-app.example.invalid          # placeholder host
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: java-app-stable
+                port:
+                  name: http
+---
+# Canary ingress — same host/path, but flagged as canary with a 10% weight.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: java-app-canary
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "10"   # 10% of traffic to v2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: java-app.example.invalid
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: java-app-canary
+                port:
+                  name: http

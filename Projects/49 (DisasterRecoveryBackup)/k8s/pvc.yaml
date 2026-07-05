@@ -1,0 +1,22 @@
+# Backup-storage PVC. This is SEPARATE from the database's own volume (which the
+# StatefulSet creates via volumeClaimTemplates). The backup CronJob writes dumps
+# here so a lost database pod does not take the backups with it.
+#
+# NOTE on durability: a PVC on a single cluster is NOT a real DR destination. For
+# true disaster recovery the backups must also be copied OFF-cluster / off-region
+# (object storage with versioning + immutability). See docs/backup-strategy.md.
+# NOT created.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-backups
+  labels:
+    app: postgres
+    role: backup-storage
+spec:
+  accessModes: ["ReadWriteOnce"]
+  # storageClassName omitted -> cluster default. In prod, prefer a class backed
+  # by durable/off-node storage, and additionally ship to object storage.
+  resources:
+    requests:
+      storage: 20Gi

@@ -1,0 +1,44 @@
+---
+# App role: lay down configuration and a systemd unit, then ensure the service
+# is running. Idempotent. NOT executed in this repo.
+
+- name: Validate required app variables are set
+  ansible.builtin.assert:
+    that:
+      - app_service_name | length > 0
+      - app_config_file | length > 0
+      - app_environment in ["dev", "prod"]
+    fail_msg: "app_service_name, app_config_file, and a valid app_environment are required."
+
+- name: Ensure the application config directory exists
+  ansible.builtin.file:
+    path: "{{ app_config_directory }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0750"
+
+- name: Render the application configuration (per-environment values)
+  ansible.builtin.template:
+    src: application.conf.j2
+    dest: "{{ app_config_file }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0640"
+  notify: Restart learning application
+
+- name: Install the systemd service unit
+  ansible.builtin.template:
+    src: learning-app.service.j2
+    dest: "/etc/systemd/system/{{ app_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart learning application
+
+- name: Enable and start the application service
+  ansible.builtin.systemd:
+    name: "{{ app_service_name }}"
+    daemon_reload: true
+    enabled: true
+    state: started

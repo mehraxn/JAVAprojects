@@ -1,13 +1,37 @@
-name: multi-environment-promotion-example
+# PROMOTION pipeline — EXAMPLE / NON-EXECUTED TEMPLATE. Promotes the SAME
+# immutable image (by digest) dev -> staging -> prod by updating the image tag in
+# the target overlay and committing to Git; Argo CD then syncs it. No promotion
+# was performed and nothing was deployed.
+name: promote (template)
 enabled: false
-promotionOrder:
-  - dev
-  - staging
-  - prod-design-only
-requirements:
-  immutableImage: true
-  testsRequired: true
-  securityReviewRequired: true
-  manualProductionApproval: true
 
-# TODO: Map this design to an approved CI provider and artifact registry.
+# Build once; never rebuild per environment.
+policy:
+  buildOnce: true
+  promoteByDigest: true          # promote the exact artifact, not a fresh build
+  order: [dev, staging, prod]
+
+gates:
+  dev:
+    autoPromoteFrom: build
+    requires: [unit-tests]
+  staging:
+    autoPromoteFrom: dev
+    requires: [integration-tests, smoke-tests]
+  prod:
+    autoPromoteFrom: staging
+    requires: [manual-approval, change-record]   # human-gated
+
+# Conceptual step a promotion job would run (NOT executed):
+#   1. read the digest currently running in <from-env>
+#   2. set images[].newTag to that digest in k8s/overlays/<to-env>/kustomization.yaml
+#   3. open a PR; on merge Argo CD syncs <to-env>
+steps:
+  - name: promote-to-staging
+    from: dev
+    to: staging
+    action: "update k8s/overlays/staging image tag -> dev's digest, commit, PR"
+  - name: promote-to-prod
+    from: staging
+    to: prod
+    action: "update k8s/overlays/prod image tag -> staging's digest, commit, PR, manual sync"

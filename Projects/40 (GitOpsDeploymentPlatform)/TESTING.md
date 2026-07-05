@@ -1,59 +1,68 @@
-# Testing GitOps Deployment Platform
+# Testing — GitOps Deployment Platform
 
-No Java, Docker, Kubernetes, Kustomize, Helm, Argo CD, GitOps sync, deployment, or rollback command was executed.
+> **Nothing was executed.** No Java, Docker, Kubernetes, Kustomize, Helm, or
+> Argo CD command ran; nothing was built, rendered, synced, deployed, or rolled
+> back. This documents the static review and the checks a disposable environment
+> *would* use.
 
-## Static validation checklist
+## 1. Static validation checklist
 
-- [ ] Confirm Java package paths and environment validation.
-- [ ] Confirm Dockerfile build context is the project root and source path is correct.
-- [ ] Confirm base Deployment selectors, Pod labels, and Service selectors match.
-- [ ] Confirm named ports and Java HTTP port agree.
-- [ ] Confirm readiness/liveness paths exist in Java source.
-- [ ] Confirm overlays patch the intended base resource names.
-- [ ] Confirm Helm values and template references agree.
-- [ ] Confirm Argo CD paths point to the intended dev/prod overlays.
+- [ ] Java package paths correct; `/health`, `/ready`, `/config` exist in source.
+- [ ] Dockerfile build context is the project root; source path matches.
+- [ ] Base Deployment selector = Pod labels = Service selector.
+- [ ] Named container port agrees with the Java HTTP port and Service targetPort.
+- [ ] Overlays patch the intended base resource names.
+- [ ] Helm values and template references agree.
+- [ ] Argo CD Applications point at the intended dev/prod overlay paths.
 
-## File existence checklist
+## 2. File existence checks
 
-- [ ] Java source and `docker/Dockerfile` exist.
-- [ ] Kubernetes base and both environment overlays exist.
-- [ ] Helm metadata, values, helpers, and templates exist.
-- [ ] Separate dev and prod Argo CD Application examples exist.
-- [ ] `docs/gitops-flow.md`, `docs/rollback.md`, README, and TESTING exist.
+- [ ] `app/src/gitopsdeploymentplatform/*.java` and `docker/Dockerfile`
+- [ ] `k8s/base/` + `k8s/overlays/dev/` + `k8s/overlays/prod/`
+- [ ] `helm/java-app/` (Chart.yaml, values.yaml, templates, _helpers.tpl)
+- [ ] `gitops/argocd/dev-application.example.yaml` + `prod-application.example.yaml`
+- [ ] `docs/gitops-flow.md`, `docs/rollback.md`, `README.md`, `TESTING.md`
 
-## Security and safety checklist
+## 3. YAML / config review checklist
 
-- [ ] No real secret, credential, token, repository, registry, or cluster endpoint is present.
-- [ ] Images and repository URLs remain obvious placeholders.
-- [ ] Container and Pod are configured for non-root execution.
-- [ ] Production-design sync remains manual.
-- [ ] Dev automated pruning remains disabled.
-- [ ] No Secret object or secret value is committed.
+- [ ] All YAML is well-formed; overlays reference `../../base`.
+- [ ] dev vs prod differ (replicas, image tag, config) and match the docs.
+- [ ] Same image tag is promoted (config differs, image does not).
+- [ ] dev Application: auto-sync + self-heal, **prune disabled**.
+- [ ] prod Application: **no `automated:` block** (manual sync).
 
-## Commands normally used - NOT executed
+## 4. Security checks
 
-```text
-javac --add-modules jdk.httpserver ...
+- [ ] **No real secrets** — no Secret object or secret value committed.
+- [ ] **No real credentials** — no tokens, registry, or kubeconfig.
+- [ ] **No production endpoints** — repo URLs/images are `example.invalid`/placeholders.
+- [ ] Container/Pod run non-root; read-only rootfs; capabilities dropped.
+
+## 5. Commands normally used — NOT executed
+
+```bash
+# NOT executed
+javac --add-modules jdk.httpserver -d out app/src/gitopsdeploymentplatform/*.java
 docker build -f docker/Dockerfile -t my-java-app:dev-placeholder .
 kubectl kustomize k8s/overlays/dev
 kubectl kustomize k8s/overlays/prod
-helm lint helm/java-app
-helm template learning-release helm/java-app
+helm lint helm/java-app && helm template demo helm/java-app
 kubectl apply --dry-run=client -f gitops/argocd/dev-application.example.yaml
 ```
 
-These examples require installed tooling, reviewed versions, and an approved disposable environment. They were not run.
+## 6. Expected results in a proper environment
 
-## Expected results in a proper environment
+- Java endpoints return health, readiness, and the selected env/version.
+- Base + overlays render valid resources with matching names/selectors.
+- dev and prod render distinct replicas/tags/config.
+- Helm renders an equivalent workload from values.
+- Argo CD reports the selected revision/path; an approved sync creates resources without exposing secrets.
+- Reverting the desired-state commit produces a clear rollback diff.
 
-- Java endpoints respond with health, readiness, and selected environment/version.
-- Base and overlays render valid resources with matching names/selectors.
-- Dev and prod render distinct replicas, tags, names, and configuration.
-- Helm renders an equivalent workload using supplied values.
-- Argo CD reports the selected Git revision and environment path.
-- An approved sync creates the intended resources without exposing secrets.
-- Reverting a desired-state commit produces a clear rollback diff.
+## 7. Manual review checklist (portfolio quality)
 
-## Limitations
-
-Static review cannot verify controller CRDs, Kustomize/Helm rendering, API compatibility, image availability, sync health, drift correction, rollout behavior, or rollback success.
+- [ ] README has a clear resume-style summary and an architecture diagram.
+- [ ] Kustomize base/overlay split reads cleanly; no duplicated YAML.
+- [ ] dev vs prod sync policy difference is obvious and justified.
+- [ ] Every command is marked NOT executed; no fake badges/screenshots.
+- [ ] Honest about what static review cannot prove.

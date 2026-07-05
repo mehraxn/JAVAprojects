@@ -1,0 +1,34 @@
+# BUILD-ONCE pipeline — EXAMPLE / NON-EXECUTED TEMPLATE (parked under ci/, not
+# .github/workflows/, so it never runs). Produces ONE immutable image that is
+# later promoted unchanged through every environment. No image was built.
+name: build (template)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write        # would push the image
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Compile
+        working-directory: "Projects/48 (MultiEnvironmentCloudNativeApp)"
+        run: javac -d out app/src/multienvironmentcloudnativeapp/*.java
+
+      # A real pipeline would also test + scan here (see project 43).
+      - name: Build & publish immutable image (NOT executed here)
+        run: |
+          echo "docker build -t registry.example.invalid/cloud-native-app:1.4.0 ."
+          echo "docker push  registry.example.invalid/cloud-native-app:1.4.0"
+          echo "Record the resulting DIGEST — that is what gets promoted."

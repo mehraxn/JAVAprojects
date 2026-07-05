@@ -1,0 +1,24 @@
+# THE SWITCH. This is the SAME Service (name: java-app) as service.yaml, with the
+# selector flipped to `track: green`. Applying this repoints 100% of traffic from
+# blue (v1) to green (v2) atomically — no pod restart, just a selector change.
+#
+#   # NOT executed:
+#   kubectl apply -f k8s/blue-green/switch-service-to-green.yaml
+#
+# To ROLL BACK, re-apply service.yaml (which selects track: blue). Because blue
+# is still running, rollback is instant. NOT deployed.
+apiVersion: v1
+kind: Service
+metadata:
+  name: java-app
+  labels:
+    app: java-app
+spec:
+  type: ClusterIP
+  selector:
+    app: java-app
+    track: green         # <-- SWITCHED. All traffic now goes to green/v2.
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

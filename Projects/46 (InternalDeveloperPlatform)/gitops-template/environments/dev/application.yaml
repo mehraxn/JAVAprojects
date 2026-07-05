@@ -1,0 +1,30 @@
+# Argo CD Application for the DEV environment of a generated service.
+# Placeholders (__TOKEN__) are filled by the generator. This is a DESIGN
+# artifact — no Argo CD exists and nothing was synced or deployed.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: __SERVICE_NAME__-dev
+  namespace: argocd
+  # Deletion protection: Argo will not cascade-delete without this being removed.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform-learning
+  source:
+    repoURL: https://example.invalid/__SERVICE_NAME__-config.git
+    targetRevision: main
+    path: helm-template
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: __SERVICE_NAME__-dev
+  syncPolicy:
+    automated:            # dev auto-syncs for fast feedback
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

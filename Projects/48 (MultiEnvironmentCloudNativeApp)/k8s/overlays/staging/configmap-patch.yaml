@@ -1,0 +1,9 @@
+# STAGING config: production-like logging, new UI on for pre-prod validation.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  APP_ENVIRONMENT: "staging"
+  LOG_LEVEL: "INFO"
+  FEATURE_NEW_UI: "true"

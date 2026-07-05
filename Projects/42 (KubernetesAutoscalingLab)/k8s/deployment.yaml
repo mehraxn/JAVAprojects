@@ -2,7 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: autoscaling-java-app
+  labels:
+    app: autoscaling-java-app
 spec:
+  # Start at 1 replica. The HorizontalPodAutoscaler (k8s/hpa.yaml) owns the
+  # replica count at runtime, so do NOT also pin replicas via GitOps once the
+  # HPA is active or the two will fight.
   replicas: 1
   selector:
     matchLabels:
@@ -12,17 +17,47 @@ spec:
       labels:
         app: autoscaling-java-app
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: app
           image: my-autoscaling-java-app:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: autoscaling-java-app-config
+          # CPU request is the DENOMINATOR for HPA CPU utilization.
+          # averageUtilization: 60 in hpa.yaml means "average pod CPU usage
+          # reaches 60% of this 250m request", i.e. ~150m per pod.
+          # The limit caps burst CPU so one busy pod cannot starve the node.
           resources:
             requests:
-              cpu: 100m
+              cpu: 250m
               memory: 128Mi
             limits:
               cpu: 500m
               memory: 256Mi
-          # TODO: Add probes and security context after the app is implemented.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL

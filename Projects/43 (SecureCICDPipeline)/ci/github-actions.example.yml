@@ -1,22 +1,138 @@
-name: secure-pipeline-example
+# =============================================================================
+# Secure CI/CD pipeline — EXAMPLE / NON-EXECUTED TEMPLATE
+# =============================================================================
+# This file lives under ci/ ON PURPOSE. GitHub only discovers workflows in the
+# repository-root .github/workflows/ directory, so this template is NOT active
+# and will NOT run. It has never been executed. No image was built, no scan was
+# run, nothing was signed, and no artifact was published.
+#
+# To actually use it you would (NOT done here):
+#   1. Copy this file to .github/workflows/secure-pipeline.yml
+#   2. Configure the referenced registry, permissions, and OIDC trust
+#   3. Review and pin every action/tool version
+#
+# Trigger is workflow_dispatch (manual only) as a second safety layer.
+# No real tokens, registries, or secrets are embedded.
+# =============================================================================
+name: secure-cicd-pipeline (template)
 
 on:
   workflow_dispatch:
+  # Realistic triggers, shown but inert while this file stays under ci/:
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
 
+# Least privilege by default. Widen only where a stage truly needs it.
 permissions:
   contents: read
 
+env:
+  PROJECT_DIR: "Projects/43 (SecureCICDPipeline)"
+  # Placeholder image reference. ghcr.io/OWNER/REPO is illustrative only.
+  IMAGE: "ghcr.io/example/secure-cicd-app"
+
 jobs:
-  design-only:
-    if: ${{ false }}
+  secure-pipeline:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write      # would be needed to push to GHCR
+      id-token: write      # would be needed for cosign keyless (OIDC) signing
     steps:
+      # --- 1. checkout --------------------------------------------------------
       - name: Checkout
         uses: actions/checkout@v4
+
+      # --- 2. setup Java ------------------------------------------------------
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
-      # TODO: Add approved compile, test, dependency, secret, SAST, SBOM,
-      # image, signing, policy, and gated deployment stages.
+
+      # --- 3. compile ---------------------------------------------------------
+      - name: Compile application
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: javac -d out src/securecicdpipeline/*.java
+
+      # --- 4. test ------------------------------------------------------------
+      - name: Compile and run tests
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          javac -cp out -d test-out test/securecicdpipeline/*.java
+          java -cp "out:test-out" securecicdpipeline.BuildInfoTest
+
+      # --- 5. build Docker image (local only — no push) -----------------------
+      - name: Build image (load locally, do NOT push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.PROJECT_DIR }}
+          file: ${{ env.PROJECT_DIR }}/Dockerfile
+          load: true          # keep it on the runner
+          push: false         # never push from this template
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          build-args: |
+            APP_VERSION=1.0.0
+            GIT_SHA=${{ github.sha }}
+
+      # --- 6. dependency scan (filesystem / SCA) ------------------------------
+      # Scans the checked-out source tree for known-vulnerable dependencies and
+      # misconfigurations. Fails the build on High/Critical.
+      - name: Dependency scan (Trivy fs)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: ${{ env.PROJECT_DIR }}
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          format: sarif
+          output: trivy-deps.sarif
+
+      # --- 7. image vulnerability scan ----------------------------------------
+      # Scans the built image's OS packages and app layers.
+      - name: Image scan (Trivy image)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: image
+          image-ref: ${{ env.IMAGE }}:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          format: sarif
+          output: trivy-image.sarif
+
+      # --- 8. SBOM generation (Syft) ------------------------------------------
+      # Produces a CycloneDX Software Bill of Materials for the image.
+      - name: Generate SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          format: cyclonedx-json
+          output-file: sbom.cyclonedx.json
+
+      # --- 9. image signing CONCEPT (Cosign, keyless) -------------------------
+      # CONCEPT ONLY: keyless signing uses the workflow's OIDC identity via
+      # Sigstore/Fulcio — no long-lived private key. This template does NOT push
+      # the image, so there is nothing real to sign; the step documents the flow.
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Sign image (concept — requires a pushed image by digest)
+        run: |
+          echo "CONCEPT ONLY — not executed against a real image."
+          echo "Real flow (needs a pushed image + id-token: write):"
+          echo "  cosign sign --yes ${IMAGE}@<DIGEST>"
+          echo "  cosign attest --yes --predicate sbom.cyclonedx.json \\"
+          echo "    --type cyclonedx ${IMAGE}@<DIGEST>"
+
+      # --- 10. artifact upload CONCEPT ----------------------------------------
+      # Retain the security evidence (SBOM + scan results) as build artifacts.
+      - name: Upload SBOM and scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-evidence
+          path: |
+            ${{ env.PROJECT_DIR }}/sbom.cyclonedx.json
+            ${{ env.PROJECT_DIR }}/trivy-deps.sarif
+            ${{ env.PROJECT_DIR }}/trivy-image.sarif
+          if-no-files-found: warn

@@ -1,0 +1,34 @@
+# Drive the whole rollout from values. NOT rendered or installed here.
+#
+# Blue-green: set `activeTrack` to blue or green — the Service follows it, so
+# promotion/rollback is a one-line value change + `helm upgrade`.
+#
+# Canary: set replica counts to shift the replica-ratio split (e.g. stable 9,
+# canary 1 ≈ 10%). Both tracks share one Service that selects on `app` only.
+
+image:
+  repository: my-java-app     # placeholder
+  blueTag: v1
+  greenTag: v2
+  pullPolicy: IfNotPresent
+
+containerPort: 8080
+
+# --- blue-green ---
+# Which track the stable Service points at. Flip to "green" to switch traffic.
+activeTrack: blue
+
+blue:
+  enabled: true
+  replicas: 3
+green:
+  enabled: true
+  replicas: 3
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

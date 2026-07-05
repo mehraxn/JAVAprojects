@@ -1,0 +1,71 @@
+# Reference examples for how CPU/memory requests and limits are governed.
+# These are illustrative and are NOT required to run the app. Apply them into a
+# disposable namespace only. None of this is applied in this repository.
+#
+# Three things are shown:
+#   1. LimitRange     - default + max requests/limits for pods in a namespace.
+#   2. ResourceQuota  - a hard cap on total requests/limits in a namespace.
+#   3. A bare Pod     - the anatomy of requests vs limits, annotated.
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: autoscaling-lab-defaults
+spec:
+  limits:
+    - type: Container
+      # Applied when a container omits limits.
+      default:
+        cpu: 500m
+        memory: 256Mi
+      # Applied when a container omits requests. Requests are what the
+      # scheduler reserves AND what the HPA measures CPU utilization against.
+      defaultRequest:
+        cpu: 250m
+        memory: 128Mi
+      # A container may not ask for more than this.
+      max:
+        cpu: "1"
+        memory: 512Mi
+      # ...nor less than this.
+      min:
+        cpu: 50m
+        memory: 64Mi
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: autoscaling-lab-quota
+spec:
+  hard:
+    # Sum of all container requests/limits in the namespace cannot exceed these.
+    # With maxReplicas=5 at 250m request each, the app needs 1250m of requests,
+    # which fits inside this 2-core request budget.
+    requests.cpu: "2"
+    requests.memory: 1Gi
+    limits.cpu: "4"
+    limits.memory: 2Gi
+    pods: "10"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resource-anatomy-example
+  labels:
+    app: autoscaling-java-app
+spec:
+  containers:
+    - name: app
+      image: my-autoscaling-java-app:latest
+      resources:
+        requests:
+          # REQUEST = guaranteed floor. The scheduler will only place this pod
+          # on a node with at least this much free CPU/memory. HPA CPU
+          # utilization is measured as (actual usage / cpu request).
+          cpu: 250m
+          memory: 128Mi
+        limits:
+          # LIMIT = hard ceiling. CPU over the limit is throttled (not killed);
+          # memory over the limit gets the container OOMKilled.
+          cpu: 500m
+          memory: 256Mi

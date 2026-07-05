@@ -1,0 +1,17 @@
+# The stable Service follows `activeTrack`. Changing that value and running
+# `helm upgrade` performs the blue-green switch (or rollback). NOT rendered here.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rollout.fullname" . }}
+  labels:
+    app: java-app
+spec:
+  type: ClusterIP
+  selector:
+    app: java-app
+    track: {{ .Values.activeTrack }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

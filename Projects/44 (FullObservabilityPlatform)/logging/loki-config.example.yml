@@ -1,6 +1,36 @@
+# Grafana Loki configuration — EXAMPLE ONLY, NOT run here.
+# Loki is the log backend: Promtail (see promtail-config.example.yml) ships the
+# app's stdout JSON logs to Loki, and Grafana queries them with LogQL. Loki
+# indexes only LABELS (service, env, level), not full log text, which keeps it
+# cheap — the opposite of a full-text engine.
 auth_enabled: false
+
 server:
   http_listen_port: 3100
 
-# TODO: Add reviewed local storage, schema, retention, limits, and ruler settings.
-# This incomplete example must not be treated as runnable configuration.
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:               # local disk only — no object store in this lab
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  # Keep label cardinality sane; reject absurdly old timestamps.
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h

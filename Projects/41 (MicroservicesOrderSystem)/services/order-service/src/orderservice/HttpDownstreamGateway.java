@@ -35,7 +35,7 @@ public class HttpDownstreamGateway implements DownstreamGateway {
     @Override
     public boolean authorizePayment(Order order) {
         return post(paymentUrl + "/payments/authorize?orderId=" + encode(order.getId())
-                + "&amount=" + order.getTotal());
+                + "&amount=" + encode(order.getTotal().toPlainString()));
     }
 
     @Override

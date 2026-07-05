@@ -1,12 +1,21 @@
+# Canary Service for the REPLICA-RATIO approach. Its selector matches ONLY
+# `app: java-app` and deliberately omits `track`, so it includes BOTH the stable
+# and canary pods. A plain Service load-balances across all matching pods, so the
+# traffic split is simply the replica ratio (9 stable : 1 canary ≈ 90/10).
+#
+# This needs no special controller. For PRECISE, pod-count-independent weights,
+# use ingress-canary-example.yaml instead. NOT deployed.
 apiVersion: v1
 kind: Service
 metadata:
-  name: java-app-canary
-spec:
-  selector:
+  name: java-app
+  labels:
     app: java-app
-    track: green
+spec:
+  type: ClusterIP
+  selector:
+    app: java-app        # note: no `track` -> matches stable AND canary pods
   ports:
     - name: http
       port: 80
-      targetPort: 8080
+      targetPort: http

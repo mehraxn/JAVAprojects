@@ -1,14 +1,15 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: app-dev
 resources:
   - ../../base
 nameSuffix: -dev
 commonLabels:
   environment: dev
 images:
+  # Immutable, environment-specific tag/digest (placeholder).
   - name: my-cloud-native-java-app
-    newTag: dev-placeholder
-configMapGenerator:
-  - name: app-config
-    literals:
-      - APP_ENVIRONMENT=dev
+    newTag: 1.4.0
+patches:
+  - path: deployment-patch.yaml
+  - path: configmap-patch.yaml

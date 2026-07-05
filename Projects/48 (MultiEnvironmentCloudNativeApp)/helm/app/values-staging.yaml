@@ -1,0 +1,12 @@
+replicaCount: 2
+config:
+  environment: staging
+  logLevel: INFO
+  featureNewUi: "true"
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

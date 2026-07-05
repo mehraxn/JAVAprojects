@@ -1,0 +1,32 @@
+# Promtail configuration — EXAMPLE ONLY, NOT run here.
+# Promtail tails the app's log output, parses the structured JSON, promotes a
+# few low-cardinality fields to Loki labels, and pushes the rest as the log
+# body. Promoting trace_id is what lets Grafana link a log line to its trace.
+server:
+  http_listen_port: 9080
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: observable-java-app
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: observable-java-app
+          service: observable-java-app
+          __path__: /var/log/app/*.log
+    pipeline_stages:
+      # Parse the JSON produced by the app's StructuredLogger.
+      - json:
+          expressions:
+            level: level
+            env: env
+            trace_id: trace_id
+            event: event
+      # Promote ONLY low-cardinality fields to labels (never trace_id — it is
+      # high-cardinality; keep it in the body for lookups instead).
+      - labels:
+          level:
+          env:
+          event:

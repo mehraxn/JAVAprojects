@@ -2,7 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloud-native-java-app
+  labels:
+    app: cloud-native-java-app
 spec:
+  # replicas is intentionally set in each overlay (dev/staging/prod differ).
   replicas: 1
   selector:
     matchLabels:
@@ -12,8 +15,15 @@ spec:
       labels:
         app: cloud-native-java-app
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: app
+          # Placeholder repo; the tag/digest is pinned per environment in the
+          # overlays (images: newTag) so an immutable artifact is promoted.
           image: my-cloud-native-java-app:placeholder
           ports:
             - name: http
@@ -21,4 +31,30 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
-          # TODO: Add probes, resources, security context, and immutable image policy.
+            # A real secret is layered in per env from a separately-managed
+            # Secret (see environments/<env>/secret.example.yaml). Never baked in.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # Baseline resources; overlays override per environment.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

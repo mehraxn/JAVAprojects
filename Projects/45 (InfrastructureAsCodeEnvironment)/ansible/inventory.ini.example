@@ -1,4 +1,25 @@
-[learning_hosts]
-iac-lab-01 ansible_host=server.example.invalid ansible_user=lab_user
+# SAFE EXAMPLE inventory. Copy to inventory.ini (git-ignored) and edit ONLY with
+# approved, disposable hosts. Every host below is an unreachable *.example.invalid
+# name — the reserved `.invalid` TLD can never resolve. No real IPs, no secrets.
+#
+# In the full workflow these entries would be GENERATED from Terraform's
+# `ansible_hosts` output (see docs/provisioning-flow.md), not hand-written.
 
-# TODO: Replace only with an explicitly approved disposable host in an ignored file.
+[dev]
+iac-lab-dev-app-0 ansible_host=iac-lab-dev-app-0.example.invalid
+
+[prod]
+iac-lab-prod-app-0 ansible_host=iac-lab-prod-app-0.example.invalid
+iac-lab-prod-app-1 ansible_host=iac-lab-prod-app-1.example.invalid
+iac-lab-prod-app-2 ansible_host=iac-lab-prod-app-2.example.invalid
+
+# `app_servers` groups both tiers so the playbook can target them together while
+# group_vars/dev.yml and group_vars/prod.yml still apply per-environment values.
+[app_servers:children]
+dev
+prod
+
+[app_servers:vars]
+ansible_user=lab_user
+# Never store a password/private key here. Use an SSH agent or --key-file at run
+# time, and ansible-vault for any secret variables (see docs/security-notes.md).

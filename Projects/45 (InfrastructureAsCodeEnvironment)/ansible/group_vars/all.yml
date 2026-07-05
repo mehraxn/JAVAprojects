@@ -1,0 +1,16 @@
+---
+# Non-sensitive defaults shared by all hosts. NEVER store passwords, tokens, or
+# private keys here — use ansible-vault for secrets (see docs/security-notes.md).
+common_packages:
+  - curl
+  - unzip
+  - ca-certificates
+
+timezone: UTC
+
+app_user: learning_app
+app_group: learning_app
+app_service_name: learning-app
+app_root: /opt/learning-app
+app_config_directory: /etc/learning-app
+app_config_file: /etc/learning-app/application.conf

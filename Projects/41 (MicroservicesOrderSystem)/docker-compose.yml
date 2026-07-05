@@ -1,0 +1,55 @@
+services:
+  inventory-service:
+    build:
+      context: .
+      dockerfile: services/inventory-service/Dockerfile
+    environment:
+      PORT: "8081"
+    ports:
+      - "8081:8081"
+    networks:
+      - order-network
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: services/payment-service/Dockerfile
+    environment:
+      PORT: "8082"
+    ports:
+      - "8082:8082"
+    networks:
+      - order-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    environment:
+      PORT: "8083"
+    ports:
+      - "8083:8083"
+    networks:
+      - order-network
+
+  order-service:
+    build:
+      context: .
+      dockerfile: services/order-service/Dockerfile
+    environment:
+      PORT: "8080"
+      INVENTORY_SERVICE_URL: http://inventory-service:8081
+      PAYMENT_SERVICE_URL: http://payment-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:8083
+    ports:
+      - "8080:8080"
+    depends_on:
+      - inventory-service
+      - payment-service
+      - notification-service
+    networks:
+      - order-network
+
+networks:
+  order-network:
+    driver: bridge

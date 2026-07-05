@@ -1,12 +1,51 @@
+# Prometheus alerting rules — EXAMPLE ONLY, never evaluated in this repo.
+# These are derived from Service Level Indicators (SLIs): availability, error
+# rate, latency, and saturation. Loaded via rule_files in prometheus.yml.
 groups:
-  - name: observability-learning
+  - name: observability-lab-slo
     rules:
+      # --- Availability ---------------------------------------------------
       - alert: JavaAppTargetDown
-        expr: up{job="java-app"} == 0
+        expr: up{job="observable-java-app"} == 0
         for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Java app metrics target is down"
+          description: "Prometheus cannot scrape {{ $labels.instance }} for 2m."
+
+      # --- Error rate (RED: Rate of Errors) -------------------------------
+      # More than 5% of requests returning 5xx over 5 minutes.
+      - alert: HighHttpErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Example Java metrics target is unavailable"
+          summary: "Elevated 5xx error rate (>5%)"
+          description: "5xx ratio is {{ $value | humanizePercentage }} over 5m."
 
-# TODO: Define alerts from measured service-level indicators.
+      # --- Latency (RED: Duration) ----------------------------------------
+      # p95 request latency above 1s, computed from the histogram buckets.
+      - alert: HighRequestLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 latency above 1s"
+          description: "p95 request latency is {{ $value }}s over 5m."
+
+      # --- Saturation -----------------------------------------------------
+      - alert: JvmHeapHigh
+        expr: jvm_memory_used_bytes{area="heap"} > 2.5e8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM heap usage high"
+          description: "Heap used is {{ $value | humanize1024 }}B for 10m."

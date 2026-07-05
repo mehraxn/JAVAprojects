@@ -1,0 +1,9 @@
+.git
+.idea
+.vscode
+**/out
+**/*.class
+README.md
+TESTING.md
+docs
+k8s

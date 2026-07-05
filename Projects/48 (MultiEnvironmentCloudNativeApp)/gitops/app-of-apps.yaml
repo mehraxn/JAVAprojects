@@ -1,0 +1,25 @@
+# "App of apps" root. This single Argo CD Application watches the environments/
+# directory and creates one child Application per environment (dev/staging/prod).
+# Registering just this root bootstraps the whole delivery tree. NOT deployed.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloud-native-app-root
+  namespace: argocd
+spec:
+  project: cloud-native-app
+  source:
+    repoURL: https://example.invalid/cloud-native-app.git
+    targetRevision: main
+    # Each environments/<env>/application.yaml is a child Application.
+    path: "Projects/48 (MultiEnvironmentCloudNativeApp)/environments"
+    directory:
+      recurse: true
+      include: "*/application.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

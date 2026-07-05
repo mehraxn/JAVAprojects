@@ -1,0 +1,9 @@
+# DEV config: verbose logs, new UI on for testing.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  APP_ENVIRONMENT: "dev"
+  LOG_LEVEL: "DEBUG"
+  FEATURE_NEW_UI: "true"

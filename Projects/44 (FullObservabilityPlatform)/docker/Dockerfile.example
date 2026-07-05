@@ -1,0 +1,19 @@
+# Example image for the observable Java app — NOT built in this repository.
+# Referenced by ../docker-compose.yml (which is also never run).
+FROM eclipse-temurin:21-jdk AS build
+WORKDIR /workspace
+COPY src ./src
+RUN javac -d out src/fullobservabilityplatform/*.java
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /workspace/out ./out
+RUN addgroup -S app && adduser -S -G app -u 10001 app
+USER 10001
+EXPOSE 8080
+ENV APP_PORT=8080 \
+    OTEL_SERVICE_NAME=observable-java-app \
+    APP_ENV=dev
+# A real deployment would add the OpenTelemetry Java agent here and set
+# OTEL_EXPORTER_OTLP_ENDPOINT so spans flow to the collector.
+ENTRYPOINT ["java", "-cp", "out", "fullobservabilityplatform.Main"]

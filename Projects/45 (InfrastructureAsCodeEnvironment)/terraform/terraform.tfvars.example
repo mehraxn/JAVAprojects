@@ -1,2 +1,17 @@
-# Safe example only. Never place credentials in tfvars files.
-environment_name = "sandbox"
+# SAFE EXAMPLE ONLY. Copy to terraform.tfvars (which is git-ignored) and edit.
+# NEVER put credentials, tokens, private keys, or real IPs in a tfvars file.
+# Secrets belong in environment variables or a secrets manager (see
+# docs/security-notes.md).
+
+project_name = "iac-lab"
+environment  = "sandbox"
+region       = "example-region-1"
+
+vpc_cidr            = "10.20.0.0/16"
+public_subnet_cidrs = ["10.20.1.0/24", "10.20.2.0/24"]
+
+instance_count = 1
+instance_size  = "small"
+
+# RFC 5737 TEST-NET-1 documentation range — a reserved placeholder, not a real IP.
+allowed_ssh_cidrs = ["192.0.2.0/24"]

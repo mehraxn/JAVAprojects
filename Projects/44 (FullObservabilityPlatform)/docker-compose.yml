@@ -1,0 +1,87 @@
+# =============================================================================
+# Full observability stack — DO NOT RUN.
+# =============================================================================
+# This compose file is a STUDY ARTIFACT. It was never executed: no container was
+# built, pulled, or started; no dashboard was imported; nothing was tested.
+# Image tags are pinned for realism only. There are NO real secrets here.
+#
+# Signal flow (see diagrams/observability-flow.md):
+#   app ──/metrics──────────────▶ Prometheus ─┐
+#   app ──stdout JSON──▶ Promtail ▶ Loki ──────┤
+#   app ──OTLP──▶ OTel Collector ▶ Tempo ──────┼─▶ Grafana (metrics+logs+traces)
+#                          └──/metrics :8889──▶ Prometheus
+# =============================================================================
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.example
+    image: my-observable-java-app:latest
+    environment:
+      APP_PORT: "8080"
+      OTEL_SERVICE_NAME: observable-java-app
+      APP_ENV: dev
+      # A real run would add the OTel Java agent + OTEL_EXPORTER_OTLP_ENDPOINT.
+    ports:
+      - "8080:8080"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    command: ["--config=/etc/otelcol/config.yml"]
+    volumes:
+      - ./monitoring/otel-collector.example.yml:/etc/otelcol/config.yml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Prometheus metrics exposed by the collector
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.example.yml:/etc/prometheus/alerts.example.yml:ro
+    ports:
+      - "9090:9090"
+
+  loki:
+    image: grafana/loki:3.1.0
+    command: ["-config.file=/etc/loki/config.yml"]
+    volumes:
+      - ./logging/loki-config.example.yml:/etc/loki/config.yml:ro
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:3.1.0
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ./logging/promtail-config.example.yml:/etc/promtail/config.yml:ro
+      # A real run would mount the app's log directory here.
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    command: ["-config.file=/etc/tempo/config.yml"]
+    volumes:
+      - ./monitoring/tempo.example.yml:/etc/tempo/config.yml:ro
+    ports:
+      - "3200:3200"
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    environment:
+      # Placeholder only. A real deployment would use a secret, not a literal.
+      GF_SECURITY_ADMIN_PASSWORD: change-me-placeholder
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana-dashboard.example.json:/var/lib/grafana/dashboards/app.json:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+# No named volumes/networks are defined on purpose — this stack is not meant to
+# be brought up. Add persistent volumes and a dedicated network before any real
+# use.

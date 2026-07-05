@@ -1,8 +1,14 @@
 ---
-- name: Show infrastructure-to-configuration handoff design
-  hosts: learning_hosts
-  gather_facts: false
-  tasks:
-    - name: Display design-only message
-      ansible.builtin.debug:
-        msg: "TODO: configure only an approved disposable host"
+# Configuration play: turn a bare provisioned host into a running app node.
+# Targets the app_servers group from the inventory. This was NOT executed — no
+# host was contacted and no change was made anywhere.
+- name: Configure application servers
+  hosts: app_servers
+  become: true
+  gather_facts: true
+
+  roles:
+    # 1) baseline every host the same way (packages, user, directories, time)
+    - role: common
+    # 2) then lay down the app-specific config and service
+    - role: app

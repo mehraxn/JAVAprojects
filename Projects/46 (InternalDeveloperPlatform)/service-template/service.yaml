@@ -1,0 +1,15 @@
+# Catalog metadata for a generated service (Backstage-style catalog-info).
+# The generator fills the __TOKEN__ values. This makes the service discoverable
+# and gives it a clear owner and lifecycle. Placeholders only.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: __SERVICE_NAME__
+  description: "Java HTTP service generated from the platform golden path."
+  annotations:
+    platform.example/image-repo: __IMAGE_REPO__
+spec:
+  type: service
+  lifecycle: experimental
+  owner: __SERVICE_OWNER__
+  system: platform-learning

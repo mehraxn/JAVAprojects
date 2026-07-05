@@ -1,0 +1,34 @@
+# Grafana Tempo configuration — EXAMPLE ONLY, NOT run here.
+# Tempo is the distributed-tracing backend: it ingests spans (via OTLP from the
+# Collector), stores them cheaply, and lets Grafana look a trace up by trace_id.
+# (Jaeger is an equally valid alternative; Tempo is used here because it shares
+# Grafana as its UI, matching the rest of this stack.)
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  max_block_duration: 5m
+
+storage:
+  trace:
+    backend: local            # local disk only — no cloud bucket in this lab
+    local:
+      path: /var/tempo/blocks
+    wal:
+      path: /var/tempo/wal
+
+# Lets Grafana jump from a log line's trace_id (or a metric exemplar) straight
+# to the matching trace — the heart of signal correlation.
+querier:
+  frontend_worker:
+    frontend_address: 127.0.0.1:9095

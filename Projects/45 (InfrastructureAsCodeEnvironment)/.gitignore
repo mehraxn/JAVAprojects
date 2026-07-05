@@ -1,0 +1,18 @@
+# Never commit real state, credentials, or the concrete inventory.
+# Only the *.example files in this project are tracked.
+
+# --- Terraform ---
+**/.terraform/
+**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars          # keep terraform.tfvars.example, ignore the real one
+!*.tfvars.example
+backend.tf        # real backend config; keep backend.tf.example
+crash.log
+
+# --- Ansible ---
+inventory.ini     # keep inventory.ini.example, ignore the real one
+*.retry
+vault-password*
+*.vault

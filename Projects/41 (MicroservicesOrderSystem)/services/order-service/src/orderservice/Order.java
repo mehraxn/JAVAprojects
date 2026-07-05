@@ -65,8 +65,8 @@ public class Order {
 
     public synchronized String toJson() {
         return "{\"id\":\"" + escape(id) + "\",\"sku\":\"" + escape(sku)
-                + "\",\"quantity\":" + quantity + ",\"unitPrice\":" + unitPrice
-                + ",\"total\":" + getTotal() + ",\"status\":\"" + status
+                + "\",\"quantity\":" + quantity + ",\"unitPrice\":" + unitPrice.toPlainString()
+                + ",\"total\":" + getTotal().toPlainString() + ",\"status\":\"" + status
                 + "\",\"detail\":\"" + escape(detail) + "\"}";
     }
 

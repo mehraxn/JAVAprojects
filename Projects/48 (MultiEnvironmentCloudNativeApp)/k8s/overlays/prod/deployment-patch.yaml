@@ -1,0 +1,18 @@
+# PROD: highest capacity + availability. 4 replicas, largest resources.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-native-java-app
+spec:
+  replicas: 4
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi

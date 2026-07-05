@@ -1,10 +1,22 @@
 ---
-- name: Backup validation design
+- name: Validate a local backup checksum
   hosts: backup_lab
   gather_facts: false
+  vars:
+    backup_directory: "{{ playbook_dir }}/../backups"
   tasks:
-    - name: Display validation placeholder
-      ansible.builtin.debug:
-        msg: "TODO: validate a backup only on an approved disposable host"
+    - name: Require a safe timestamped backup filename
+      ansible.builtin.assert:
+        that:
+          - backup_file is defined
+          - backup_file is match('^app-[0-9]{8}T[0-9]{6}Z\.dump$')
+        fail_msg: "Pass -e backup_file=app-<timestamp>.dump"
 
-# Inventory must use example.invalid until a disposable host is approved.
+    - name: Verify the checksum without changing the backup
+      ansible.builtin.command:
+        argv:
+          - sha256sum
+          - -c
+          - "{{ backup_file }}.sha256"
+        chdir: "{{ backup_directory }}"
+      changed_when: false

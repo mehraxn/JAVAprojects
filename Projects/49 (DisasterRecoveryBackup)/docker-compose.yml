@@ -1,0 +1,61 @@
+name: disaster-recovery-backup-lab
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      # Local lab credentials only. Override them for your own machine if needed;
+      # never reuse these values outside this disposable environment.
+      POSTGRES_DB: app
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: local_dev_password
+      PGPASSWORD: local_dev_password
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  restore-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: restore_user
+      POSTGRES_PASSWORD: local_restore_password
+      PGPASSWORD: local_restore_password
+    ports:
+      - "127.0.0.1:${RESTORE_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - restore-data:/var/lib/postgresql/data
+      - ./backups:/backups:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  db-tools:
+    image: postgres:16-alpine
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGDATABASE: app
+      PGUSER: app_user
+      PGPASSWORD: local_dev_password
+    volumes:
+      - ./backups:/backups:ro
+
+volumes:
+  postgres-data:
+  restore-data:

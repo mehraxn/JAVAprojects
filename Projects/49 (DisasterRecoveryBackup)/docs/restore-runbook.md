@@ -1,80 +1,50 @@
-# Restore Runbook
+# Restore runbook
 
-Step-by-step recovery of the PostgreSQL database from a backup. **No restore was
-performed; every command is marked NOT executed.** This is the canonical restore
-procedure (the older `runbooks/restore.md` is a superseded stub).
+This runbook separates the executable local drill from a real incident. Never
+restore directly over a production database before validating the selected
+backup in an isolated target.
 
-## Before you start
+## Local verification restore
 
-- Confirm you have **incident authority** ([disaster-recovery-plan.md](disaster-recovery-plan.md)).
-- Restore into a **disposable / DR target first**, never straight over a
-  production DB. The example script refuses a host containing `prod`.
-- Start a timer now — elapsed time is your measured **RTO**.
+1. Start a timer for the measured RTO.
+2. Select the newest appropriate dump from `backups/`.
+3. Run the guarded restore script:
 
-## Steps
+   ```bash
+   ./scripts/restore.sh backups/app-YYYYMMDDTHHMMSSZ.dump
+   ```
 
-### 1. Declare & isolate
-Stop writes to the damaged database (scale the app to 0 or put it in maintenance)
-so you are not racing the corruption.
+4. Confirm the script reports a valid checksum and a non-zero `app_data` count.
+5. Independently inspect the restored rows:
 
-```bash
-# NOT executed:
-kubectl scale deployment app --replicas=0
-```
+   ```bash
+   docker compose exec -T restore-postgres \
+     psql -U restore_user -d app_restore -c "TABLE app_data;"
+   ```
 
-### 2. Select a backup
-Pick the most recent **verified** backup at or before the last-known-good time.
-The gap between "now" and that backup's timestamp is your **RPO** for this
-incident.
+6. Record the elapsed restore time and the selected backup's age. Do not claim
+   an RTO or RPO measurement that was not observed.
 
-```bash
-# NOT executed — list available backups:
-ls -l /backups/app-*.dump
-```
+The script always targets `app_restore` inside the local `restore-postgres`
+container. It rejects a non-local `DR_TARGET_ENV`, external database variables,
+missing checksums, unexpected filenames, and archives outside `backups/`.
 
-### 3. Verify integrity BEFORE restoring
-```bash
-# NOT executed:
-sha256sum --check /backups/app-<ts>.dump.sha256
-```
+## Production incident outline
 
-### 4. Restore into the target
-```bash
-# NOT executed — see backup/restore-script.example.sh:
-PGHOST=postgres-dr PGUSER=app PGDATABASE=app_restore \
-  ./backup/restore-script.example.sh --file /backups/app-<ts>.dump --confirm
-```
+The local script is intentionally not a production restore tool. During a real
+incident:
 
-### 5. Validate the data (integrity + application)
-```bash
-# NOT executed — integrity: expected tables/rows present:
-psql -h postgres-dr -U app -d app_restore -c "SELECT count(*) FROM app_data;"
-```
-Then run **application-level** checks: start the app against the restored DB and
-exercise a critical read/write path. A restore that loads but fails app checks is
-not a successful recovery.
+1. obtain incident authority and stop or isolate application writes;
+2. preserve the damaged source and relevant logs;
+3. identify the last-known-good recovery point;
+4. retrieve an immutable off-site backup through an audited process;
+5. verify its signature/checksum;
+6. restore into an isolated recovery environment;
+7. run database integrity and application-level validation;
+8. approve and execute a controlled traffic cutover;
+9. monitor errors and latency, retaining a rollback path;
+10. record the timeline, measured RPO/RTO, decisions, and follow-up actions.
 
-### 6. Cut traffic over (controlled)
-Only after validation, point the app at the restored DB and scale it back up.
-Watch error rate and latency.
-
-```bash
-# NOT executed:
-kubectl scale deployment app --replicas=3
-```
-
-### 7. Record evidence
-Note: backup timestamp used (→ RPO), elapsed time (→ RTO), who did what, and any
-surprises. Feed this into [incident-simulation.md](incident-simulation.md) and
-the retrospective.
-
-## If the restore fails
-
-- Do **not** delete the damaged source until a restore has succeeded elsewhere.
-- Try the next-older backup; a bad dump is exactly why we verify.
-- Escalate per the DR plan; keep the timer running and comms flowing.
-
-## What was NOT done
-
-- No `kubectl`, `psql`, `pg_restore`, or script was executed.
-- No database was restored or validated; **recovery was not tested.**
+If validation fails, keep the damaged source, try the next appropriate verified
+backup, and escalate through the incident plan. Never weaken checksum or safety
+guards merely to make a restore proceed.

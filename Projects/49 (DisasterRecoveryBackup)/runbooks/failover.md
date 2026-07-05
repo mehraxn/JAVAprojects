@@ -1,5 +1,12 @@
 # Failover Runbook
 
-Planned steps: declare incident authority, freeze unsafe writes, assess the failure domain, choose recovery/failover, restore service, validate data, control traffic, communicate status, and preserve evidence.
+This project does not automate application traffic failover. The local Compose
+lab verifies data recovery only.
 
-TODO: define decision owners, DNS/traffic controls, split-brain prevention, and failback.
+For a future production runbook, define named decision owners and require these
+gates: freeze unsafe writes, determine the failure domain, prevent split brain,
+restore and validate data, approve traffic changes, monitor the recovered path,
+retain a rollback option, plan failback, and preserve an incident timeline.
+
+DNS, load-balancer, replication, and application commands must be specific to
+the deployed environment; generic commands here would be unsafe.

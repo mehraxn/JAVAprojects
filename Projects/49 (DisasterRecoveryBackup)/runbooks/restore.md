@@ -1,5 +1,11 @@
 # Restore Runbook
 
-Planned steps: isolate the target, select and verify a backup, restore data, run integrity/application checks, record elapsed time and data point, and obtain approval before traffic.
+The executable local restore command is:
 
-TODO: define validation queries and rollback for a failed restore.
+```bash
+./scripts/restore.sh backups/app-YYYYMMDDTHHMMSSZ.dump
+```
+
+It verifies the checksum and restores only into the disposable `app_restore`
+database. Follow the detailed [restore runbook](../docs/restore-runbook.md) for
+validation, production incident boundaries, and failure handling.

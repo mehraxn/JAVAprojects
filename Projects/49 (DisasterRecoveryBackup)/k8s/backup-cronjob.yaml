@@ -1,7 +1,7 @@
 # Scheduled logical backup CronJob. Runs pg_dump nightly into the backup PVC.
 # SUSPENDED by default (suspend: true) so it does nothing until deliberately
 # enabled with a reviewed destination. Credentials come from the Secret, never
-# from this file. Placeholder image only. NOT deployed / NOT scheduled.
+# from this file. This is a reviewed example, but it is NOT deployed or tested.
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -24,6 +24,10 @@ spec:
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+            seccompProfile:
+              type: RuntimeDefault
           containers:
             - name: backup
               image: postgres:16   # provides pg_dump; pin a digest in prod
@@ -32,16 +36,23 @@ spec:
                     name: postgres-credentials
               env:
                 - name: PGHOST
-                  value: postgres  # headless Service name of the StatefulSet
+                  value: postgres  # resolves through postgres-service.yaml
+                - name: PGPORT
+                  value: "5432"
               command: ["/bin/sh", "-c"]
               args:
                 - |
-                  set -euo pipefail
+                  # postgres:16-alpine provides /bin/sh, not Bash. Keep this
+                  # POSIX-compatible instead of enabling Bash-only pipefail.
+                  set -eu
                   ts="$(date -u +%Y%m%dT%H%M%SZ)"
-                  out="/backups/${POSTGRES_DB}-${ts}.dump"
+                  name="${POSTGRES_DB}-${ts}.dump"
+                  out="/backups/${name}"
                   pg_dump -h "$PGHOST" -U "$POSTGRES_USER" \
                     -Fc --no-owner --no-privileges -f "$out" "$POSTGRES_DB"
-                  sha256sum "$out" > "${out}.sha256"
+                  cd /backups
+                  sha256sum "$name" > "${name}.sha256"
+                  date -u +%s > last_success_epoch
                   # retention: keep 7 days
                   find /backups -name "*.dump*" -mtime +7 -delete
                   echo "backup ok: $out"

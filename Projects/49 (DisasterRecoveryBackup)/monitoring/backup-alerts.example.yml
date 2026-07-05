@@ -1,12 +1,20 @@
 groups:
-  - name: backup-learning
+  - name: disaster-recovery-backups
     rules:
-      - alert: BackupTooOld
-        expr: time() - backup_last_success_timestamp_seconds > 86400
+      - alert: DisasterRecoveryBackupMetricMissing
+        expr: absent(disaster_recovery_backup_last_success_timestamp_seconds)
         for: 15m
         labels:
           severity: warning
         annotations:
-          summary: "Example backup success timestamp is too old"
+          summary: "No successful-backup metric is being scraped"
+          description: "The backup freshness metric has been absent for 15 minutes. Check the textfile collector and backup job."
 
-# TODO: Implement and verify the metric before using this conceptual alert.
+      - alert: DisasterRecoveryBackupStale
+        expr: time() - disaster_recovery_backup_last_success_timestamp_seconds > 90000
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "The latest successful PostgreSQL backup is more than 25 hours old"
+          description: "The age of the last successful backup exceeds the daily backup schedule plus a one-hour allowance."

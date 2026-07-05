@@ -1,8 +1,8 @@
 # pg_dump / pg_restore — Reference
 
-The PostgreSQL logical-backup tools behind the example scripts. **None of these
-commands were executed** — they are documented for learning and marked NOT
-executed.
+Reference notes for the PostgreSQL tools used by the executable local scripts.
+The standalone commands below are learning examples; use `../scripts/` for the
+guarded Compose workflow.
 
 ## Logical vs physical backups
 
@@ -21,10 +21,10 @@ executed.
 | `-Fc` | custom (compressed) | `pg_restore` | **recommended**: selective + parallel |
 | `-Fd` | directory | `pg_restore -j` | parallel dump *and* restore |
 
-## Common commands (NOT executed)
+## Common commands
 
 ```bash
-# NOT executed — full custom-format dump (what backup-script.example.sh does):
+# Full custom-format dump (scripts/backup.sh performs this through Compose):
 pg_dump -h "$PGHOST" -U "$PGUSER" -Fc --no-owner --no-privileges \
   -f app-$(date -u +%Y%m%dT%H%M%SZ).dump app
 
@@ -55,6 +55,6 @@ credentials only.
 ## Verification
 
 A dump is not a backup until it has been **restored and validated**. The
-[restore-script.example.sh](restore-script.example.sh) checks the SHA-256
-checksum, restores into a disposable target, and runs a row-count query. See
+[maintained restore script](../scripts/restore.sh) requires and verifies the
+SHA-256 checksum, restores into a disposable target, and runs a row-count query. See
 [../docs/backup-strategy.md](../docs/backup-strategy.md#verification).

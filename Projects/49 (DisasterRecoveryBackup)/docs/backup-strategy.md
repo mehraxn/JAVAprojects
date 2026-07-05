@@ -1,7 +1,8 @@
 # Backup Strategy
 
-How backups are taken, stored, retained, and — critically — verified. **No
-backup was taken and nothing was stored.**
+How backups are taken, stored, retained, and, critically, verified. The local
+workflow is executable; off-site storage and production retention remain design
+recommendations.
 
 ## What to back up
 
@@ -16,7 +17,7 @@ manifests, images) is redeployable from Git/registry.
 | Physical + WAL (PITR) | `pg_basebackup` + WAL archive | seconds–minutes | tiny RPO, point-in-time; version/platform-locked, more moving parts |
 
 This project uses **daily logical backups** (see
-[../backup/backup-script.example.sh](../backup/backup-script.example.sh) and
+[../scripts/backup.sh](../scripts/backup.sh) and
 [../k8s/backup-cronjob.yaml](../k8s/backup-cronjob.yaml)). For a smaller RPO you
 would add WAL archiving on top.
 
@@ -28,7 +29,8 @@ would add WAL archiving on top.
   **off-site**. The on-cluster PVC is one copy; a real setup also ships to
   off-region object storage.
 - **GFS retention (Grandfather-Father-Son):** keep e.g. 7 daily, 4 weekly, 12
-  monthly. The example script prunes by age (`RETENTION_DAYS`).
+  monthly. The Kubernetes example prunes dumps older than seven days. The local
+  lab retains files until the operator deliberately removes them.
 
 ## Storage & durability
 
@@ -59,7 +61,9 @@ Backups fail silently more often than anyone expects. Verify at multiple levels:
 
 The [restore-runbook.md](restore-runbook.md) does 2 and 3.
 
-## What was NOT done
+## Scope boundary
 
-- No dump was created; no checksum, marker, or off-site copy exists.
-- No retention pruning ran; no verification restore was performed.
+The Compose lab can create checksummed dumps and perform verification restores.
+It does not create off-site copies, immutable storage, WAL archives, or a
+production retention process. Record actual test evidence rather than treating
+the design targets as achieved results.

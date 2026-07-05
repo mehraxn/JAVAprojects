@@ -1,93 +1,167 @@
-# Disaster Recovery & Backup
+# Disaster Recovery and Backup Lab
 
-*A disaster-recovery and backup design for a Java/PostgreSQL/Kubernetes app — scheduled logical backups, a verified restore procedure, RPO/RTO targets, and a game-day simulation plan.*
+This project is a locally executable PostgreSQL disaster-recovery lab. It starts
+a primary database with sample data, creates custom-format `pg_dump` archives,
+adds SHA-256 checksums, and restores a selected archive into a separate disposable
+database. The restore is considered successful only when the checksum passes and
+the restored `app_data` table contains rows.
 
-## Problem this project solves
+## Architecture
 
-Backups that are never restored are just hope. When data is lost — a bad
-migration, a deleted volume, a lost region — you need a **tested** path back
-within known limits. This project designs that path: automated `pg_dump`
-backups, a **restore runbook that verifies integrity**, explicit **RPO/RTO**
-targets, and an **incident simulation** to prove it all before a real outage.
-
-## Technologies & concepts
-
-- **PostgreSQL** logical backups (`pg_dump -Fc`) + `pg_restore` verification
-- **Kubernetes** — StatefulSet with persistent volumes, backup CronJob, PVC, Secret
-- **RPO / RTO**, **3-2-1** + **GFS** retention, checksums, off-site immutability
-- **Failure simulation (game day)**, incident runbook, backup verification
-
-## Architecture overview
-
+```text
+db/init.sql
+    |
+    v
+postgres:5432 (primary) --pg_dump--> backups/app-<UTC timestamp>.dump
+                                            |
+                                            +--> .sha256 checksum
+                                            +--> Prometheus textfile metric
+                                            |
+                                            v
+restore-postgres:5433 (disposable) <-- pg_restore + app_data validation
 ```
- StatefulSet (Postgres) ── volumeClaimTemplates ─▶ DB PVC (durable)
-        │
-   CronJob: pg_dump (suspended) ─▶ backup PVC ─▶ [off-site object storage]
-        │
-   restore: verify checksum ─▶ pg_restore into DISPOSABLE target ─▶ validate
-        │
-   RPO = age of backup used   |   RTO = time to service restored
+
+Both databases are local Docker containers with separate named volumes. Restore
+scripts cannot target an arbitrary host or database: they always recreate
+`app_restore` inside the `restore-postgres` service.
+
+## Prerequisites
+
+- Docker Engine or Docker Desktop with Docker Compose v2
+- Bash (Linux, macOS, WSL, or Git Bash on Windows)
+- Ports 5432 and 5433 available, or override `POSTGRES_PORT` and
+  `RESTORE_POSTGRES_PORT`
+
+The Compose credentials are obvious local-only development values. They are not
+real secrets and must never be reused in a shared or production environment.
+
+## Run locally
+
+From this project directory:
+
+```bash
+docker compose up -d
+docker compose ps
 ```
+
+The primary database initializes `app_data` automatically the first time its
+volume is created. Verify the sample records:
+
+```bash
+docker compose exec -T postgres \
+  psql -U app_user -d app -c "TABLE app_data;"
+```
+
+Initialization scripts run only for a new PostgreSQL volume. To reset this lab
+completely, use `docker compose down -v` and then start it again. This deletes
+only the two local Compose database volumes; backup files remain in `backups/`.
+
+## Create a backup
+
+```bash
+./scripts/backup.sh
+```
+
+On Windows PowerShell, invoke the same script through Bash:
+
+```powershell
+bash ./scripts/backup.sh
+```
+
+The script:
+
+1. checks that the Compose primary database is ready;
+2. streams `pg_dump -Fc` to a timestamped file in `backups/`;
+3. confirms that `pg_restore` can read the archive catalogue;
+4. creates a SHA-256 sidecar file;
+5. writes a Prometheus textfile metric only after backup success.
+
+Generated backups, checksums, and metrics are ignored by Git.
+
+## Restore and validate
+
+Select the backup printed by the backup command:
+
+```bash
+./scripts/restore.sh backups/app-20260101T120000Z.dump
+```
+
+The restore script requires the matching `.sha256` file, verifies it before any
+database change, recreates only the fixed `app_restore` database in the isolated
+restore container, runs `pg_restore --exit-on-error`, and checks that `app_data`
+contains at least one row. It refuses non-local `DR_TARGET_ENV` values and refuses
+to run when external `PGHOST` or `DATABASE_URL` variables are present.
+
+The primary database is never overwritten by the restore workflow. This makes
+restore drills repeatable without risking the source data.
+
+## RPO and RTO
+
+- **Recovery Point Objective (RPO)** is the maximum acceptable data-loss window.
+  A daily successful backup gives a theoretical RPO of up to 24 hours. The age of
+  the backup actually selected during a drill is the observed recovery point.
+- **Recovery Time Objective (RTO)** is the maximum acceptable recovery duration.
+  Measure from the decision to restore until checksum verification, restore, and
+  validation finish.
+
+This repository does not claim measured RPO or RTO results. Follow `TESTING.md`
+and record your own local measurements.
+
+## Implemented versus demo-only
+
+Implemented and locally executable:
+
+- two isolated PostgreSQL 16 Compose services;
+- automatic sample schema/data initialization;
+- timestamped custom-format backups and SHA-256 checksums;
+- safe restore into a disposable database with data validation;
+- a generated backup-success metric file;
+- an optional local Ansible checksum-validation playbook.
+
+Examples that are not part of the local Compose execution:
+
+- `k8s/`: StatefulSet, headless Service, backup PVC, suspended CronJob, and
+  placeholder Secret. These require a Kubernetes cluster and have not been
+  deployed by this project.
+- `monitoring/backup-alerts.example.yml`: realistic Prometheus alert rules, but
+  the local lab does not run Prometheus or node_exporter.
+- `terraform/`: documented extension point only; no cloud resources are created.
+- off-site copies, immutable object storage, WAL archiving, and point-in-time
+  recovery are design/future work.
 
 ## Project structure
 
 ```text
-backup/
-  backup-script.example.sh   restore-script.example.sh   pg-dump-example.md
-k8s/
-  postgres-statefulset.yaml  pvc.yaml  backup-cronjob.yaml  secret.example.yaml
-docs/
-  disaster-recovery-plan.md  backup-strategy.md  restore-runbook.md
-  incident-simulation.md  rpo-rto.md
-.gitignore  README.md  TESTING.md
+docker-compose.yml       local primary and disposable restore databases
+db/init.sql              app_data schema and sample rows
+scripts/backup.sh        executable backup/checksum workflow
+scripts/restore.sh       guarded restore and validation workflow
+backups/                 ignored runtime artifacts
+k8s/                     suspended Kubernetes deployment examples
+monitoring/              backup freshness rule and integration notes
+docs/                    DR strategy, policy, incident, and RPO/RTO documents
+runbooks/                operational backup, restore, and failover checklists
+ansible/                  optional local checksum validation
+terraform/                documented future cloud extension point
 ```
 
-## Important files explained
+## Security and limitations
 
-- **backup/backup-script.example.sh** — `pg_dump -Fc` → SHA-256 checksum → retention prune → success marker; refuses a placeholder/unset host, never hardcodes creds.
-- **backup/restore-script.example.sh** — verifies checksum → `pg_restore` → validation query; requires `--confirm` and **refuses a host containing `prod`**.
-- **k8s/postgres-statefulset.yaml** — StatefulSet with per-pod durable volume (`volumeClaimTemplates`).
-- **k8s/pvc.yaml** — a **separate** backup-storage volume so losing the DB pod doesn't lose the backups.
-- **k8s/backup-cronjob.yaml** — nightly `pg_dump`, ships **suspended** by default, creds from the Secret.
-- **docs/** — DR plan, backup strategy (3-2-1/GFS/verification), restore runbook, game-day simulation, RPO/RTO.
-
-## How it would work in a real environment
-
-The CronJob dumps the DB nightly to the backup PVC (and, in a real setup, to
-off-region object storage with versioning + immutability). To recover: pick a
-verified backup, check its checksum, restore into a **disposable** target,
-validate data + application, then cut traffic over — timing it to measure RTO and
-noting the backup age as RPO. Game days rehearse this so the runbook is proven.
-
-## What was prepared but NOT executed
-
-Prepared: backup/restore scripts + pg_dump reference, the K8s StatefulSet/PVC/
-CronJob/Secret, and five DR docs. **Not executed:** no script ran, no `kubectl`,
-no Kubernetes resource created, no database backed up or restored. **Recovery was
-not tested and no RPO/RTO is claimed as achieved.**
-
-## Security notes
-
-- **No real secrets** — `secret.example.yaml` holds `REPLACE_ME` placeholders; `.gitignore` blocks real `secret.yaml`, `*.dump`, `backups/`.
-- **No real credentials** — scripts read creds only from env (a Secret); never hardcoded.
-- **No production endpoints** — restore refuses a `prod`-looking host; the CronJob is suspended.
-- Backups should be encrypted at rest/in transit and shipped off-site with object-lock immutability.
-
-## Limitations
-
-- No cluster/database; no backup, restore, or drill was performed.
-- A single-cluster PVC is **not** true DR — off-site copies are described, not created.
-- Scripts were syntax-checked (`bash -n`) only; PostgreSQL/kubectl tooling was not run.
+- No real secrets are committed. Kubernetes credentials remain placeholders.
+- Local backup files are not encrypted. Real backups require encryption,
+  access controls, off-site copies, retention, and immutability.
+- A local bind-mounted backup directory is not protection from host loss.
+- Logical dumps do not provide point-in-time recovery between backup runs.
+- Kubernetes and monitoring examples must be tested in their target environment
+  before operational use.
 
 ## Future improvements
 
-- Add WAL archiving / PITR for a minutes-scale RPO; automate off-site sync.
-- Automate periodic restore-verification jobs and backup-freshness alerting.
-- Warm standby / read replica to shrink RTO; expand/contract migration checks in CI.
+- upload encrypted backups to versioned, immutable object storage;
+- add WAL archiving and point-in-time recovery;
+- run scheduled automated restore drills in CI or a disposable environment;
+- add Prometheus and node_exporter to the Compose lab;
+- sign backup metadata and record restore audit events;
+- test larger datasets and document measured RTO trends.
 
-## What I learned
-
-- **A dump isn't a backup until it restores and validates** — verification is the whole point.
-- How **RPO** (backup frequency) and **RTO** (restore speed) drive the design.
-- Why a **StatefulSet + separate backup PVC** and **off-site immutability** matter.
-- Rehearsing recovery with **game days** so the runbook is proven, not hoped-for.
+See [TESTING.md](TESTING.md) for the exact end-to-end recovery drill.

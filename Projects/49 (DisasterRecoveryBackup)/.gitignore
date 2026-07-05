@@ -1,11 +1,15 @@
-# Only *.example.* files are tracked. Never commit real secrets or backups.
+# Never commit real secrets.
 secret.yaml
 **/secret.yaml
 !secret.example.yaml
 *.pgpass
+.env
 
 # Backup artifacts must never be committed.
-backups/
+backups/*
+!backups/.gitkeep
 *.dump
 *.dump.sha256
 last_success_epoch
+*.prom
+*.tmp

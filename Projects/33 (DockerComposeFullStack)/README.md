@@ -1,99 +1,82 @@
 # Docker Compose Full Stack
 
-An educational full-stack project that connects a static Nginx frontend, a small Java HTTP backend, and PostgreSQL with Docker Compose. The application stores and lists short notes so the communication path is visible without adding a large framework.
+## Description
 
-## Services
+An educational full-stack project connecting a static Nginx frontend, a small Java HTTP/JDBC backend, and PostgreSQL with Docker Compose. The application stores short notes to make service-to-service communication visible.
 
-| Service | Purpose | Container port | Host access |
-|---|---|---:|---|
-| `frontend` | Serves the HTML page and proxies `/api` requests | 80 | `http://localhost:8081` by default |
-| `backend` | Runs Java `HttpServer` endpoints and JDBC code | 8080 | `http://localhost:8080` by default |
-| `database` | Stores notes in PostgreSQL | 5432 | Internal network only |
+## Goal
 
-Host ports can be changed with `FRONTEND_HOST_PORT` and `BACKEND_HOST_PORT` in `.env`. PostgreSQL is deliberately not published to the host because only the backend needs it.
+The goal is to understand how a browser-facing frontend, backend API, and persistent database are built and configured as separate services that communicate over a private Compose network.
 
-## Features
+## Technologies and concepts used
 
-- Java 21 backend using the built-in `HttpServer`
-- JDBC repository using the standard `java.sql` API
-- PostgreSQL runtime driver supplied through Maven
-- Static HTML and JavaScript frontend served by Nginx
-- Nginx reverse proxy from `/api` to the backend
-- Explicit Compose bridge network
-- Named volume for PostgreSQL data
-- Database, backend, and frontend health-check examples
-- Environment-based ports and database configuration
-- Placeholder-only environment example
+- Java 21 built-in `HttpServer`
+- Standard JDBC APIs and PostgreSQL driver packaging
+- Nginx static-file serving and reverse proxying
+- PostgreSQL schema initialization
+- Docker multi-stage builds
+- Docker Compose services, DNS, networks, volumes, dependencies, and health checks
+- Environment-variable configuration and placeholder secret handling
 
 ## Project structure
 
 ```text
-backend/
-  Dockerfile
-  pom.xml
-  src/main/java/dockercomposefullstack/
-database/init/001-schema.sql
-frontend/
-  index.html
-  nginx.conf
-docs/architecture.md
-.env.example
-docker-compose.yml
-README.md
-TESTING.md
+backend/                         Java source, Maven file, and Dockerfile
+database/init/001-schema.sql     Initial notes table
+frontend/index.html              Static browser interface
+frontend/nginx.conf              Static serving and /api reverse proxy
+docker-compose.yml               Full-stack service topology
+.env.example                     Placeholder local configuration
+docs/architecture.md             Request and startup flow
+README.md                        Project documentation
+TESTING.md                       Validation guide
 ```
 
-## API
+## Important files explained
 
-| Method and path | Behavior |
-|---|---|
-| `GET /health` | Returns `200` when the backend can query PostgreSQL, otherwise `503` |
-| `GET /api/notes` | Returns all notes as a JSON array |
-| `POST /api/notes` | Accepts a plain-text body and creates a note |
+- `backend/src/` contains configuration, model, repository, JSON, health-check, API-server, and entry-point classes.
+- `backend/pom.xml` declares the PostgreSQL JDBC runtime dependency.
+- `backend/Dockerfile` builds the backend and creates a non-root runtime image.
+- `frontend/nginx.conf` proxies browser `/api` requests to `backend:8080` on the Compose network.
+- `database/init/001-schema.sql` creates the notes table only when PostgreSQL initializes an empty data directory.
+- `docker-compose.yml` defines frontend, backend, database, health checks, the bridge network, and persistent volume.
 
-Notes must contain 1 to 500 non-whitespace characters. JSON is produced manually to keep the Java example small.
+## Intended real-environment workflow
 
-## Intended local workflow
+For an approved local exercise, copy `.env.example` to ignored `.env`, replace the password placeholder, review `docker compose config`, build the backend image, and start the stack. A browser would open the frontend host port. Nginx would forward API calls to the backend service, and the backend would connect to PostgreSQL through the `database` service name.
 
-These commands are documentation only and were not executed while implementing the project.
+The database is intentionally not published to the host. Frontend and backend host ports are configurable for local use.
 
-1. Copy `.env.example` to `.env`.
-2. Replace the password placeholder with a local development password.
-3. Review the resolved configuration with `docker compose config`.
-4. Start the learning stack with `docker compose up --build`.
-5. Open `http://localhost:8081`.
+## Prepared but not executed
 
-The first backend image build would use Maven to obtain the PostgreSQL JDBC driver. Compose would also need to pull the declared Maven, Java, PostgreSQL, and Nginx images if they are not already available.
+- Java API, JDBC repository, static frontend, Nginx proxy, schema, Compose networking, volumes, and health checks were prepared.
+- Docker, Compose, Java, Maven, Nginx, PostgreSQL, HTTP requests, and JDBC operations were not executed.
+- No image was built, service started, note saved, or health state observed.
+- No working-stack claim is made.
 
-## Communication flow
+## Manual validation checklist
 
-The browser calls `/api/notes` on the frontend origin. Nginx forwards that request to `http://backend:8080` using Compose DNS. The Java backend connects to `jdbc:postgresql://database:5432/...`. Service names work only inside the Compose network; the browser uses published host ports instead.
+- [ ] Confirm `.env` is ignored and placeholders are replaced locally.
+- [ ] Review resolved ports, mounts, service names, and environment variables.
+- [ ] Confirm Nginx proxies `/api` to `backend:8080`.
+- [ ] Confirm JDBC uses `database:5432`, not container-local `localhost`.
+- [ ] Confirm database initialization and named-volume behavior.
+- [ ] Exercise health, list-notes, and create-note endpoints.
+- [ ] Recreate containers without deleting the volume and verify persistence.
 
-See [docs/architecture.md](docs/architecture.md) for the full request and startup flow.
+## Common mistakes avoided
 
-## Data persistence
+- No real password is committed.
+- PostgreSQL is not unnecessarily exposed to the host.
+- Browser requests do not attempt to resolve Compose hostnames.
+- Startup health is distinguished from simple container creation order.
+- Database initialization is not described as a migration system.
+- The root filesystem and service-user boundaries are documented honestly.
 
-The named volume `postgres-data` stores PostgreSQL files outside the container lifecycle. Recreating the database container should retain data while the volume exists. The initialization SQL runs only when PostgreSQL initializes an empty data directory.
+## Possible future improvements
 
-## Security boundaries
-
-- `.env.example` contains a conspicuous placeholder, not a usable production secret.
-- `.env` is ignored by Git.
-- The setup is for local learning and is not production hardened.
-- TLS, authentication, authorization, secret management, backups, and database migrations are outside this example.
-- pgAdmin is intentionally omitted to keep the stack focused and reduce exposed services.
-
-## Limitations
-
-- Docker, Docker Compose, Java, Maven, the HTTP endpoints, and PostgreSQL were not executed.
-- Images were not built or pulled, and no container health status was observed.
-- Runtime behavior depends on Docker availability, image access, and a user-created `.env` file.
-- No successful local test or working-stack claim is made.
-
-## Possible improvements
-
-- Add automated backend tests and a disposable integration-test database.
-- Add database migrations instead of relying on one initialization script.
-- Add update and delete operations for notes.
-- Add authentication only after defining a clear learning goal.
-- Pin images by digest when reproducible builds become a requirement.
+- Add backend unit and integration tests.
+- Add bounded database retries and connection pooling.
+- Replace initialization SQL with versioned migrations.
+- Add update/delete operations and stronger HTTP request limits.
+- Add TLS, authentication, and an approved secret mechanism only with a clear learning scope.

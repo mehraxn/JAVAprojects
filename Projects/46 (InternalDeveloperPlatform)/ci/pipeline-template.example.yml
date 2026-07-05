@@ -1,0 +1,11 @@
+name: generated-java-service-example
+enabled: false
+stages:
+  - compile
+  - test
+  - package
+  - security-review
+  - publish
+  - gitops-update
+
+# TODO: Convert to the approved CI provider only after trust boundaries are defined.

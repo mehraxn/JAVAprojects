@@ -1,0 +1,14 @@
+policyVersion: 1
+mode: design-only
+requiredChecks:
+  - compile
+  - unit-tests
+  - dependency-review
+  - secret-scan
+  - static-analysis
+  - sbom
+  - container-scan
+deployment:
+  automatic: false
+  approvalRequired: true
+# TODO: Map these conceptual checks to reviewed tools and thresholds.

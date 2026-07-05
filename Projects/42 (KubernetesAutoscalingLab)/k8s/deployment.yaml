@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaling-java-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscaling-java-app
+  template:
+    metadata:
+      labels:
+        app: autoscaling-java-app
+    spec:
+      containers:
+        - name: app
+          image: my-autoscaling-java-app:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          # TODO: Add probes and security context after the app is implemented.

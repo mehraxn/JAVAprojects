@@ -45,6 +45,11 @@ public class DatabaseConfig {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(fieldName + " is required.");
         }
+        String normalized = value.trim();
+        if (normalized.equalsIgnoreCase("CHANGE_ME")
+                || normalized.equals("replace_with_a_local_learning_password")) {
+            throw new IllegalArgumentException(fieldName + " placeholder must be replaced.");
+        }
         return value;
     }
 }

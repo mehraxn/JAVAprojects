@@ -1,55 +1,56 @@
 # Testing Terraform Infrastructure Starter
 
-Terraform was not installed or executed. All runtime and CLI checklist items below remain unverified.
+Terraform was not installed or executed. No formatting, initialization, validation, plan, apply, destroy, provider, or state command was run.
 
-## Static safety checklist
+## Static validation checklist
 
-- [x] No cloud provider configuration is present.
-- [x] No external provider token, credential, account ID, or subscription ID is present.
-- [x] No provisioner or external command is present.
-- [x] Resources use only Terraform's built-in `terraform_data` type.
-- [x] Example variables contain only non-sensitive learning values.
-- [x] State, plan, and real `.tfvars` files are ignored.
-- [x] Outputs are non-sensitive configuration summaries.
+- [ ] Confirm braces, blocks, references, and module paths are internally consistent.
+- [ ] Confirm variable defaults satisfy their own validation rules.
+- [ ] Confirm standard labels cannot be overridden unexpectedly.
+- [ ] Confirm component output ordering is stable.
+- [ ] Confirm all resources use the built-in `terraform_data` type.
 
-These checks describe source inspection only; they do not represent Terraform CLI validation.
+## File existence checks
 
-## Deferred formatting and validation checks
+- [ ] Root `main.tf`, `variables.tf`, `outputs.tf`, and `versions.tf` exist.
+- [ ] `terraform.tfvars.example` exists.
+- [ ] Child-module `main.tf`, `variables.tf`, and `outputs.tf` exist.
+- [ ] `docs/architecture.md`, `.gitignore`, `README.md`, and `TESTING.md` exist.
 
-From the `terraform/` directory, a future learner can perform these checks after Terraform is deliberately installed:
+## Configuration review checklist
 
-- [ ] Run `terraform fmt -check -recursive` and confirm formatting passes.
-- [ ] Run `terraform init` and confirm no external provider configuration is introduced.
-- [ ] Run `terraform validate` and resolve every reported error.
-- [ ] Confirm `terraform providers` lists only the built-in Terraform provider.
+- [ ] Required Terraform version is deliberate.
+- [ ] No external provider requirement exists.
+- [ ] Root module passes every required child-module input.
+- [ ] Output references match child-module output names.
+- [ ] State, plans, and real `.tfvars` files are ignored.
+- [ ] Example variables describe only dev/test/sandbox learning values.
 
-None of these commands were run during implementation.
+## Security checks
 
-## Deferred variable tests
+- [ ] No real secret, credential, provider token, or account ID is present.
+- [ ] No production endpoint, region, subscription, or project identifier is present.
+- [ ] No `local-exec` or `remote-exec` provisioner is present.
+- [ ] Outputs contain no sensitive material.
 
-| Input | Expected result |
-|---|---|
-| Default values | Validation succeeds and three component names are modeled |
-| `environment = "sandbox"` | Validation succeeds |
-| `environment = "production"` | Validation fails |
-| Empty component set | Validation fails |
-| Uppercase component name | Validation fails |
-| Project name starting with a number | Validation fails |
-| Empty additional-label key or value | Validation fails |
+## Commands normally used - NOT executed
 
-## Deferred plan review
+```text
+terraform fmt -check -recursive
+terraform init
+terraform validate
+terraform plan -var-file="terraform.tfvars"
+terraform apply -var-file="terraform.tfvars"
+terraform destroy -var-file="terraform.tfvars"
+```
 
-- [ ] Copy `terraform.tfvars.example` to ignored `terraform.tfvars`.
-- [ ] Run a plan without saving it and inspect every proposed action.
-- [ ] Confirm all proposed resource addresses start with `terraform_data` inside the local module.
-- [ ] Confirm there are no cloud, network, file, or command-execution resources.
-- [ ] Confirm outputs contain no sensitive values.
-- [ ] Confirm no credential prompt or provider authentication occurs.
+The apply/destroy commands are shown only to explain the normal lifecycle. They were not run and require separate approval even for local-only state.
 
-## Optional local apply review
+## Expected results in a proper environment
 
-Applying is not required to learn the file structure. If separately approved later, an apply should create only local Terraform state records for the built-in data resources. It must not create cloud resources or run commands. The resulting state should remain uncommitted and should be inspected as potentially sensitive data.
-
-## Current status
-
-No `terraform init`, `fmt`, `validate`, `plan`, `apply`, `destroy`, or provider command was executed. No successful validation or applied infrastructure is claimed.
+- Formatting and validation accept the configuration.
+- Initialization uses only Terraform's built-in provider and local child module.
+- A plan proposes only `terraform_data` resources.
+- Invalid environment, project, component, or label values fail validation clearly.
+- An approved apply creates only local state records and no cloud or external resource.
+- A subsequent unchanged plan reports no infrastructure changes.

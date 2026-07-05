@@ -5,5 +5,6 @@ metadata:
   labels:
     {{- include "java-app.labels" . | nindent 4 }}
 data:
+  APP_PORT: {{ .Values.containerPort | quote }}
   APP_ENVIRONMENT: {{ .Values.config.environment | quote }}
-  APP_PORT: {{ .Values.config.appPort | quote }}
+  APP_MESSAGE: {{ .Values.config.message | quote }}

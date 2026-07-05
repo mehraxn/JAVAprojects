@@ -1,0 +1,13 @@
+name: multi-environment-promotion-example
+enabled: false
+promotionOrder:
+  - dev
+  - staging
+  - prod-design-only
+requirements:
+  immutableImage: true
+  testsRequired: true
+  securityReviewRequired: true
+  manualProductionApproval: true
+
+# TODO: Map this design to an approved CI provider and artifact registry.

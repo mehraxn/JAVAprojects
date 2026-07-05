@@ -1,37 +1,30 @@
 # Infrastructure as Code Environment
 
-## Description
-Plan a reproducible cloud environment defined entirely as code with Terraform and Ansible. The focus is IaC together with configuration management.
+Starter structure combining safe local-only Terraform concepts with an Ansible configuration-management example that targets documentation-only hosts.
 
-## Difficulty
-Resume Grade
+## Structure
 
-## Main Features
-- Network and compute definitions (design)
-- Modules and environments
-- Provisioning plus configuration
-- State management
-- Teardown
-
-## Main Skills Practiced
-- Terraform
-- Ansible
-- Infrastructure as Code
-- Cloud concepts
-
-## Planned Technologies
-- Terraform (planned)
-- Ansible (planned)
-- Cloud provider concepts (planned)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- terraform modules (planned, not created yet)
-- ansible playbooks (planned, not created yet)
-- documentation
-
-*(These folders and files are not created yet.)*
+```text
+terraform/main.tf
+terraform/variables.tf
+terraform/outputs.tf
+terraform/terraform.tfvars.example
+ansible/inventory.ini.example
+ansible/playbook.yml
+ansible/roles/common/tasks/main.yml
+docs/architecture.md
+docs/state-and-secrets.md
+README.md
+TESTING.md
+```
 
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Skeleton only. Terraform has no cloud provider and Ansible performs only debug output against an example host. Nothing was initialized, planned, applied, connected, or configured.
+
+## Required confirmations
+
+- Disposable infrastructure target and cost/cleanup boundary
+- Terraform state, locking, recovery, and credential strategy
+- Approved Ansible operating system, account, privilege, and package policy
+- Clear handoff between provisioning outputs and configuration inputs

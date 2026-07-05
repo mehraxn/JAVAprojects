@@ -1,0 +1,21 @@
+# Example only. Repository and cluster values are not real deployment targets.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: java-app-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://example.invalid/gitops-deployment-platform.git
+    targetRevision: main
+    path: k8s/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: java-app-dev
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

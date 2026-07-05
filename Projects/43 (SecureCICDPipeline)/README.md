@@ -1,39 +1,27 @@
-# Secure CI CD Pipeline
+# Secure CI/CD Pipeline
 
-## Description
-Plan a hardened CI/CD pipeline with security scanning and secrets management. The focus is secure software delivery.
+Starter structure for a Java delivery pipeline designed around least privilege, repeatable builds, security evidence, and explicit approval boundaries.
 
-## Difficulty
-Resume Grade
+## Structure
 
-## Main Features
-- Build, test and deploy stages (design)
-- Dependency and image scanning (concept)
-- Secrets management
-- Signed artifacts (concept)
-- Least-privilege access
-
-## Main Skills Practiced
-- CI/CD security
-- SAST/DAST concepts
-- Secrets management
-
-## Planned Technologies
-- CI/CD (planned)
-- Container scanning (planned)
-- Terraform (planned)
-- Docker (planned)
-- Java
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- app source (created later)
-- pipeline config (planned, not created yet)
-- security policy notes
-
-*(These folders and files are not created yet.)*
+```text
+src/securecicdpipeline/
+docker/Dockerfile.example
+ci/github-actions.example.yml
+ci/security-policy.yml
+docs/pipeline-security.md
+docs/threat-model.md
+README.md
+TESTING.md
+```
 
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Skeleton only. The example workflow is stored under `ci/`, is disabled, and is not discoverable as an active GitHub workflow. No build, scan, signing, publishing, or deployment stage ran.
+
+## Required confirmations
+
+- CI provider and repository-level workflow location
+- Approved test, SAST, dependency, secret, SBOM, image, and signing tools
+- Artifact registry, identities, permissions, and retention
+- Manual approval and deployment-environment boundaries

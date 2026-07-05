@@ -1,22 +1,47 @@
+# Default values are for a disposable learning environment, not production.
 replicaCount: 2
 
+nameOverride: ""
+fullnameOverride: ""
+
 image:
-  repository: example.invalid/phase3-java-app
-  tag: CHANGE_ME
+  repository: my-java-app
+  tag: latest
   pullPolicy: IfNotPresent
+
+containerPort: 8080
+
+config:
+  environment: learning
+  message: "Hello from a Helm ConfigMap"
+
+secret:
+  # Leave false for the default example. Never put real secret values in values.yaml.
+  create: false
+  demoToken: ""
+  # Set only the name of a separately managed Secret when one is approved.
+  existingSecret: ""
 
 service:
   type: ClusterIP
   port: 80
-  targetPort: 8080
 
-config:
-  environment: dev
-  appPort: "8080"
+ingress:
+  enabled: false
+  className: nginx
+  host: java-app.example.invalid
+  path: /
+  pathType: Prefix
 
-secret:
-  create: false
-  exampleValue: CHANGE_ME
+probes:
+  readiness:
+    path: /ready
+    initialDelaySeconds: 3
+    periodSeconds: 10
+  liveness:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 20
 
 resources:
   requests:
@@ -26,4 +51,17 @@ resources:
     cpu: 500m
     memory: 256Mi
 
-# TODO: Confirm probes, autoscaling, ingress, and secret ownership.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL

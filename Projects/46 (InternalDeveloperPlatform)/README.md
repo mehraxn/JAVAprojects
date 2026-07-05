@@ -1,40 +1,28 @@
-# Internal Developer Platform Mini Version
+# Internal Developer Platform
 
-## Description
-Plan a small internal developer platform that gives developers self-service deployments via golden paths. The focus is platform-engineering concepts.
+Starter structure for a small platform-engineering portfolio project centered on a reviewed Java-service golden path rather than a custom production portal.
 
-## Difficulty
-Resume Grade
+## Structure
 
-## Main Features
-- Self-service templates (design)
-- Standardized pipelines
-- Environment provisioning
-- Guardrails and policies
-- Docs or portal (concept)
-
-## Main Skills Practiced
-- Platform engineering
-- Kubernetes
-- GitOps
-- CI/CD
-- IaC
-
-## Planned Technologies
-- Kubernetes (planned)
-- Helm (planned)
-- Argo CD or Flux (planned)
-- Terraform (planned)
-- CI/CD (planned)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- templates (planned, not created yet)
-- pipeline definitions (planned)
-- platform documentation
-
-*(These folders and files are not created yet.)*
+```text
+src/templates/javaservice/
+helm/java-service/
+gitops/applications/java-service.example.yaml
+ci/pipeline-template.example.yml
+k8s/policies/resource-requirements.example.yaml
+docs/platform-architecture.md
+docs/golden-path.md
+README.md
+TESTING.md
+```
 
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Skeleton only. The template, chart, policy, pipeline, and GitOps application were not rendered, generated, synchronized, or deployed.
+
+## Required confirmations
+
+- Intended developer persona and self-service boundary
+- Template input contract and ownership
+- CI, registry, cluster, GitOps controller, policy engine, and secret strategy
+- Support model, versioning, upgrade, exception, and deprecation processes

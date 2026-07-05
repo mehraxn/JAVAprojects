@@ -1,0 +1,20 @@
+# Optional example. It requires an Ingress controller and suitable local DNS.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: java-app
+  labels:
+    app.kubernetes.io/name: java-app
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: java-app.example.invalid
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: java-app
+                port:
+                  name: http

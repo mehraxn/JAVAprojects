@@ -1,0 +1,6 @@
+auth_enabled: false
+server:
+  http_listen_port: 3100
+
+# TODO: Add reviewed local storage, schema, retention, limits, and ruler settings.
+# This incomplete example must not be treated as runnable configuration.

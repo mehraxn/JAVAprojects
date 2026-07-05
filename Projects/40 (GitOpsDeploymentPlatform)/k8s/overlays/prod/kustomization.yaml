@@ -1,0 +1,14 @@
+# Design-only production overlay. No real cluster or production value is present.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+nameSuffix: -prod
+commonLabels:
+  environment: prod-design-only
+images:
+  - name: my-java-app
+    newTag: prod-placeholder
+patches:
+  - path: deployment-patch.yaml
+  - path: configmap-patch.yaml

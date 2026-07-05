@@ -1,0 +1,4 @@
+[backup_lab]
+backup-lab-01 ansible_host=server.example.invalid ansible_user=lab_user
+
+# Documentation-only host. Replace only in an ignored file for an approved lab.

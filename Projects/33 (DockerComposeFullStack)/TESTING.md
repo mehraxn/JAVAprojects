@@ -1,59 +1,58 @@
 # Testing Docker Compose Full Stack
 
-This project was reviewed statically only. Docker, Compose, Java, Maven, Nginx, PostgreSQL, and HTTP requests were not executed.
+No Docker, Compose, Java, Maven, Nginx, PostgreSQL, browser, HTTP, or JDBC command was executed while preparing this project.
 
-## Configuration checks
+## Static validation checklist
 
-- [ ] Copy `.env.example` to `.env` and replace the password placeholder.
-- [ ] Confirm `.env` remains ignored by Git.
-- [ ] Run `docker compose config` and inspect interpolated values before starting services.
-- [ ] Confirm the database has no published host port.
-- [ ] Confirm all three services use `app-network`.
-- [ ] Confirm the PostgreSQL volume and initialization-script mount are present.
-- [ ] Confirm no real credential is stored in tracked files.
+- [ ] Review Java package paths, validation, SQL resource handling, and JSON escaping.
+- [ ] Confirm frontend API paths match backend contexts.
+- [ ] Confirm Nginx proxy behavior preserves `/api` paths.
+- [ ] Confirm Deployment ordering relies on health conditions where documented.
+- [ ] Review schema constraints and note-length limits.
 
-## Manual service checks
+## File existence checks
 
-| Check | Expected result |
-|---|---|
-| Build and start the stack | Database becomes healthy, followed by backend and frontend |
-| Open `http://localhost:8081` | Notes page loads from Nginx |
-| Request `http://localhost:8080/health` | `200` with `{"status":"UP"}` when PostgreSQL is reachable |
-| Submit a normal note | Backend returns `201`; note appears in the list |
-| Refresh the page | Previously created notes are loaded from PostgreSQL |
-| Recreate containers without deleting the volume | Notes remain available |
-| Stop or make PostgreSQL unavailable | Backend health endpoint returns `503` |
+- [ ] Backend Java source, `pom.xml`, and `Dockerfile` exist.
+- [ ] `frontend/index.html` and `frontend/nginx.conf` exist.
+- [ ] `database/init/001-schema.sql` exists.
+- [ ] `docker-compose.yml` and `.env.example` exist.
+- [ ] `docs/architecture.md`, `README.md`, and `TESTING.md` exist.
 
-## Validation checks
+## Configuration review checklist
 
-| Input | Expected result |
-|---|---|
-| Empty or whitespace-only note | Frontend blocks it; direct backend request returns `400` |
-| Note longer than 500 characters | Backend returns `400` |
-| Unsupported method on `/api/notes` | Backend returns `405` with an `Allow` header |
-| Database unavailable during note request | Backend returns `503` without exposing SQL details |
-| Missing `POSTGRES_PASSWORD` during interpolation | Compose reports the explanatory required-variable error |
-| Invalid `APP_PORT` | Backend stops during configuration validation |
+- [ ] All services share the intended bridge network.
+- [ ] Frontend, backend, and database ports match their consumers.
+- [ ] Database credentials and names agree across services.
+- [ ] Named volume and initialization mounts target correct paths.
+- [ ] Health checks use commands/endpoints available inside each image.
+- [ ] PostgreSQL has no accidental host-port publication.
 
-## Networking checks
+## Security checks
 
-- [ ] From the browser, verify API calls use `/api/notes`, not a container hostname.
-- [ ] Confirm Nginx proxies `/api/` to `backend:8080`.
-- [ ] Confirm the backend JDBC URL uses `database:5432`.
-- [ ] Confirm frontend and backend host-port overrides still map to container ports 80 and 8080.
-- [ ] Confirm PostgreSQL cannot be reached through an accidentally published host port.
+- [ ] No real secret or credential is present.
+- [ ] No production host, database, or endpoint is present.
+- [ ] `.env` is ignored.
+- [ ] Database errors returned to clients do not reveal SQL or credentials.
+- [ ] Backend runs as a non-root user.
 
-## Health-check checks
+## Commands normally used - NOT executed
 
-- [ ] Confirm `pg_isready` controls the database health state.
-- [ ] Confirm the backend health probe requires both HTTP availability and a database query.
-- [ ] Confirm the frontend health probe requests its local Nginx page.
-- [ ] Confirm `depends_on` health conditions establish startup order but are not treated as a complete recovery strategy.
+```text
+docker compose config
+docker compose build
+docker compose up
+docker compose ps
+docker compose logs
+docker compose down
+```
 
-## Cleanup caution
+These commands require installed tooling, reviewed local values, and an approved disposable environment.
 
-`docker compose down` normally keeps the named database volume. Adding `--volumes` removes it and deletes the learning data. Review the target project and volume before using destructive cleanup options.
+## Expected results in a proper environment
 
-## Current status
-
-All checklist items requiring containers remain unverified. There is no claim that images build, services start, health checks pass, or data persists at runtime.
+- PostgreSQL becomes healthy before the backend reports healthy.
+- Nginx serves the frontend after the backend is available.
+- `/health` reports database-aware backend status.
+- Notes can be created and listed through the frontend/API path.
+- Recreated containers retain notes while the named volume remains.
+- Invalid notes receive controlled client errors, and unavailable PostgreSQL receives a controlled service-unavailable response.

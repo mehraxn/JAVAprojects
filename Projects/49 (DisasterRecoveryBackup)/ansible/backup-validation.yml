@@ -1,0 +1,10 @@
+---
+- name: Backup validation design
+  hosts: backup_lab
+  gather_facts: false
+  tasks:
+    - name: Display validation placeholder
+      ansible.builtin.debug:
+        msg: "TODO: validate a backup only on an approved disposable host"
+
+# Inventory must use example.invalid until a disposable host is approved.

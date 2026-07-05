@@ -1,39 +1,29 @@
 # Kubernetes Autoscaling Lab
 
-## Description
-Plan experiments with horizontal and vertical autoscaling of a Java workload under load. The focus is scaling behavior.
+Starter structure for studying resource requests, Horizontal Pod Autoscaling, optional Vertical Pod Autoscaling recommendations, and controlled load generation for a Java workload.
 
-## Difficulty
-Resume Grade
+## Structure
 
-## Main Features
-- HPA config (design)
-- Load generation (design)
-- Metrics-driven scaling
-- Resource requests and limits
-- Results analysis
-
-## Main Skills Practiced
-- Kubernetes
-- Autoscaling
-- Metrics
-- Performance
-
-## Planned Technologies
-- Java
-- Kubernetes (planned)
-- Prometheus (planned)
-- Docker (planned)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- app source (created later)
-- scaling manifests (planned, not created yet)
-- load-test plan
-- documentation
-
-*(These folders and files are not created yet.)*
+```text
+src/kubernetesautoscalinglab/
+docker/Dockerfile
+k8s/deployment.yaml
+k8s/service.yaml
+k8s/hpa.yaml
+k8s/vpa.example.yaml
+docs/autoscaling-plan.md
+docs/load-test-plan.md
+README.md
+TESTING.md
+```
 
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Skeleton only. The Java workload, metrics endpoint, image, metrics provider, autoscalers, load test, and cluster behavior are not implemented or executed.
+
+## Required confirmations
+
+- Metrics Server or another HPA metrics source
+- Disposable cluster capacity and namespace
+- Safe load limits and stop conditions
+- HPA target, replica bounds, stabilization, and measurement method

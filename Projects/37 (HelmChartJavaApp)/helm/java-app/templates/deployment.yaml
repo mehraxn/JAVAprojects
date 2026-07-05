@@ -8,22 +8,56 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "java-app.labels" . | nindent 6 }}
+      {{- include "java-app.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "java-app.labels" . | nindent 8 }}
+        {{- include "java-app.selectorLabels" . | nindent 8 }}
+      annotations:
+        # A ConfigMap value change updates this checksum and triggers a rollout.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: app
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        - name: java-app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.targetPort }}
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
           envFrom:
             - configMapRef:
                 name: {{ include "java-app.fullname" . }}
+          {{- if or .Values.secret.create .Values.secret.existingSecret }}
+          env:
+            - name: APP_DEMO_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "java-app.secretName" . }}
+                  key: APP_DEMO_TOKEN
+          {{- end }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          # TODO: Add probes after endpoint behavior is confirmed.
+          volumeMounts:
+            - name: temporary-files
+              mountPath: /tmp
+      volumes:
+        - name: temporary-files
+          emptyDir:
+            sizeLimit: 64Mi

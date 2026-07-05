@@ -1,0 +1,12 @@
+# Example only. Requires a separately installed VPA controller and CRDs.
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: autoscaling-java-app
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: autoscaling-java-app
+  updatePolicy:
+    updateMode: "Off"

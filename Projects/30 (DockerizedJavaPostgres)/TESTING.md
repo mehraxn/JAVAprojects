@@ -1,59 +1,60 @@
 # Testing Dockerized Java PostgreSQL
 
-No tests or commands described here were executed during implementation.
+No Java, Docker, Compose, PostgreSQL, JDBC driver, or database command was executed while preparing this project.
 
-## Static checks
+## Static validation checklist
 
-- Confirm `.env.example` contains only placeholder values.
-- Confirm no password is printed by Java code.
-- Confirm SQL uses prepared statements.
-- Confirm JDBC resources use try-with-resources.
-- Confirm the app waits for the PostgreSQL health check in Compose.
-- Confirm schema, environment-variable, service, and volume names agree.
+- [ ] Confirm Java package declarations match source directories.
+- [ ] Review model, repository, service, and entry-point responsibilities.
+- [ ] Confirm JDBC resources use safe closing patterns.
+- [ ] Confirm configuration errors produce clear messages without revealing passwords.
+- [ ] Review Dockerfile stages, copied paths, runtime user, and entry point.
 
-## Java validation cases
+## File existence checks
 
-| Test | Action | Expected result |
-|---|---|---|
-| Valid task | Create a task with a short title | Task is accepted |
-| Blank title | Use null, empty, or whitespace title | `IllegalArgumentException` |
-| Long title | Use more than 200 characters | `IllegalArgumentException` |
-| Negative ID | Construct a task with negative ID | `IllegalArgumentException` |
-| Invalid stored ID | Find, update, or delete ID zero or below | `IllegalArgumentException` |
-| Missing configuration | Omit a required DB environment variable | Clear configuration error; password is not shown |
+- [ ] `src/` contains useful Java source.
+- [ ] `pom.xml` exists and declares the PostgreSQL JDBC runtime dependency.
+- [ ] `Dockerfile` exists.
+- [ ] `docker-compose.yml` exists.
+- [ ] `configs/init.sql` exists.
+- [ ] `.env.example` exists.
+- [ ] `README.md` and `TESTING.md` exist.
 
-## Repository integration cases
+## Configuration review checklist
 
-These require PostgreSQL and the PostgreSQL JDBC driver.
+- [ ] Application and PostgreSQL database names, users, and ports agree.
+- [ ] Missing password interpolation fails instead of using a fallback password.
+- [ ] JDBC URL uses the Compose database hostname.
+- [ ] PostgreSQL data uses a named or explicitly documented volume.
+- [ ] The application does not silently depend on an unavailable JDBC driver.
+- [ ] Startup dependencies are not confused with database readiness.
 
-| Test | Action | Expected result |
-|---|---|---|
-| Empty database | Start with an empty initialized task table | Starter task is inserted once |
-| Existing data | Start again using the same volume | Existing tasks are listed; no extra starter task |
-| Create | Add a valid task | Generated positive ID returned |
-| Find | Query existing and missing IDs | Task or empty `Optional` returned |
-| Complete | Mark an existing task complete | Exactly one row updated |
-| Delete | Delete existing then missing task | `true`, then `false` |
-| Database unavailable | Use an unreachable JDBC URL | Clear `SQLException`; credentials are not printed |
-| Driver missing | Run without PostgreSQL JDBC driver | Connection fails honestly; no fallback claim |
+## Security checks
 
-## Docker and Compose manual checklist
+- [ ] No real secret is present.
+- [ ] No real credential, private key, or token is present.
+- [ ] No production database endpoint or account identifier is present.
+- [ ] `.env` is ignored.
+- [ ] Logs and documentation do not print a database password.
 
-- [ ] Copy `.env.example` to an uncommitted `.env` file.
-- [ ] Replace `CHANGE_ME` with a local-only password.
-- [ ] Review resolved environment values before startup.
-- [ ] Build the Java image.
-- [ ] Start the database and application services.
-- [ ] Verify PostgreSQL becomes healthy before the app starts.
-- [ ] Verify the first run inserts and prints one task.
-- [ ] Verify a second run reuses the named volume.
-- [ ] Stop services without deleting the volume and confirm persistence.
-- [ ] Remove the volume only when its data is intentionally disposable.
+## Commands normally used - NOT executed
 
-## Expected limitations during current review
+```text
+mvn --batch-mode --no-transfer-progress package
+docker compose config
+docker compose build
+docker compose up
+docker compose logs
+docker compose down
+```
 
-- Java was not run.
-- Maven was not run and no dependency was downloaded.
-- Docker and Docker Compose were not run.
-- PostgreSQL was not installed or started.
-- JDBC connectivity and SQL behavior were reviewed statically only.
+These commands are examples only. They require deliberate review, installed tooling, a JDBC driver strategy, and an approved disposable environment.
+
+## Expected results in a proper environment
+
+- Java source compiles with the required runtime dependencies.
+- Compose resolves an application service and a healthy PostgreSQL service.
+- The application connects using environment configuration without exposing credentials.
+- Repository operations persist data in PostgreSQL.
+- Recreating containers while retaining the volume preserves database data.
+- Invalid configuration or unavailable PostgreSQL produces a clear, controlled failure.

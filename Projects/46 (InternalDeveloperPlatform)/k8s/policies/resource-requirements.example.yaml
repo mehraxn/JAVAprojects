@@ -1,0 +1,17 @@
+# Example LimitRange for a disposable platform-learning namespace only.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: java-service-defaults
+  namespace: platform-learning
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      default:
+        cpu: 500m
+        memory: 256Mi
+
+# TODO: Confirm policy engine, enforcement, exceptions, and ownership.

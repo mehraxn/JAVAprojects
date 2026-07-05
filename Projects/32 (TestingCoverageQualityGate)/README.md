@@ -1,67 +1,81 @@
 # Testing Coverage Quality Gate
 
-A small Java project that separates testable pricing logic from its demo entry point and shows how automated tests, coverage measurement, and human code-review checks can form a quality gate.
+## Description
 
-## Features
+A focused Java project demonstrating testable business logic, JUnit tests, JaCoCo coverage measurement, and a Maven verification gate without claiming that coverage alone proves software quality.
 
-- Subtotal and percentage-discount calculations using `BigDecimal`
-- Validation for quantity, prices, discounts, and required objects
-- JUnit 5 tests for normal, boundary, invalid, and rounding cases
-- JaCoCo line-coverage reporting and an 80% minimum gate
-- Maven `verify` lifecycle configuration
-- Manual GitHub Actions workflow template
+## Goal
 
-## Main classes
+The goal is to show how automated tests, a measurable line-coverage threshold, and human review criteria can work together as a quality gate for a small Java codebase.
 
-- `PriceCalculator` calculates subtotals and discounted totals.
-- `DiscountPolicy` validates and applies a percentage discount.
-- `Main` demonstrates a simple calculation and is excluded from the coverage gate.
-- `PriceCalculatorTest` and `DiscountPolicyTest` contain the prepared JUnit tests.
+## Technologies and concepts used
+
+- Java 21 and `BigDecimal` money calculations
+- Small classes with validation and deterministic behavior
+- JUnit 5 unit tests
+- Maven build lifecycle
+- JaCoCo report generation and line-coverage enforcement
+- GitHub Actions workflow template
+- Manual checks for naming, duplication, and secrets
 
 ## Project structure
 
 ```text
-src/main/java/testingcoveragequalitygate/
-src/test/java/testingcoveragequalitygate/
-pom.xml
-configs/quality-gate.properties
-.github/workflows/quality.yml
-docs/QUALITY_GATE.md
-README.md
-TESTING.md
+src/main/java/testingcoveragequalitygate/   Application source
+src/test/java/testingcoveragequalitygate/   JUnit tests
+pom.xml                                     Maven, JUnit, and JaCoCo configuration
+configs/quality-gate.properties             Human-readable policy mirror
+.github/workflows/quality.yml               Verification workflow template
+docs/QUALITY_GATE.md                        Gate interpretation
+README.md                                   Project documentation
+TESTING.md                                  Validation guide
 ```
 
-## Quality gate
+## Important files explained
 
-`mvn verify` is configured to compile the project, run JUnit tests, create the JaCoCo report, and fail if covered lines fall below 80%. The policy also requires manual review for duplicated logic, hardcoded secrets, and readable names.
+- `PriceCalculator.java` calculates subtotals and discounted totals with explicit rounding.
+- `DiscountPolicy.java` validates and applies percentage discounts.
+- Test classes cover normal behavior, boundaries, invalid inputs, and rounding.
+- `pom.xml` binds JUnit execution, JaCoCo reporting, and an 80% line-coverage check to Maven verification.
+- `quality.yml` demonstrates automated `mvn verify` and report artifact handling.
+- `docs/QUALITY_GATE.md` explains why coverage evidence still requires code review.
 
-The 80% value is a configured target, not a measured result from this implementation session.
+## Intended real-environment workflow
 
-## Example commands
+A developer would review dependencies, run unit tests, inspect failures, run Maven verification, and open the generated JaCoCo HTML report. The build should fail when tests fail or covered lines fall below the configured threshold. Reviewers would separately assess duplicated logic, hardcoded secrets, names, edge cases, and assertion quality.
 
-These show the intended Maven workflow; they were not run during implementation.
+The workflow is stored inside the project boundary. It must be reviewed and moved to the repository-level `.github/workflows` directory before GitHub can discover it.
 
-```text
-mvn test
-mvn verify
-```
+## Prepared but not executed
 
-If executed successfully, the HTML coverage report would be written to `target/site/jacoco/index.html`.
-
-## Workflow location limitation
-
-The workflow remains inside project 32 to respect the requested project boundary. GitHub Actions only discovers workflows in the repository-level `.github/workflows` directory, so this template must be reviewed and moved there before it can be triggered.
-
-## Limitations
-
-- Java, Maven, JUnit, JaCoCo, and the workflow were not executed.
-- Maven must download the declared plugins and JUnit dependency when it is eventually run.
-- Coverage indicates which lines ran; it does not prove that assertions or requirements are complete.
+- Maven, JUnit, JaCoCo, test cases, the 80% line threshold, and workflow steps were configured.
+- Java, Maven, tests, coverage instrumentation, report generation, gate enforcement, and CI were not executed.
+- The 80% value is a policy target, not a measured result.
 - No badge, passing build, or achieved coverage percentage is claimed.
 
-## Possible improvements
+## Manual validation checklist
 
-- Add branch-coverage requirements after the line gate is established.
-- Add mutation testing only if the added complexity is justified.
-- Enable pull-request triggers after the workflow is placed and validated.
-- Record agreed exclusions and threshold changes through code review.
+- [ ] Review every calculation and validation branch against a test.
+- [ ] Confirm monetary assertions use the intended scale and rounding.
+- [ ] Confirm `Main` is the only deliberate coverage exclusion.
+- [ ] Inspect the JaCoCo report instead of relying only on the percentage.
+- [ ] Confirm the gate fails below the configured threshold.
+- [ ] Review names, duplicated logic, secrets, and assertion meaning manually.
+- [ ] Enable CI only after moving and reviewing the workflow.
+
+## Common mistakes avoided
+
+- Coverage is not described as proof of correctness.
+- The threshold is not presented as already achieved.
+- Demo entry-point code is separated from tested business logic.
+- Tests include invalid and boundary cases, not only happy paths.
+- No fake report or success badge is included.
+- Workflow placement limitations are explicit.
+
+## Possible future improvements
+
+- Add branch-coverage criteria after establishing stable line coverage.
+- Add parameterized tests for broader boundary combinations.
+- Add mutation testing only when the additional complexity is justified.
+- Establish a reviewed policy for exclusions and threshold changes.
+- Enable pull-request checks after the workflow is validated.

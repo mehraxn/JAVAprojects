@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: java-app
+  labels:
+    app.kubernetes.io/name: java-app
+spec:
+  # ClusterIP exposes the application only inside the cluster.
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: java-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

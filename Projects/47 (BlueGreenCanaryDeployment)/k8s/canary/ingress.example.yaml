@@ -1,0 +1,21 @@
+# NGINX Ingress example only; requires a separately installed compatible controller.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: java-app-canary
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "10"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: java-app.example.invalid
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: java-app-canary
+                port:
+                  name: http

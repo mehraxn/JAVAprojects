@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-native-java-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloud-native-java-app
+  template:
+    metadata:
+      labels:
+        app: cloud-native-java-app
+    spec:
+      containers:
+        - name: app
+          image: my-cloud-native-java-app:placeholder
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app-config
+          # TODO: Add probes, resources, security context, and immutable image policy.

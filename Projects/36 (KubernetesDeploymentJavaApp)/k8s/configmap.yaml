@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: java-app-config
+  labels:
+    app.kubernetes.io/name: java-app
+data:
+  # ConfigMaps are for non-sensitive application configuration.
+  APP_PORT: "8080"
+  APP_ENVIRONMENT: "learning"
+  APP_MESSAGE: "Hello from a Kubernetes ConfigMap"

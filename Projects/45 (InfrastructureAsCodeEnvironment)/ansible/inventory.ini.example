@@ -1,0 +1,4 @@
+[learning_hosts]
+iac-lab-01 ansible_host=server.example.invalid ansible_user=lab_user
+
+# TODO: Replace only with an explicitly approved disposable host in an ignored file.

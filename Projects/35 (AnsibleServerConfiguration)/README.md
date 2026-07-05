@@ -1,10 +1,21 @@
 # Ansible Server Configuration
 
-A beginner-friendly Ansible project that demonstrates repeatable Linux server configuration with an inventory, group variables, a playbook, roles, handlers, copied files, and a systemd service. The tracked inventory uses `server.example.invalid`, so it cannot identify a real server.
+## Description
 
-## What Ansible is
+A beginner-friendly Ansible learning project demonstrating repeatable Linux server configuration with an example inventory, group variables, a playbook, roles, copied files, a systemd template, and a restart handler.
 
-Ansible is an automation tool that connects to managed hosts, usually over SSH, and brings them toward a declared configuration. Playbooks are YAML files composed of tasks. Modules such as `package`, `user`, `file`, `copy`, and `systemd` describe the required state instead of relying on a long shell script.
+## Goal
+
+The goal is to understand how Ansible declares desired server state—packages installed, accounts present, directories configured, files deployed, and services enabled—while keeping all tracked hosts and credentials non-real.
+
+## Technologies and concepts used
+
+- Ansible inventory and configuration
+- YAML playbooks and facts
+- Roles, group variables, tasks, templates, files, and handlers
+- Package, group, user, file, copy, template, assert, and systemd modules
+- Privilege escalation and host-key-checking concepts
+- Idempotency and check-mode review
 
 ## Project structure
 
@@ -14,89 +25,63 @@ ansible/
   inventory.ini.example
   playbook.yml
   group_vars/all.yml
-  roles/
-    common/tasks/main.yml
-    app/
-      tasks/main.yml
-      handlers/main.yml
-      files/application.conf
-      files/learning-app.sh
-      templates/learning-app.service.j2
+  roles/common/tasks/main.yml
+  roles/app/tasks/main.yml
+  roles/app/handlers/main.yml
+  roles/app/files/
+  roles/app/templates/
 docs/runbook.md
 .gitignore
 README.md
 TESTING.md
 ```
 
-## What the playbook demonstrates
+## Important files explained
 
-If executed against a separately approved disposable Linux lab host, the playbook would:
+- `inventory.ini.example` uses `server.example.invalid`, a placeholder user, and a placeholder key path.
+- `ansible.cfg` points to an ignored real inventory and keeps host-key checking enabled.
+- `playbook.yml` validates Linux/systemd facts and applies the common and app roles.
+- `group_vars/all.yml` contains non-sensitive package, account, path, and service defaults.
+- The `common` role installs packages and manages the system account and directories.
+- The `app` role copies configuration and a harmless demo process, renders a systemd unit, and starts/enables it.
+- `docs/runbook.md` describes approval, check mode, execution, verification, idempotency, and cleanup.
 
-1. Gather host facts and require Linux with systemd.
-2. Install `curl` and `unzip` through the host package manager.
-3. Create the `learning_app` system group and non-login user.
-4. Create application, configuration, data, and log directories with explicit ownership and modes.
-5. Copy a non-sensitive application configuration file.
-6. Copy a harmless shell process that represents an application artifact.
-7. Render a hardened example systemd unit from a template.
-8. Enable and start the `learning-app` service.
-9. Restart the service through a handler only when managed app files change.
+## Intended real-environment workflow
 
-The demonstration process prints a periodic heartbeat and does not open a network port. It is not a production application.
+For an approved disposable Linux lab, copy `inventory.ini.example` to ignored `inventory.ini`, replace placeholders with the reviewed host/user/key path, inspect all variables and tasks, parse the inventory, perform syntax/list checks, and run check mode with an explicit host limit. A real playbook run should happen only after reviewing predicted package, account, file, and service changes.
 
-## Roles
+The default configuration requests the sudo password interactively rather than storing it.
 
-- `common` handles packages, the system account, and shared directories.
-- `app` deploys application-specific files and manages the systemd service.
+## Prepared but not executed
 
-Keeping responsibilities in roles makes tasks easier to read and reuse. Shared non-sensitive settings are in `group_vars/all.yml`.
+- Inventory example, playbook, variables, two roles, app files, service template, and handler were prepared.
+- Tasks demonstrate package installation, user/group creation, directories, file copying, service start, and conditional restart.
+- Ansible was not installed or run; no YAML was parsed by Ansible, no inventory resolved, and no SSH/sudo connection occurred.
+- No host, package, user, directory, file, or service was changed.
 
-## Inventory safety
+## Manual validation checklist
 
-`inventory.ini.example` contains only `server.example.invalid`, the placeholder user `lab_user`, and a placeholder SSH-key path. The configured `inventory.ini` is ignored and does not exist by default, so an accidental command has no real target.
+- [ ] Confirm the inventory contains only the approved disposable host.
+- [ ] Review gathered-fact assumptions and platform assertion.
+- [ ] Review every package, path, owner, group, and mode.
+- [ ] Confirm app file changes notify one matching restart handler.
+- [ ] Use `--limit`, `--check`, and `--diff` before a real run.
+- [ ] Verify the service account cannot log in interactively.
+- [ ] Run twice in a lab and investigate any second-run change.
 
-For a future approved lab, copy the example to `inventory.ini` and replace the placeholders with details for a disposable host. Do not commit real hostnames, IP addresses, passwords, or private keys. `become_ask_pass = True` requests a sudo password interactively instead of storing it.
+## Common mistakes avoided
 
-## Idempotency
+- No real IP address, hostname, SSH key, or password is tracked.
+- Host-key checking is not disabled for convenience.
+- The application service does not run as root.
+- Package state is `present`, not an unconditional shell installation.
+- Copy/template modules drive restart notification only when content changes.
+- Check mode is not described as a guarantee of real execution behavior.
 
-Idempotency means repeated runs should converge on the same result without repeating unnecessary changes:
+## Possible future improvements
 
-- `package` uses `state: present`, not an unconditional install command.
-- `group`, `user`, and `file` declare their required state and attributes.
-- `copy` and `template` compare content before reporting a change.
-- `systemd` declares the service enabled and started.
-- The restart handler runs only when copied or templated application files change.
-
-On a stable approved host, a second run should normally report zero changed tasks. That claim must be verified in a real lab; this playbook was not executed.
-
-## Normal learning workflow
-
-The following commands show how a future lab review would normally proceed from the `ansible/` directory. None were executed here.
-
-```text
-ansible-inventory --graph
-ansible-playbook playbook.yml --syntax-check
-ansible-playbook playbook.yml --list-tasks
-ansible-playbook playbook.yml --check --diff --limit app-lab-01
-ansible-playbook playbook.yml --limit app-lab-01
-```
-
-Check mode predicts many changes but cannot guarantee that every package or service operation will behave exactly like a real run. Review [docs/runbook.md](docs/runbook.md) before any approved execution.
-
-## Host assumptions
-
-- A disposable Linux lab machine using systemd
-- Python available for Ansible modules
-- A supported package manager containing `curl` and `unzip`
-- An approved SSH user and key stored outside the repository
-- Sudo access reviewed and entered interactively
-- `/usr/sbin/nologin` available for the service account
-
-## Limitations
-
-- Ansible was not installed or run.
-- No inventory was parsed and no YAML syntax check was performed by Ansible.
-- No SSH, sudo, package, user, directory, file, or service operation occurred.
-- Idempotency and check-mode behavior remain unverified.
-- The systemd hardening options may need adjustment for another Linux distribution.
-- No successful playbook execution is claimed.
+- Add distribution-specific package mappings.
+- Add Molecule-style role tests only after external tooling is approved.
+- Add explicit rollback tasks for a disposable lab.
+- Add vault/external-secret documentation without committing secret material.
+- Add CI syntax/lint checks after the project is placed in an executable environment.

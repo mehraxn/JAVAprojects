@@ -1,0 +1,37 @@
+groups:
+  - name: java-app-learning-alerts
+    rules:
+      - alert: JavaAppTargetDown
+        expr: up{job="java-app"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Java application metrics target is unavailable"
+          description: "Prometheus has been unable to scrape the Java app for two minutes."
+
+      - alert: JavaAppHighErrorRatio
+        expr: |
+          sum(rate(http_requests_total{job="java-app",status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(http_requests_total{job="java-app"}[5m])), 0.001)
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Java application HTTP error ratio is above 5%"
+          description: "The example threshold has been exceeded for five minutes."
+
+      - alert: JavaAppHighHeapUsage
+        expr: |
+          sum(jvm_memory_used_bytes{job="java-app",area="heap"})
+          /
+          sum(jvm_memory_max_bytes{job="java-app",area="heap"})
+          > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Java application heap usage is above 85%"
+          description: "Review memory behavior before changing limits or alert thresholds."

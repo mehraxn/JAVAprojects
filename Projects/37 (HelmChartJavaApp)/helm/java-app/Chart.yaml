@@ -1,6 +1,6 @@
 apiVersion: v2
 name: java-app
-description: Educational starter chart for a Java application
+description: Educational Helm chart for a small Java HTTP application
 type: application
 version: 0.1.0
-appVersion: "CHANGE_ME"
+appVersion: "1.0.0"

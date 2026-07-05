@@ -1,0 +1,8 @@
+---
+- name: Show infrastructure-to-configuration handoff design
+  hosts: learning_hosts
+  gather_facts: false
+  tasks:
+    - name: Display design-only message
+      ansible.builtin.debug:
+        msg: "TODO: configure only an approved disposable host"

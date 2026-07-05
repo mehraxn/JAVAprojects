@@ -1,0 +1,9 @@
+replicaCount: 1
+image:
+  repository: my-generated-java-service
+  tag: latest
+service:
+  port: 80
+  containerPort: 8080
+
+# TODO: Add probes, resources, security, and configuration after contract review.

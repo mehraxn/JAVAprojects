@@ -1,0 +1,12 @@
+groups:
+  - name: backup-learning
+    rules:
+      - alert: BackupTooOld
+        expr: time() - backup_last_success_timestamp_seconds > 86400
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Example backup success timestamp is too old"
+
+# TODO: Implement and verify the metric before using this conceptual alert.

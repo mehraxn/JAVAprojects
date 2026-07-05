@@ -1,0 +1,2 @@
+# Safe example only. Never place credentials in tfvars files.
+environment_name = "sandbox"

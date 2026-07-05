@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+nameSuffix: -dev
+commonLabels:
+  environment: dev
+images:
+  - name: my-java-app
+    newTag: dev-placeholder
+patches:
+  - path: deployment-patch.yaml
+  - path: configmap-patch.yaml

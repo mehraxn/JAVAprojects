@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-app-blue
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: java-app
+      track: blue
+  template:
+    metadata:
+      labels:
+        app: java-app
+        track: blue
+    spec:
+      containers:
+        - name: app
+          image: my-java-app:blue-placeholder
+          env:
+            - name: APP_VERSION
+              value: blue
+          # TODO: Add ports, probes, resources, and security context.

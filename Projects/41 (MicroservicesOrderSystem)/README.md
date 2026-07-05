@@ -1,40 +1,34 @@
 # Microservices Order System
 
-## Description
-Plan a small set of cooperating microservices for order processing with clear boundaries and APIs. The focus is service decomposition.
+Starter structure for three small Java services with explicit order, inventory, and payment boundaries.
 
-## Difficulty
-Resume Grade
+## Current scope
 
-## Main Features
-- Order, inventory and payment services (design)
-- REST or messaging between services
-- Database per service (concept)
-- Resilience patterns
-- API gateway (concept)
+- Separate standard-Java entry points
+- API and interaction contract documentation
+- Container and Kubernetes design placeholders
+- No database, broker, gateway, or distributed transaction implementation yet
 
-## Main Skills Practiced
-- Microservices
-- REST
-- Docker
-- Kubernetes
-- Databases
+## Structure
 
-## Planned Technologies
-- Java
-- REST (planned)
-- Docker / Kubernetes (planned)
-- PostgreSQL (planned)
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- service modules (created later)
-- API contracts (design)
-- deployment manifests (planned, not created yet)
-
-*(These folders and files are not created yet.)*
+```text
+src/orderservice/
+src/inventoryservice/
+src/paymentservice/
+docs/architecture.md
+docs/api-contracts.md
+docker/CONTAINERS.md
+k8s/README.md
+README.md
+TESTING.md
+```
 
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Skeleton only. Services were not compiled, started, connected, containerized, or deployed.
+
+## Next implementation decisions
+
+- Confirm synchronous REST versus asynchronous messaging boundaries.
+- Define identifiers, failure responses, retries, idempotency, and data ownership.
+- Keep the first implementation in-memory and dependency-light.

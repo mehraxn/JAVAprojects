@@ -1,0 +1,4 @@
+---
+- name: Common role placeholder
+  ansible.builtin.debug:
+    msg: "TODO: add reviewed idempotent package, user, and directory tasks"

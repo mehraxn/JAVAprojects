@@ -1,39 +1,54 @@
 # Testing CI Pipeline Java App
 
-Nothing described here was executed during implementation.
+No Java command, build command, test process, packaging process, or CI workflow was executed while preparing this project.
 
-## Manual Java checks
+## Static validation checklist
 
-| Test | Input | Expected result |
-|---|---|---|
-| Normal greeting | `Java` | `Hello, Java!` |
-| Trimmed greeting | `  CI  ` | `Hello, CI!` |
-| Null name | `null` | `IllegalArgumentException` |
-| Blank name | whitespace | `IllegalArgumentException` |
-| Oversized name | 81 characters | `IllegalArgumentException` |
+- [ ] Confirm `GreetingService` rejects null, blank, and oversized names.
+- [ ] Confirm normal names are trimmed and formatted correctly.
+- [ ] Confirm test assertions fail with a non-zero process result.
+- [ ] Confirm workflow stages appear in checkout, setup, compile, test, and package order.
+- [ ] Confirm packaging reads only from the application output directory.
 
-## Manual build checklist
+## File existence checks
 
-- [ ] Compile application classes into `out`.
-- [ ] Compile test classes with `out` on the classpath.
-- [ ] Run `GreetingServiceTest` and confirm a zero exit status.
-- [ ] Run `Main` with and without a name argument.
-- [ ] Package the application JAR.
-- [ ] Execute the JAR and verify its main class.
+- [ ] `src/cipipelinejavaapp/GreetingService.java` exists.
+- [ ] `src/cipipelinejavaapp/Main.java` exists.
+- [ ] `test/cipipelinejavaapp/GreetingServiceTest.java` exists.
+- [ ] `.github/workflows/ci.yml` exists.
+- [ ] `docs/PIPELINE.md`, `README.md`, and `TESTING.md` exist.
 
-## CI configuration checks
+## Configuration review checklist
 
-- [ ] Confirm checkout and Java setup action versions.
-- [ ] Confirm every working directory points to project 31.
-- [ ] Confirm compile, test, and package stages are separate.
-- [ ] Confirm failed tests prevent packaging.
-- [ ] Confirm artifact upload requires the JAR to exist.
-- [ ] Move the workflow to repository scope only after approval.
-- [ ] Trigger it manually before adding automatic triggers.
+- [ ] Workflow working directories point to project 31.
+- [ ] Java version and distribution are consistent across steps.
+- [ ] Application and tests use separate output directories.
+- [ ] A test failure prevents packaging.
+- [ ] Artifact upload requires the expected JAR.
+- [ ] Manual-only triggering and nested placement are documented.
 
-## Current limitations
+## Security checks
 
-- Java was not installed or run.
-- The test runner was not executed.
-- The JAR was not created.
-- The GitHub Actions workflow was not enabled or run.
+- [ ] No real secret or credential is present.
+- [ ] No production endpoint is present.
+- [ ] Workflow permissions are read-only unless a reviewed step needs more.
+- [ ] No untrusted script or downloaded executable is invoked.
+
+## Commands normally used - NOT executed
+
+```text
+javac -d out src/cipipelinejavaapp/*.java
+javac -cp out -d test-out test/cipipelinejavaapp/*.java
+java -cp "out;test-out" cipipelinejavaapp.GreetingServiceTest
+jar --create --file dist/ci-pipeline-java-app.jar --main-class cipipelinejavaapp.Main -C out cipipelinejavaapp
+```
+
+GitHub Actions would normally run equivalent Linux commands after the workflow is moved to repository scope. None were run here.
+
+## Expected results in a proper environment
+
+- Application and test classes compile cleanly.
+- All prepared greeting checks pass.
+- Invalid behavior causes the test stage and workflow to fail.
+- An executable application-only JAR is created after successful tests.
+- CI uploads the expected artifact only after every prior stage succeeds.

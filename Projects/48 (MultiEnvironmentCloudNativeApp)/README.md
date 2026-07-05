@@ -1,44 +1,30 @@
-# Multi Environment Cloud Native App
+# Multi-Environment Cloud-Native App
 
-## Description
-Plan a cloud-native Java app deployable across dev, staging and prod with consistent configuration. The focus is environment parity.
+Starter structure for a configuration-aware Java application promoted through dev, staging, and production-design overlays without duplicating the Kubernetes base.
 
-## Difficulty
-Resume Grade
+## Structure
 
-## Main Features
-- Per-environment configs (design)
-- IaC provisioning
-- CI/CD promotion
-- Per-environment secrets
-- Observability hooks
-
-## Main Skills Practiced
-- Cloud-native design
-- Kubernetes
-- Terraform
-- CI/CD
-- Configuration management
-
-## Planned Technologies
-- Java
-- Kubernetes (planned)
-- Helm (planned)
-- Terraform (planned)
-- CI/CD (planned)
-- PostgreSQL (planned)
-- Docker (planned)
-- Maven (build tool, as used in existing projects)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- app source (created later)
-- environment overlays (planned, not created yet)
-- IaC (planned)
-- documentation
-
-*(These folders and files are not created yet.)*
+```text
+src/multienvironmentcloudnativeapp/
+k8s/base/
+k8s/overlays/dev/
+k8s/overlays/staging/
+k8s/overlays/prod/
+terraform/main.tf
+ci/promotion.example.yml
+docs/environment-strategy.md
+docs/promotion-model.md
+README.md
+TESTING.md
+```
 
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Skeleton only. The Java app, image, overlays, promotion flow, infrastructure design, and environment behavior were not compiled, rendered, planned, deployed, or tested.
+
+## Required confirmations
+
+- Environment ownership and promotion approvals
+- Image immutability and configuration/secrets boundaries
+- Cluster/account topology and production access policy
+- Database migration, observability, rollback, and disaster-recovery expectations

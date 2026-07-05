@@ -1,70 +1,78 @@
 # CI Pipeline Java App
 
-A small dependency-free Java application designed to demonstrate a clear continuous-integration pipeline without hiding the individual compilation, test, and packaging stages behind a build framework.
+## Description
 
-## Features
+A small dependency-free Java application prepared with a GitHub Actions workflow that makes compilation, testing, packaging, and artifact handling visible as separate continuous-integration steps.
 
-- Simple greeting business logic
-- Input validation and trimming
-- Separate application and test source trees
-- Dependency-free test runner using assertions
-- GitHub Actions workflow template
-- Executable JAR packaging and artifact upload stages
+## Goal
+
+The goal is to learn what a CI pipeline actually performs rather than hiding every operation behind a large build framework. A greeting service provides simple validated business logic, and a dependency-free test runner supplies a clear pass/fail process exit status.
+
+## Technologies and concepts used
+
+- Java 21 source and package structure
+- Input validation and focused service logic
+- Separate application and test output directories
+- `javac`, `java`, and `jar` command concepts
+- GitHub Actions checkout and Java setup actions
+- Build artifacts and failure-driven pipeline control
 
 ## Project structure
 
 ```text
-src/cipipelinejavaapp/
-  GreetingService.java
-  Main.java
-test/cipipelinejavaapp/
-  GreetingServiceTest.java
-.github/workflows/ci.yml
-.gitignore
-docs/PIPELINE.md
-README.md
-TESTING.md
+src/cipipelinejavaapp/           Application source
+test/cipipelinejavaapp/          Dependency-free test runner
+.github/workflows/ci.yml         CI workflow template
+docs/PIPELINE.md                 Pipeline design explanation
+.gitignore                       Generated-output exclusions
+README.md                        Project documentation
+TESTING.md                       Validation guide
 ```
 
-## Pipeline stages
+## Important files explained
 
-| Stage | Purpose |
-|---|---|
-| Checkout | Makes repository files available to the runner |
-| Set up Java | Selects Temurin JDK 21 |
-| Compile | Compiles application and test classes with `javac` |
-| Test | Runs `GreetingServiceTest` |
-| Package | Creates an executable JAR and uploads the artifact |
+- `GreetingService.java` contains the testable greeting and validation logic.
+- `Main.java` provides a minimal console demonstration.
+- `GreetingServiceTest.java` performs normal and invalid-input checks without an external test library.
+- `.github/workflows/ci.yml` defines checkout, Java setup, application compilation, test compilation, test execution, JAR packaging, and artifact upload.
+- `docs/PIPELINE.md` explains trigger and repository-placement decisions.
 
-The workflow is manual-only and was not executed.
+## Intended real-environment workflow
 
-## Example local commands
+A developer would first compile application classes, compile tests against those classes, run the test runner, and package only application classes into an executable JAR. In CI, the same stages would run on a clean hosted runner, and any failed compilation or test would stop later stages.
 
-These commands document the expected process; they were not run during implementation.
+GitHub discovers workflows only in the repository-level `.github/workflows` directory. The workflow remains inside project 31 to respect project isolation, so it must be reviewed and moved to repository scope before GitHub Actions can discover it.
 
-```text
-javac -d out src/cipipelinejavaapp/*.java
-javac -cp out -d test-out test/cipipelinejavaapp/*.java
-java -cp "out;test-out" cipipelinejavaapp.GreetingServiceTest
-jar --create --file dist/ci-pipeline-java-app.jar --main-class cipipelinejavaapp.Main -C out cipipelinejavaapp
-```
+## Prepared but not executed
 
-The example classpath uses the Windows separator (`;`). The CI workflow uses the Linux separator (`:`).
+- Java source, test source, workflow stages, packaging commands, and artifact configuration were prepared.
+- The workflow uses a manual trigger and contains no fake status badge.
+- Java compilation, tests, JAR creation, artifact upload, and GitHub Actions execution were not performed.
+- No passing pipeline or working artifact is claimed.
 
-## Workflow location limitation
+## Manual validation checklist
 
-The workflow is stored inside this project because modifications are restricted to project 31. GitHub will not automatically discover a nested workflow. It must be reviewed and moved to the repository-level `.github/workflows` directory before it can be triggered.
+- [ ] Confirm source and package paths agree.
+- [ ] Confirm tests compile into `test-out`, separate from application classes.
+- [ ] Confirm the test class exits non-zero on an assertion failure.
+- [ ] Confirm packaging includes application classes but excludes tests.
+- [ ] Review action versions and Java distribution/version.
+- [ ] Move the workflow only after repository-level approval.
+- [ ] Trigger manually before adding push or pull-request events.
 
-## Limitations
+## Common mistakes avoided
 
-- Java, tests, packaging, and CI were not executed.
-- The test runner is intentionally small and does not use JUnit.
-- There is no coverage report or quality gate in this project; those belong to project 32.
-- No badge or successful build status is claimed.
+- Test classes are not packaged into the application JAR.
+- CI stages are explicit and ordered.
+- The workflow does not claim it ran successfully.
+- No fake badge or generated artifact is committed.
+- The nested-workflow discovery limitation is documented.
+- Linux and Windows classpath separators are not treated as interchangeable.
 
 ## Possible future improvements
 
-- Add push and pull-request triggers after enabling the workflow.
-- Add more business cases and tests.
-- Add artifact checksums and a release policy.
-- Add caching only if a build tool is introduced.
+- Add more service behavior and test cases.
+- Add pull-request triggers after the workflow is enabled and verified.
+- Publish checksums with retained artifacts.
+- Add a test framework only when its value outweighs the added build complexity.
+- Record pipeline permissions and artifact-retention policy explicitly.

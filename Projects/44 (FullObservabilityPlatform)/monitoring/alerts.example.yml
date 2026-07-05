@@ -1,0 +1,12 @@
+groups:
+  - name: observability-learning
+    rules:
+      - alert: JavaAppTargetDown
+        expr: up{job="java-app"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Example Java metrics target is unavailable"
+
+# TODO: Define alerts from measured service-level indicators.

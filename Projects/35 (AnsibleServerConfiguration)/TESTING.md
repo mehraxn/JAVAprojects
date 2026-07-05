@@ -1,69 +1,59 @@
 # Testing Ansible Server Configuration
 
-No Ansible command was run and no host was contacted. All command-based and remote checks remain unverified.
+Ansible was not installed or executed. No inventory, syntax, check-mode, SSH, sudo, package, account, file, handler, or service operation ran.
 
-## Static safety checks
+## Static validation checklist
 
-- [x] The tracked inventory uses only `server.example.invalid`.
-- [x] The SSH username and key path are obvious placeholders.
-- [x] No password, private key, token, or real host address is stored.
-- [x] The real `inventory.ini`, private-key extensions, and vault-password files are ignored.
-- [x] The application user is non-root and has a non-login shell.
-- [x] File ownership and modes are explicit.
-- [x] The sample service does not bind a network port.
+- [ ] Review YAML indentation and fully qualified module names.
+- [ ] Confirm play hosts match the example inventory group.
+- [ ] Confirm role names match role directories.
+- [ ] Confirm handler notifications match the handler name exactly.
+- [ ] Confirm variables referenced by tasks are declared.
+- [ ] Review module state values for idempotent intent.
 
-These checks are source inspection, not Ansible validation.
+## File existence checks
 
-## Deferred local checks
+- [ ] `ansible/ansible.cfg`, `inventory.ini.example`, and `playbook.yml` exist.
+- [ ] `ansible/group_vars/all.yml` exists.
+- [ ] Common and app task files exist.
+- [ ] App handler, copied files, and systemd template exist.
+- [ ] `docs/runbook.md`, `.gitignore`, `README.md`, and `TESTING.md` exist.
 
-After Ansible is deliberately installed, from the `ansible/` directory:
+## Configuration review checklist
 
-- [ ] Copy `inventory.ini.example` to ignored `inventory.ini` and use only an approved disposable host.
-- [ ] Run `ansible-inventory --graph` and confirm only the intended lab host appears.
-- [ ] Run `ansible-playbook playbook.yml --syntax-check`.
-- [ ] Run `ansible-playbook playbook.yml --list-hosts`.
-- [ ] Run `ansible-playbook playbook.yml --list-tasks`.
-- [ ] Review every resolved variable and task before allowing a connection.
+- [ ] Real `inventory.ini` remains ignored and absent by default.
+- [ ] Roles path resolves from `ansible.cfg`.
+- [ ] Package names suit the approved lab distribution.
+- [ ] `/usr/sbin/nologin` exists on the target distribution.
+- [ ] systemd hardening fields and writable paths suit the demo process.
+- [ ] Service and file paths agree across variables, tasks, script, and template.
 
-None of these commands were executed during implementation.
+## Security checks
 
-## Deferred check-mode cases
+- [ ] No real secret, credential, SSH key, or sudo password is present.
+- [ ] No production endpoint or real IP address is present.
+- [ ] Private-key and vault-password file patterns are ignored.
+- [ ] Host-key checking remains enabled.
+- [ ] Application files and service use least-privilege ownership/modes.
 
-| Case | Expected result |
-|---|---|
-| Documentation inventory unchanged | Connection fails safely because `example.invalid` cannot resolve |
-| Approved Linux systemd lab | Platform assertion passes |
-| Non-Linux or non-systemd target | Playbook stops at the platform assertion |
-| `app_user` set to `root` | Common role validation fails |
-| Empty package list | Common role validation fails |
-| Missing service/path variable | App role validation fails |
-| First check-mode review | Proposed package, account, directory, file, and service changes are visible |
+## Commands normally used - NOT executed
 
-Check mode is predictive and may not fully simulate package installation, user creation, or service startup.
+```text
+ansible-inventory --graph
+ansible-playbook playbook.yml --syntax-check
+ansible-playbook playbook.yml --list-hosts
+ansible-playbook playbook.yml --list-tasks
+ansible-playbook playbook.yml --check --diff --limit app-lab-01
+ansible-playbook playbook.yml --limit app-lab-01
+```
 
-## Deferred execution checks
+These commands require an approved disposable host and deliberately prepared ignored inventory. None were executed.
 
-- [ ] Confirm packages are present without requesting newer versions unnecessarily.
-- [ ] Confirm the system user cannot log in interactively.
-- [ ] Confirm all directories have the documented owner, group, and mode.
-- [ ] Confirm `application.conf` is mode `0640`.
-- [ ] Confirm the copied demo process is executable but not writable by the service user.
-- [ ] Confirm the systemd unit is enabled and active.
-- [ ] Confirm changing app configuration notifies exactly one restart handler.
-- [ ] Confirm unchanged app files do not trigger a restart.
+## Expected results in a proper environment
 
-## Idempotency test
-
-On an approved disposable host only:
-
-1. Review check mode and then run the playbook once.
-2. Record the play recap.
-3. Run the same playbook a second time without changing variables or files.
-4. Expect `changed=0` on the second run.
-5. Investigate any repeatedly changed task rather than accepting it as normal.
-
-This two-run test was not performed, so idempotency is designed but not proven.
-
-## Current status
-
-YAML parsing, inventory resolution, SSH access, privilege escalation, task behavior, handler behavior, service startup, and idempotency were not executed or verified.
+- Inventory and syntax checks show only the intended lab host and tasks.
+- Unsupported operating systems stop at the platform assertion.
+- Packages, system account, directories, configuration, script, and unit reach their declared states.
+- The service is enabled and active.
+- Changed app files trigger one restart handler.
+- A second unchanged playbook run normally reports `changed=0`.

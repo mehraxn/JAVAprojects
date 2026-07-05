@@ -1,0 +1,12 @@
+groups:
+  - name: rollout-learning
+    rules:
+      - alert: CanaryErrorRatioHigh
+        expr: canary_error_ratio > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Example canary error ratio exceeded"
+
+# TODO: Replace conceptual metric with an implemented measured query.

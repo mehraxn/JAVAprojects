@@ -1,41 +1,30 @@
 # Full Observability Platform
 
-## Description
-Plan an end-to-end observability setup covering metrics, logs and traces. The focus is the three pillars of observability.
+Starter structure for correlating Java application metrics, structured logs, and distributed traces in one educational observability design.
 
-## Difficulty
-Resume Grade
+## Structure
 
-## Main Features
-- Metrics with Prometheus (design)
-- Logs with a central stack (design)
-- Tracing with OpenTelemetry (design)
-- Dashboards
-- Alerting
-
-## Main Skills Practiced
-- Observability
-- Prometheus
-- Grafana
-- OpenTelemetry
-- Logging
-
-## Planned Technologies
-- Java
-- Prometheus (planned)
-- Grafana (planned)
-- OpenTelemetry (planned)
-- Docker / Kubernetes (planned)
-
-*(Planned only. None of these are implemented yet.)*
-
-## Planned Structure
-- app source (created later)
-- observability config (planned, not created yet)
-- dashboards (planned)
-- documentation
-
-*(These folders and files are not created yet.)*
+```text
+src/fullobservabilityplatform/
+docker/docker-compose.example.yml
+monitoring/prometheus.yml
+monitoring/otel-collector.example.yml
+monitoring/alerts.example.yml
+monitoring/grafana-dashboard.example.json
+logging/loki-config.example.yml
+docs/observability-architecture.md
+diagrams/observability-flow.md
+README.md
+TESTING.md
+```
 
 ## Status
-Planned. Folder and README created. Implementation not started yet.
+
+Skeleton only. No instrumentation library, collector, metrics target, log pipeline, trace backend, dashboard, alert, container, or deployment was executed.
+
+## Required confirmations
+
+- Approved Java OpenTelemetry instrumentation approach
+- Metrics, logs, and trace backends and versions
+- Correlation-field and label-cardinality policy
+- Retention, access, redaction, sampling, and alert ownership

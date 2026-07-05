@@ -1,0 +1,24 @@
+replicaCount: 1
+
+image:
+  repository: my-java-app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  port: 80
+  containerPort: 8080
+
+config:
+  environment: learning
+  version: helm-placeholder
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Secrets are intentionally excluded from this chart starter.

@@ -1,59 +1,84 @@
-# Incident Simulation (Game Day)
+# Incident Simulation / Game Day
 
-How you would **rehearse** disaster recovery so the runbooks are proven, not
-hoped-for. **No simulation was run** — this describes the drill.
+This document explains how to rehearse disaster recovery. The repository already
+contains an executable **local accidental-data-loss drill** in `TESTING.md`. The
+other scenarios below are planned game-day exercises for Kubernetes or production-
+like environments and are not executed by this local lab.
 
 ## Why simulate
 
-"Backups are working" is a claim; a **restore drill** is proof. Game days find
-the gaps (a missing checksum, a wrong credential, an unrestorable dump, an RTO
-that's really 4 hours) *before* a real incident does. An untested backup should
-be assumed broken.
+"Backups are working" is only a claim until a restore succeeds. A game day finds
+problems such as missing checksums, wrong credentials, unrestorable dumps, slow
+restore steps, unclear ownership, or missing validation before a real incident.
+An untested backup should be treated as suspicious.
 
 ## Ground rules
 
-- Run in a **disposable** environment only — never against production.
-- Use a **copy** of a backup; never the only copy.
-- Time everything; compare to the [rpo-rto.md](rpo-rto.md) targets.
-- Write a blameless retro; turn every gap into a runbook fix.
+- Run drills in a disposable environment unless an approved incident commander
+  explicitly authorizes a production action.
+- Never restore directly over the only production database before validating the
+  backup somewhere isolated.
+- Use a copy of the backup, not the only copy.
+- Time each stage and record evidence in `TEST_RESULTS.md` or an incident log.
+- Turn every delay or unclear step into a runbook fix.
 
-## Scenarios
+## Scenario matrix
 
-| # | Scenario | Inject (in a lab) | Expected recovery |
+| # | Scenario | Where it can be tested here | Expected result |
 | --- | --- | --- | --- |
-| 1 | Accidental data loss | `DELETE FROM app_data;` on a test DB | restore latest backup; RPO = age of that backup |
-| 2 | Volume loss | delete the DB PVC / pod on a test cluster | StatefulSet reschedules; if data gone, restore |
-| 3 | Corrupt backup | point restore at a truncated dump | checksum check fails → fall back to older backup |
-| 4 | Region loss | rebuild cluster from Git in a lab | redeploy manifests; restore from off-site copy |
+| 1 | Accidental data loss | Local Compose lab | delete rows from primary, restore backup into disposable DB, validate rows |
+| 2 | Corrupt backup | Local Compose lab | checksum check fails before restore |
+| 3 | Database volume loss | Kubernetes or a disposable cluster | recreate database target and restore from backup |
+| 4 | Cluster or region loss | Future production-like lab | rebuild from Git, retrieve off-site backup, restore and cut over |
 
-## Drill procedure (NOT executed)
+## Executable local drill
 
-1. Pick a scenario; announce start; start the clock.
-2. Inject the failure in the disposable environment.
-3. Follow [restore-runbook.md](restore-runbook.md) exactly — no shortcuts (that's
-   the point).
-4. Record: detection time, decision time, restore time (**RTO**), and the
-   data-loss window (**RPO**).
-5. Validate data + application.
-6. Retro: what was slow, unclear, or missing? File fixes.
+The local drill is documented in [../TESTING.md](../TESTING.md). It tests the most
+important safety property: a backup can be restored and validated **without
+modifying the primary database**.
 
-## Chaos-style failure injection (examples, NOT executed)
+High-level flow:
+
+```text
+start Compose lab
+  -> confirm sample data
+  -> run scripts/backup.sh
+  -> delete rows from local primary
+  -> run scripts/restore.sh <backup>
+  -> verify rows in app_restore
+  -> confirm production guard refuses DR_TARGET_ENV=production
+```
+
+## Production-style drill procedure
+
+1. Pick a scenario and announce the game-day window.
+2. Start the clock and record the initial state.
+3. Inject the failure in the disposable environment.
+4. Follow the relevant runbook exactly.
+5. Record detection time, decision time, restore duration, validation duration,
+   and selected backup age.
+6. Compare measured RPO/RTO against the targets.
+7. Write a short retrospective with fixes.
+
+## Example failure-injection commands
+
+These commands are examples only. Run them only in a disposable lab where losing
+state is acceptable.
 
 ```bash
-# NOT executed — all against a DISPOSABLE lab only:
-kubectl delete pod postgres-0                 # pod loss (StatefulSet reschedules)
-kubectl delete pvc data-postgres-0            # volume loss (forces a restore)
-psql -h postgres-dr -d app_test -c "DROP TABLE app_data;"   # data loss
+kubectl delete pod postgres-0
+kubectl delete pvc data-postgres-0
+psql -h postgres-dr -d app_test -c "DROP TABLE app_data;"
 ```
 
 ## Success criteria
 
-A drill passes when: the correct backup was found and verified, the restore
-completed within the **RTO target**, data loss was within the **RPO target**, the
-application validated green, and the retro produced concrete improvements.
+A drill passes when the selected backup is verified, restore completes without
+bypassing safeguards, `app_data` validates successfully, the observed RPO/RTO are
+recorded, and the retrospective produces concrete follow-up work.
 
-## What was NOT done
+## Current evidence boundary
 
-- No failure was injected; no drill was run.
-- No recovery time or data-loss window was measured.
-- **No claim is made that recovery works.**
+The repository provides the commands needed to run scenario 1 locally. It does
+not commit generated backup files or fake test results. After running the drill,
+add your real command output and measurements to `TEST_RESULTS.md`.

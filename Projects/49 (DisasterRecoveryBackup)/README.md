@@ -164,4 +164,4 @@ terraform/                documented future cloud extension point
 - sign backup metadata and record restore audit events;
 - test larger datasets and document measured RTO trends.
 
-See [TESTING.md](TESTING.md) for the exact end-to-end recovery drill.
+See [TESTING.md](TESTING.md) for the exact end-to-end recovery drill and [TEST_RESULTS.md](TEST_RESULTS.md) for recording real evidence after you run it.

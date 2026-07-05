@@ -1,0 +1,6 @@
+ansible/inventory.ini
+ansible/*.retry
+ansible/.cache/
+*.vault-password
+*.pem
+*.key

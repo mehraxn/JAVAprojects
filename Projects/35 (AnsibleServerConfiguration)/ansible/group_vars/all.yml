@@ -1,0 +1,19 @@
+---
+# These are non-sensitive lab defaults. Do not store passwords or private keys here.
+common_packages:
+  - curl
+  - unzip
+
+app_user: learning_app
+app_group: learning_app
+app_user_shell: /usr/sbin/nologin
+
+app_root: /opt/learning-app
+app_bin_directory: /opt/learning-app/bin
+app_config_directory: /etc/learning-app
+app_data_directory: /var/lib/learning-app
+app_log_directory: /var/log/learning-app
+
+app_service_name: learning-app
+app_config_file: /etc/learning-app/application.conf
+app_executable: /opt/learning-app/bin/learning-app

@@ -1,0 +1,19 @@
+---
+- name: Configure the learning application server
+  hosts: app_servers
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Confirm the target is a supported Linux system
+      ansible.builtin.assert:
+        that:
+          - ansible_system == "Linux"
+          - ansible_service_mgr == "systemd"
+        fail_msg: "This learning playbook expects Linux with systemd."
+
+  roles:
+    # The common role prepares the operating-system user and directories.
+    - role: common
+    # The app role deploys configuration, a demo process, and a service unit.
+    - role: app

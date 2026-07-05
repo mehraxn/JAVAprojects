@@ -1,0 +1,20 @@
+[Unit]
+Description=Ansible learning application
+After=network.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+Environment="APP_CONFIG_FILE={{ app_config_file }}"
+ExecStart={{ app_executable }}
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ app_data_directory }} {{ app_log_directory }}
+
+[Install]
+WantedBy=multi-user.target

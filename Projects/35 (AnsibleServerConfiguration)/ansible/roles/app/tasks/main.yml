@@ -1,0 +1,42 @@
+---
+- name: Validate app role inputs
+  ansible.builtin.assert:
+    that:
+      - app_service_name | length > 0
+      - app_config_file | length > 0
+      - app_executable | length > 0
+    fail_msg: "Service, configuration, and executable paths are required."
+
+- name: Copy the learning application configuration
+  ansible.builtin.copy:
+    src: application.conf
+    dest: "{{ app_config_file }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0640"
+  notify: Restart learning application
+
+- name: Copy the harmless demonstration process
+  ansible.builtin.copy:
+    src: learning-app.sh
+    dest: "{{ app_executable }}"
+    owner: root
+    group: "{{ app_group }}"
+    mode: "0750"
+  notify: Restart learning application
+
+- name: Install the systemd service unit
+  ansible.builtin.template:
+    src: learning-app.service.j2
+    dest: "/etc/systemd/system/{{ app_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart learning application
+
+- name: Start and enable the learning application service
+  ansible.builtin.systemd:
+    name: "{{ app_service_name }}"
+    daemon_reload: true
+    enabled: true
+    state: started

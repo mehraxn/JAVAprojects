@@ -1,0 +1,50 @@
+---
+- name: Validate common role inputs
+  ansible.builtin.assert:
+    that:
+      - app_user | length > 0
+      - app_group | length > 0
+      - app_user != "root"
+      - app_group != "root"
+      - common_packages | length > 0
+    fail_msg: "Application user, group, and package values must be safe non-empty lab values."
+
+- name: Install required learning packages
+  ansible.builtin.package:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Create the application group
+  ansible.builtin.group:
+    name: "{{ app_group }}"
+    system: true
+    state: present
+
+- name: Create the non-login application user
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    home: "{{ app_data_directory }}"
+    shell: "{{ app_user_shell }}"
+    system: true
+    create_home: false
+    state: present
+
+- name: Create application directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ app_root }}"
+      mode: "0755"
+    - path: "{{ app_bin_directory }}"
+      mode: "0755"
+    - path: "{{ app_config_directory }}"
+      mode: "0750"
+    - path: "{{ app_data_directory }}"
+      mode: "0750"
+    - path: "{{ app_log_directory }}"
+      mode: "0750"

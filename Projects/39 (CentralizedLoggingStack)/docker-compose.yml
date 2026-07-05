@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    environment:
+      LOG_FILE: /var/log/phase3/application.log
+    volumes:
+      - app_logs:/var/log/phase3
+
+  loki:
+    image: grafana/loki:3.1.1
+    command: -config.file=/etc/loki/loki.yml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./logging/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    command: -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - ./logging/promtail.yml:/etc/promtail/promtail.yml:ro
+      - app_logs:/var/log/phase3:ro
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: CHANGE_ME
+    volumes:
+      - ./logging/grafana/provisioning:/etc/grafana/provisioning:ro
+
+volumes:
+  app_logs:
+  loki_data:
+
+# TODO: Add health checks and explicit retention after the stack is confirmed.

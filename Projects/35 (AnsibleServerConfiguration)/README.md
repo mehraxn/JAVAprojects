@@ -1,37 +1,27 @@
-# Ansible Server Configuration Project
+# Ansible Server Configuration
 
-## Description
-Plan automated server configuration with Ansible playbooks and roles at a conceptual level. The focus is configuration management.
+Safe Ansible starter demonstrating inventory, playbooks, roles, defaults, handlers, and templates with documentation-only hosts.
 
-## Difficulty
-Advanced
+## Structure
 
-## Main Features
-- Inventory (design)
-- Playbooks and roles
-- Idempotent tasks
-- Variables and templates
-- App deploy step
+```text
+ansible/ansible.cfg
+ansible/inventory/example.ini
+ansible/playbooks/site.yml
+ansible/roles/java_app/defaults/main.yml
+ansible/roles/java_app/tasks/main.yml
+ansible/roles/java_app/handlers/main.yml
+ansible/roles/java_app/templates/application.service.j2
+docs/SAFETY.md
+TESTING.md
+```
 
-## Main Skills Practiced
-- Ansible
-- Configuration management
-- Linux basics
+## Safety
 
-## Planned Technologies
-- Ansible (planned)
-- YAML
-- Linux concepts
+The inventory uses a reserved documentation address and the role performs only a debug placeholder task. No host was contacted and no playbook was run.
 
-*(Planned only. None of these are implemented yet.)*
+## Next implementation steps
 
-## Planned Structure
-- playbooks (planned, not created yet)
-- roles (planned)
-- inventory (planned)
-- documentation
-
-*(These folders and files are not created yet.)*
-
-## Status
-Planned. Folder and README created. Implementation not started yet.
+- Confirm the target operating system and package manager.
+- Confirm application user, paths, artifact source, and service manager.
+- Add idempotent tasks one responsibility at a time.

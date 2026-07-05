@@ -1,0 +1,9 @@
+# Example non-sensitive values for local learning only.
+project_name = "iac-starter"
+environment  = "dev"
+components   = ["backend", "database", "frontend"]
+
+additional_labels = {
+  course = "terraform-basics"
+  owner  = "student"
+}

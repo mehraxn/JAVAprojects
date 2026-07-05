@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phase3-java-app
+  labels:
+    app: phase3-java-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: phase3-java-app
+  template:
+    metadata:
+      labels:
+        app: phase3-java-app
+    spec:
+      containers:
+        - name: app
+          image: example.invalid/phase3-java-app:CHANGE_ME
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: phase3-java-app-config
+            - secretRef:
+                name: phase3-java-app-secret
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+      # TODO: Confirm pod-level security context and image pull policy.

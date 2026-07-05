@@ -1,0 +1,12 @@
+groups:
+  - name: starter-alerts
+    rules:
+      - alert: StarterMetricsTargetMissing
+        expr: up{job="phase3-java-app"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Starter Java metrics target is unavailable
+
+# TODO: Add application alerts only after real service-level objectives exist.

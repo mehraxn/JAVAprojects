@@ -1,39 +1,29 @@
-# Monitoring with Prometheus and Grafana
+# Prometheus Grafana Monitoring
 
-## Description
-Plan monitoring for a Java app using Prometheus metrics and Grafana dashboards. The focus is metrics and observability basics.
+Starter Java metrics application with Prometheus scrape configuration, alert placeholders, and Grafana provisioning files.
 
-## Difficulty
-Advanced
+## Structure
 
-## Main Features
-- Metrics exposure (design)
-- Prometheus scrape config (design)
-- Grafana dashboards (design)
-- Alert rules (concept)
-- Key application metrics
+```text
+src/prometheusgrafanamonitoring/
+Dockerfile
+docker-compose.yml
+monitoring/prometheus.yml
+monitoring/alerts.yml
+monitoring/grafana/provisioning/datasources/prometheus.yml
+monitoring/grafana/provisioning/dashboards/dashboards.yml
+monitoring/grafana/dashboards/starter-dashboard.json
+docs/METRICS.md
+TESTING.md
+```
 
-## Main Skills Practiced
-- Prometheus
-- Grafana
-- Metrics
-- Observability
+## Safety and status
 
-## Planned Technologies
-- Java
-- Prometheus (planned)
-- Grafana (planned)
-- Docker (planned)
+The Java server and metrics endpoint are not implemented yet. No container, Prometheus server, Grafana server, scrape, or alert was started. Grafana credentials remain placeholders.
 
-*(Planned only. None of these are implemented yet.)*
+## Next implementation steps
 
-## Planned Structure
-- app source (created later)
-- monitoring config (planned, not created yet)
-- dashboards (planned)
-- documentation
-
-*(These folders and files are not created yet.)*
-
-## Status
-Planned. Folder and README created. Implementation not started yet.
+- Implement `/health` and `/metrics` with Java `HttpServer`.
+- Define metric names, types, labels, and cardinality limits.
+- Confirm dashboard panels and meaningful alert thresholds.
+- Replace placeholder credentials outside version control.

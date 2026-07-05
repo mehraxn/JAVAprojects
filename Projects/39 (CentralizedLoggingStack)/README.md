@@ -1,36 +1,31 @@
 # Centralized Logging Stack
 
-## Description
-Plan a centralized logging pipeline that collects, ships, stores and displays logs for services. The focus is log-aggregation concepts.
+Starter Java structured-logging application with a local Loki, Promtail, and Grafana configuration layout.
 
-## Difficulty
-Advanced
+## Structure
 
-## Main Features
-- Structured logging (design)
-- Log shipping
-- Central log store
-- Search and dashboards
-- Retention policy
+```text
+src/centralizedloggingstack/
+Dockerfile
+docker-compose.yml
+logging/loki.yml
+logging/promtail.yml
+logging/grafana/provisioning/datasources/loki.yml
+docs/LOGGING.md
+TESTING.md
+```
 
-## Main Skills Practiced
-- Logging
-- Observability
-- Data pipelines
+## Current assumption
 
-## Planned Technologies
-- Java
-- Logging stack (e.g. ELK or Loki) (planned)
-- Docker (planned)
+Loki, Promtail, and Grafana are used only as a concrete starter choice. Confirm this stack before implementing the full logging pipeline.
 
-*(Planned only. None of these are implemented yet.)*
+## Safety and status
 
-## Planned Structure
-- app source (created later)
-- logging config (planned, not created yet)
-- documentation
+No container or logging service was started. The Java logger writes only locally, Grafana credentials are placeholders, and no production log data or secrets are included.
 
-*(These folders and files are not created yet.)*
+## Next implementation steps
 
-## Status
-Planned. Folder and README created. Implementation not started yet.
+- Confirm the logging stack and retention expectations.
+- Define the structured log schema and redaction rules.
+- Connect the shared application log volume to the collector.
+- Add search examples and a dashboard only after logs are ingested.

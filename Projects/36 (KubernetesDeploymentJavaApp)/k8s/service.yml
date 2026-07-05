@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: phase3-java-app
+spec:
+  type: ClusterIP
+  selector:
+    app: phase3-java-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

@@ -1,0 +1,48 @@
+name: Java CI Pipeline Starter
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Compile application
+        working-directory: "Projects/31 (CIPipelineJavaApp)"
+        run: javac -d out src/cipipelinejavaapp/*.java
+
+      - name: Compile tests
+        working-directory: "Projects/31 (CIPipelineJavaApp)"
+        run: javac -cp out -d test-out test/cipipelinejavaapp/*.java
+
+      - name: Run tests
+        working-directory: "Projects/31 (CIPipelineJavaApp)"
+        run: java -cp "out:test-out" cipipelinejavaapp.GreetingServiceTest
+
+      - name: Package application
+        working-directory: "Projects/31 (CIPipelineJavaApp)"
+        run: |
+          mkdir -p dist
+          jar --create --file dist/ci-pipeline-java-app.jar --main-class cipipelinejavaapp.Main -C out cipipelinejavaapp
+
+      - name: Upload packaged application
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-pipeline-java-app
+          path: "Projects/31 (CIPipelineJavaApp)/dist/ci-pipeline-java-app.jar"
+          if-no-files-found: error
+
+# This nested workflow is a portfolio template. GitHub discovers workflows only
+# from the repository-level .github/workflows directory.

@@ -1,38 +1,28 @@
-# Helm Chart for Java App
+# Helm Chart Java App
 
-## Description
-Plan packaging Kubernetes manifests for a Java app as a reusable Helm chart. The focus is templating and values.
+Starter Helm chart for parameterizing the Kubernetes resources of a Java application without duplicating application source.
 
-## Difficulty
-Advanced
+## Structure
 
-## Main Features
-- Chart templates (design)
-- values.yaml (design)
-- Parameterization
-- Multiple environments
-- Release concepts
+```text
+helm/java-app/Chart.yaml
+helm/java-app/values.yaml
+helm/java-app/templates/_helpers.tpl
+helm/java-app/templates/deployment.yaml
+helm/java-app/templates/service.yaml
+helm/java-app/templates/configmap.yaml
+helm/java-app/templates/secret.example.yaml
+docs/VALUES.md
+TESTING.md
+```
 
-## Main Skills Practiced
-- Helm
-- Kubernetes
-- Templating
-- YAML
+## Safety
 
-## Planned Technologies
-- Java
-- Docker (planned)
-- Kubernetes / Helm (planned)
-- Maven (build tool, as used in existing projects)
+Image, host, and secret values are placeholders. The chart was not rendered, installed, upgraded, or connected to a cluster.
 
-*(Planned only. None of these are implemented yet.)*
+## Next implementation steps
 
-## Planned Structure
-- chart (planned, not created yet)
-- values files (planned)
-- documentation
-
-*(These folders and files are not created yet.)*
-
-## Status
-Planned. Folder and README created. Implementation not started yet.
+- Confirm the Java image and health endpoints.
+- Define supported values and validation rules.
+- Decide whether secrets belong in this chart or an external secret system.
+- Add environment-specific values only after policy review.

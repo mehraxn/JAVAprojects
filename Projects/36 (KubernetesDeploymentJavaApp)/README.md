@@ -1,38 +1,27 @@
-# Kubernetes Deployment for Java App
+# Kubernetes Deployment Java App
 
-## Description
-Plan deploying a containerized Java app to Kubernetes using Deployments and Services. The focus is core Kubernetes objects.
+Starter Java application plus Kubernetes Deployment, Service, ConfigMap, and example Secret manifests.
 
-## Difficulty
-Advanced
+## Structure
 
-## Main Features
-- Deployment and Service (design)
-- Config via ConfigMap/Secret (design)
-- Replicas
-- Liveness and readiness probes
-- Rollout concepts
+```text
+src/kubernetesdeploymentjavaapp/
+Dockerfile
+k8s/deployment.yml
+k8s/service.yml
+k8s/configmap.yml
+k8s/secret.example.yml
+docs/DEPLOYMENT.md
+TESTING.md
+```
 
-## Main Skills Practiced
-- Kubernetes
-- Docker
-- YAML
-- Deployment concepts
+## Safety
 
-## Planned Technologies
-- Java
-- Docker (planned)
-- Kubernetes (planned)
-- Maven (build tool, as used in existing projects)
+The image repository is a non-routable placeholder and the Secret contains only `CHANGE_ME`. No image was built, no manifest was applied, and no cluster was contacted.
 
-*(Planned only. None of these are implemented yet.)*
+## Next implementation steps
 
-## Planned Structure
-- app source (created later)
-- Kubernetes manifests (planned, not created yet)
-- documentation
-
-*(These folders and files are not created yet.)*
-
-## Status
-Planned. Folder and README created. Implementation not started yet.
+- Implement health and readiness endpoints.
+- Confirm image name, port, namespace, and resource limits.
+- Replace the example Secret with an external secret-delivery strategy.
+- Review security context and rollout behavior.

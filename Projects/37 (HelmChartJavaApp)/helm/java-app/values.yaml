@@ -1,0 +1,29 @@
+replicaCount: 2
+
+image:
+  repository: example.invalid/phase3-java-app
+  tag: CHANGE_ME
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+config:
+  environment: dev
+  appPort: "8080"
+
+secret:
+  create: false
+  exampleValue: CHANGE_ME
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# TODO: Confirm probes, autoscaling, ingress, and secret ownership.

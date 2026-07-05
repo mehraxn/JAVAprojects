@@ -1,0 +1,39 @@
+name: Testing and Coverage Quality Gate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "Projects/32 (TestingCoverageQualityGate)"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: "Projects/32 (TestingCoverageQualityGate)/pom.xml"
+
+      - name: Run tests and enforce coverage gate
+        run: mvn --batch-mode --no-transfer-progress verify
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-report
+          path: "Projects/32 (TestingCoverageQualityGate)/target/site/jacoco"
+          if-no-files-found: warn
+
+# This nested workflow is a portfolio template. GitHub discovers workflows only
+# from the repository-level .github/workflows directory.

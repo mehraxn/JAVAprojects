@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS notes (
+    id BIGSERIAL PRIMARY KEY,
+    note_text VARCHAR(500) NOT NULL CHECK (length(trim(note_text)) > 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

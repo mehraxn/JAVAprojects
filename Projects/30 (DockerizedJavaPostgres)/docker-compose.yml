@@ -1,0 +1,29 @@
+services:
+  database:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-taskdb}
+      POSTGRES_USER: ${POSTGRES_USER:-task_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./configs/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  app:
+    build:
+      context: .
+    environment:
+      DB_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-taskdb}
+      DB_USER: ${POSTGRES_USER:-task_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME}
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

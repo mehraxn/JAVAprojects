@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compose Notes</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 3rem auto; padding: 0 1rem; }
+    form { display: grid; gap: 0.75rem; }
+    textarea { min-height: 6rem; padding: 0.75rem; }
+    button { width: fit-content; padding: 0.55rem 1rem; }
+    li { margin: 0.75rem 0; }
+    #status { min-height: 1.5rem; color: #444; }
+  </style>
+</head>
+<body>
+  <h1>Compose Notes</h1>
+  <p>A small frontend talking to a Java backend and PostgreSQL.</p>
+
+  <form id="note-form">
+    <label for="note-text">New note</label>
+    <textarea id="note-text" maxlength="500" required></textarea>
+    <button type="submit">Save note</button>
+  </form>
+
+  <p id="status" role="status"></p>
+  <h2>Saved notes</h2>
+  <ul id="notes"></ul>
+
+  <script>
+    const form = document.querySelector('#note-form');
+    const noteText = document.querySelector('#note-text');
+    const notes = document.querySelector('#notes');
+    const status = document.querySelector('#status');
+
+    async function loadNotes() {
+      status.textContent = 'Loading notes...';
+      try {
+        const response = await fetch('/api/notes');
+        if (!response.ok) throw new Error(`Backend returned ${response.status}`);
+        const data = await response.json();
+        notes.replaceChildren();
+        for (const note of data) {
+          const item = document.createElement('li');
+          item.textContent = `${note.text} (${new Date(note.createdAt).toLocaleString()})`;
+          notes.append(item);
+        }
+        status.textContent = data.length === 0 ? 'No notes saved yet.' : 'Notes loaded.';
+      } catch (error) {
+        status.textContent = `Could not load notes: ${error.message}`;
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const text = noteText.value.trim();
+      if (!text) {
+        status.textContent = 'Enter a note before saving.';
+        return;
+      }
+      status.textContent = 'Saving note...';
+      try {
+        const response = await fetch('/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          body: text
+        });
+        if (!response.ok) throw new Error(`Backend returned ${response.status}`);
+        noteText.value = '';
+        await loadNotes();
+      } catch (error) {
+        status.textContent = `Could not save note: ${error.message}`;
+      }
+    });
+
+    loadNotes();
+  </script>
+</body>
+</html>

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-readonly PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+readonly PROJECT_ROOT
 readonly COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.yml"
 readonly BACKUP_DIR="${PROJECT_ROOT}/backups"
 readonly RESTORE_SERVICE="restore-postgres"
@@ -23,8 +24,8 @@ docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is required."
 # This workflow intentionally supports only the fixed, disposable local target.
 [[ "${DR_TARGET_ENV:-local}" == "local" ]] || \
   fail "DR_TARGET_ENV must be 'local'; production-like restores are refused."
-[[ -z "${PGHOST:-}" && -z "${DATABASE_URL:-}" ]] || \
-  fail "External database variables are set. Unset PGHOST and DATABASE_URL."
+[[ -z "${PGHOST:-}" && -z "${PGHOSTADDR:-}" && -z "${PGSERVICE:-}" && -z "${DATABASE_URL:-}" ]] || \
+  fail "External database variables are set. Unset PGHOST, PGHOSTADDR, PGSERVICE, and DATABASE_URL."
 [[ "$RESTORE_SERVICE" == "restore-postgres" && "$RESTORE_DATABASE" == *_restore ]] || \
   fail "The restore target did not pass the disposable-target guard."
 

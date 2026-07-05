@@ -10,6 +10,5 @@ backups/*
 !backups/.gitkeep
 *.dump
 *.dump.sha256
-last_success_epoch
 *.prom
 *.tmp

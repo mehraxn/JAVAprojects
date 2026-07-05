@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-readonly PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+readonly PROJECT_ROOT
 readonly COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.yml"
 readonly BACKUP_DIR="${PROJECT_ROOT}/backups"
 
@@ -43,12 +44,17 @@ docker compose -f "$COMPOSE_FILE" run --rm --no-deps -T db-tools \
 docker compose -f "$COMPOSE_FILE" run --rm --no-deps -T db-tools \
   pg_restore --list <"$tmp_dump" >/dev/null
 
-mv -- "$tmp_dump" "$artifact"
-
+# Checksum the still-unpublished temp dump, but record the final .dump name so
+# restore.sh's in-container `sha256sum -c` resolves the published artifact. This
+# guarantees a dump is never published without its matching .sha256.
 docker compose -f "$COMPOSE_FILE" run --rm --no-deps -T \
   -e BACKUP_FILE="$backup_name" db-tools \
-  sh -eu -c 'cd /backups && sha256sum "$BACKUP_FILE"' >"$tmp_checksum"
+  sh -eu -c 'cd /backups && hash="$(sha256sum "${BACKUP_FILE}.tmp" | cut -d " " -f 1)" && printf "%s  %s\n" "$hash" "$BACKUP_FILE"' >"$tmp_checksum"
+
+# Publish atomically once both the dump and its checksum exist: checksum first,
+# then the dump, so a visible .dump always has its .sha256 sidecar.
 mv -- "$tmp_checksum" "$checksum"
+mv -- "$tmp_dump" "$artifact"
 
 success_epoch="$(date -u +%s)"
 {

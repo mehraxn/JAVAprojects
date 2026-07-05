@@ -42,8 +42,8 @@ spec:
               command: ["/bin/sh", "-c"]
               args:
                 - |
-                  # postgres:16-alpine provides /bin/sh, not Bash. Keep this
-                  # POSIX-compatible instead of enabling Bash-only pipefail.
+                  # Invoked via /bin/sh on the postgres:16 (Debian) image. Keep
+                  # this POSIX-compatible rather than relying on Bash features.
                   set -eu
                   ts="$(date -u +%Y%m%dT%H%M%SZ)"
                   name="${POSTGRES_DB}-${ts}.dump"
@@ -52,9 +52,17 @@ spec:
                     -Fc --no-owner --no-privileges -f "$out" "$POSTGRES_DB"
                   cd /backups
                   sha256sum "$name" > "${name}.sha256"
-                  date -u +%s > last_success_epoch
-                  # retention: keep 7 days
-                  find /backups -name "*.dump*" -mtime +7 -delete
+                  # Prometheus textfile metric (same format as scripts/backup.sh),
+                  # written atomically so a partial file is never scraped.
+                  epoch="$(date -u +%s)"
+                  {
+                    echo '# HELP disaster_recovery_backup_last_success_timestamp_seconds Unix timestamp of the last successful backup.'
+                    echo '# TYPE disaster_recovery_backup_last_success_timestamp_seconds gauge'
+                    echo "disaster_recovery_backup_last_success_timestamp_seconds ${epoch}"
+                  } > backup_last_success.prom.tmp
+                  mv backup_last_success.prom.tmp backup_last_success.prom
+                  # retention: delete dumps older than 7 days (keeps ~7 daily backups)
+                  find /backups -name "*.dump*" -mtime +6 -delete
                   echo "backup ok: $out"
               volumeMounts:
                 - name: backups

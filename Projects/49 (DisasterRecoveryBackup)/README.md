@@ -68,6 +68,11 @@ On Windows PowerShell, invoke the same script through Bash:
 bash ./scripts/backup.sh
 ```
 
+> **Windows note:** the backup step redirects a **binary** custom-format dump to a
+> file. This is reliable under **WSL2** (used for `TEST_RESULTS.md`) or Git Bash;
+> prefer those over native `cmd.exe`/PowerShell console redirection, which can
+> alter binary stdout and corrupt the dump.
+
 The script:
 
 1. checks that the Compose primary database is ready;

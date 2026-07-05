@@ -1,4 +1,4 @@
-# Placeholder image for app-v1. Would be tagged my-java-app:v1. NOT built here.
+# Example Dockerfile for app-1. A registry build would tag it as registry.example.invalid/blue-green-canary-app:v1.
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /workspace
 COPY src ./src

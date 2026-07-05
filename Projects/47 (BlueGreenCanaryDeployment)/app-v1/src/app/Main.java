@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
  *
  * A version-reporting HTTP service. In blue-green and canary demos the whole
  * point is that clients can tell which version served them, so traffic shifting
- * is observable. This app is NOT built or run in this repo.
+ * is observable. It can be compiled and run locally; see TESTING.md.
  *
  *   GET /version  -> {"version":"v1"}
  *   GET /health   -> liveness
@@ -45,7 +45,10 @@ public final class Main {
     private static void respond(com.sun.net.httpserver.HttpExchange ex, int status, String body)
             throws IOException {
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-        ex.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
+        String contentType = body.strip().startsWith("{")
+                ? "application/json; charset=utf-8"
+                : "text/plain; charset=utf-8";
+        ex.getResponseHeaders().add("Content-Type", contentType);
         ex.sendResponseHeaders(status, bytes.length);
         try (OutputStream out = ex.getResponseBody()) {
             out.write(bytes);

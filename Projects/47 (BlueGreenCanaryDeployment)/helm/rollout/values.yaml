@@ -1,21 +1,14 @@
-# Drive the whole rollout from values. NOT rendered or installed here.
-#
-# Blue-green: set `activeTrack` to blue or green — the Service follows it, so
-# promotion/rollback is a one-line value change + `helm upgrade`.
-#
-# Canary: set replica counts to shift the replica-ratio split (e.g. stable 9,
-# canary 1 ≈ 10%). Both tracks share one Service that selects on `app` only.
+# Blue-green rollout values. This optional chart renders both tracks and one
+# Service whose selector follows activeTrack. It is intentionally blue-green
+# only; canary examples live under k8s/canary/.
 
 image:
-  repository: my-java-app     # placeholder
+  repository: registry.example.invalid/blue-green-canary-app
   blueTag: v1
   greenTag: v2
   pullPolicy: IfNotPresent
 
 containerPort: 8080
-
-# --- blue-green ---
-# Which track the stable Service points at. Flip to "green" to switch traffic.
 activeTrack: blue
 
 blue:

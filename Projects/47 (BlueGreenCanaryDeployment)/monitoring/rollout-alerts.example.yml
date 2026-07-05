@@ -1,12 +1,27 @@
+# Example Prometheus rules for a canary protected by an NGINX ingress controller.
+# These metrics depend on a real ingress controller and Prometheus setup; they
+# are not produced by the toy Java app itself.
 groups:
   - name: rollout-learning
     rules:
-      - alert: CanaryErrorRatioHigh
-        expr: canary_error_ratio > 0.05
+      - alert: Canary5xxRateHigh
+        expr: |
+          (
+            sum(rate(nginx_ingress_controller_requests{ingress="java-app-canary",status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(nginx_ingress_controller_requests{ingress="java-app-canary"}[5m])), 1)
+          ) > 0.05
         for: 2m
         labels:
           severity: warning
         annotations:
-          summary: "Example canary error ratio exceeded"
-
-# TODO: Replace conceptual metric with an implemented measured query.
+          summary: "Canary 5xx rate is above 5%"
+          description: "Pause promotion or roll back the canary while investigating."
+      - alert: CanaryTrafficMissing
+        expr: sum(rate(nginx_ingress_controller_requests{ingress="java-app-canary"}[5m])) == 0
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Canary ingress is not receiving traffic"
+          description: "Check ingress annotations, host/path matching, and service selectors."

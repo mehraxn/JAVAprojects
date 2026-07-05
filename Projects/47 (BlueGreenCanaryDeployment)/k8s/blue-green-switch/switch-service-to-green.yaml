@@ -1,0 +1,19 @@
+# Promotion switch for blue-green deployment.
+# This is the same Service as k8s/blue-green/service.yaml, but the selector points
+# to green/v2. Keep this file outside the initial apply folder so it is not
+# applied by accident.
+apiVersion: v1
+kind: Service
+metadata:
+  name: java-app
+  labels:
+    app: java-app
+spec:
+  type: ClusterIP
+  selector:
+    app: java-app
+    track: green
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

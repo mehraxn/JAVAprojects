@@ -31,7 +31,7 @@ argocd app rollback cloud-native-app-prod <previous-revision>
 
 ```bash
 # NOT executed — set the overlay image back to the last-good digest and re-apply:
-kubectl apply -k "Projects/48 (MultiEnvironmentCloudNativeApp)/k8s/overlays/prod"
+kubectl apply -k "48 (MultiEnvironmentCloudNativeApp)/k8s/overlays/prod"
 ```
 
 ## Runbook

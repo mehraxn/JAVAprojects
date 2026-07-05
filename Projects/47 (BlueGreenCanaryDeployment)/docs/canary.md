@@ -1,78 +1,57 @@
 # Canary Deployment
 
-Covers the manifests in [`../k8s/canary/`](../k8s/canary/). **Nothing was
-deployed and no traffic was shifted.**
+Covers the manifests in `../k8s/canary/`. These are example manifests; no real
+cluster traffic was shifted in this repository.
 
 ## The idea
 
-Instead of switching everyone at once (blue-green), expose the new version to a
-**small percentage** of traffic first, watch it, and increase the percentage only
-while metrics stay healthy. A bad release hurts a few percent of users, not all.
+Expose the new version to a small percentage of traffic first, watch it, then
+increase the percentage only while metrics stay healthy.
 
-- **Stable** = proven version (v1), most of the traffic.
-- **Canary** = new version (v2), a small slice that grows over time.
+- **Stable** = proven version v1.
+- **Canary** = new version v2.
 
-## The files
+## Files
 
 | File | Role |
 | --- | --- |
-| `stable-deployment.yaml` | v1 pods, `track: stable`, 9 replicas |
-| `canary-deployment.yaml` | v2 pods, `track: canary`, 1 replica |
-| `service.yaml` | Service selecting `app` only (both tracks) — replica-ratio split |
-| `ingress-canary-example.yaml` | NGINX weight-based split (exact %, controller needed) |
+| `stable-deployment.yaml` | v1 pods, 9 replicas |
+| `canary-deployment.yaml` | v2 pods, 1 replica |
+| `service.yaml` | Service selecting both tracks for replica-ratio split |
+| `ingress-canary-example.yaml` | NGINX weighted canary example |
 
-## Two ways to set the percentage
+## Two traffic split methods
 
-### 1. Replica ratio (no special controller)
+### Replica ratio
 
-A plain Service that selects `app: java-app` (omitting `track`) load-balances
-across **all** matching pods. The split is just the replica ratio:
+One Service selects `app: java-app` and omits `track`, so it load-balances across
+stable and canary pods. With 9 stable pods and 1 canary pod, the approximate
+split is 90% stable and 10% canary.
 
-```
-9 stable pods : 1 canary pod  ≈  90% v1 : 10% v2
-```
+### Ingress weight
 
-Increase the split by scaling the canary Deployment up (and stable down). Simple,
-but granularity is limited by pod counts and it needs spare capacity.
-
-### 2. Ingress weight (precise)
-
-`ingress-canary-example.yaml` uses the NGINX canary annotations to set an **exact**
-weight independent of pod counts:
+The NGINX ingress example uses:
 
 ```yaml
 nginx.ingress.kubernetes.io/canary: "true"
-nginx.ingress.kubernetes.io/canary-weight: "10"   # exactly 10% to v2
+nginx.ingress.kubernetes.io/canary-weight: "10"
 ```
 
-This needs a compatible ingress controller (or a service mesh / Argo Rollouts for
-richer control). Not installed here.
+This gives a more precise percentage, but it requires a compatible ingress
+controller and real metrics.
 
-## Canary percentage: the progression
+## Promotion pattern
 
-```
- 10%  →  observe  →  25%  →  observe  →  50%  →  observe  →  100% (promote)
-   │                                                          │
-   └──── at any step, if metrics regress → roll back to 0% ───┘
+```text
+10% -> observe -> 25% -> observe -> 50% -> observe -> 100%
 ```
 
-"Observe" means comparing the canary's **error rate and latency** against stable
-over a bake time (see `../monitoring/rollout-alerts.example.yml`). Promotion
-should be gated on those signals, automatically or by a human — never on a timer
-alone.
-
-## The flow (NOT executed)
-
-1. Deploy stable (v1) at full scale.
-2. Deploy canary (v2) small (1 replica or 10% weight).
-3. Send a small slice of live traffic to the canary.
-4. Compare canary vs stable metrics over a bake period.
-5. Healthy → raise the percentage and repeat; unhealthy → drop canary to 0%
-   ([rollback.md](rollback.md)).
-6. At 100%, promote: canary becomes the new stable and the old version is retired.
+If error rate or latency regresses, roll back by scaling the canary to zero or
+setting the canary ingress weight to zero.
 
 ## Trade-offs
 
-- **Pro:** limits blast radius; real production traffic validates v2 gradually.
-- **Con:** more moving parts than blue-green; both versions run at once (needs
-  version/schema compatibility); requires trustworthy metrics to decide.
+- **Pros:** smaller blast radius and real traffic validation.
+- **Cons:** more moving parts and requires trustworthy metrics.
+- **Risk:** both versions may run at the same time, so schema changes must be
+  backward compatible.

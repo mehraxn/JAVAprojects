@@ -1,7 +1,4 @@
-# STABLE = the proven version (v1) carrying the bulk of traffic during a canary.
-# With 9 stable + 1 canary replica and a Service that selects BOTH, a plain
-# round-robin Service sends ~90% of requests here (replica-ratio canary).
-# Placeholder image only. NOT deployed.
+# STABLE = proven version v1 carrying most traffic during a canary. Example manifest; not deployed here.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,7 +27,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: app
-          image: my-java-app:v1        # placeholder tag
+          image: registry.example.invalid/blue-green-canary-app:v1        # placeholder image; replace with your built image
           ports:
             - name: http
               containerPort: 8080
@@ -61,3 +58,9 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

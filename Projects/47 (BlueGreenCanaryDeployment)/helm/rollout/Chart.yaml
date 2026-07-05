@@ -1,6 +1,6 @@
 apiVersion: v2
 name: rollout
-description: Blue-green / canary rollout of a Java app, driven entirely by values
+description: Blue-green rollout chart for a versioned Java app
 type: application
 version: 0.1.0
 appVersion: "1.0.0"

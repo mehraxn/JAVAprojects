@@ -1,7 +1,6 @@
-# The single stable Service users hit. Its `track` selector decides which
-# Deployment receives ALL live traffic. Here it points at BLUE (v1).
-# Blue-green switching = changing the one line `track: blue` -> `track: green`.
-# NOT deployed.
+# Stable Service users call during the blue-green flow.
+# Initial state: selector points to blue/v1.
+# To promote green/v2, apply ../blue-green-switch/switch-service-to-green.yaml separately.
 apiVersion: v1
 kind: Service
 metadata:
@@ -12,7 +11,7 @@ spec:
   type: ClusterIP
   selector:
     app: java-app
-    track: blue          # <-- ACTIVE track. All traffic goes to blue/v1.
+    track: blue
   ports:
     - name: http
       port: 80

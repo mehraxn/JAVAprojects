@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
  *
  * Identical shape to app-v1 but reports v2 and adds one extra field to the "/"
  * response ("feature":"new-greeting") to represent a behavior change worth
- * canarying. NOT built or run in this repo.
+ * canarying. It can be compiled and run locally; see TESTING.md.
  *
  *   GET /version  -> {"version":"v2"}
  *   GET /health   -> liveness
@@ -43,7 +43,10 @@ public final class Main {
     private static void respond(com.sun.net.httpserver.HttpExchange ex, int status, String body)
             throws IOException {
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-        ex.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
+        String contentType = body.strip().startsWith("{")
+                ? "application/json; charset=utf-8"
+                : "text/plain; charset=utf-8";
+        ex.getResponseHeaders().add("Content-Type", contentType);
         ex.sendResponseHeaders(status, bytes.length);
         try (OutputStream out = ex.getResponseBody()) {
             out.write(bytes);

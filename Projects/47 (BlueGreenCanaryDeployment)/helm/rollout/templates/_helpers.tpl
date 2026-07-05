@@ -2,10 +2,7 @@
 {{- printf "%s-%s" .Release.Name "java-app" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{/*
-Render one Deployment for a track.
-Usage: include "rollout.deployment" (dict "ctx" . "track" "blue" "tag" .Values.image.blueTag "replicas" .Values.blue.replicas)
-*/}}
+{{/* Render one secure Deployment for a blue-green track. */}}
 {{- define "rollout.deployment" -}}
 {{- $ctx := .ctx -}}
 apiVersion: apps/v1
@@ -15,6 +12,7 @@ metadata:
   labels:
     app: java-app
     track: {{ .track }}
+    version: {{ .tag | quote }}
 spec:
   replicas: {{ .replicas }}
   selector:
@@ -26,7 +24,13 @@ spec:
       labels:
         app: java-app
         track: {{ .track }}
+        version: {{ .tag | quote }}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: app
           image: "{{ $ctx.Values.image.repository }}:{{ .tag }}"
@@ -41,10 +45,25 @@ spec:
             httpGet:
               path: /ready
               port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /health
               port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
           resources:
             {{- toYaml $ctx.Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 {{- end -}}

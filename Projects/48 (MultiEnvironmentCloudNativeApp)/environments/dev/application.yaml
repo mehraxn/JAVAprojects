@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: https://example.invalid/cloud-native-app.git
     targetRevision: main
-    path: "Projects/48 (MultiEnvironmentCloudNativeApp)/k8s/overlays/dev"
+    path: "48 (MultiEnvironmentCloudNativeApp)/k8s/overlays/dev"
   destination:
     server: https://kubernetes.default.svc
     namespace: app-dev

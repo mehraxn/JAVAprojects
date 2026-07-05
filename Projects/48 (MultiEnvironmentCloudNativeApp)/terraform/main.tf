@@ -11,4 +11,7 @@ resource "terraform_data" "environment_design" {
   input    = each.value
 }
 
-# TODO: Add real provider modules only for approved disposable environments.
+# This Terraform file is intentionally design-only. Real cloud resources are not
+# created in this portfolio project. In a real setup, this layer would provision
+# namespaces, Argo CD bootstrap resources, registry access, and environment-specific
+# infrastructure.

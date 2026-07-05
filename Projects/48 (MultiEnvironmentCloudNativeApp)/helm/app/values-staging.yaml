@@ -1,4 +1,6 @@
 replicaCount: 2
+image:
+  digest: "sha256:REPLACE_WITH_STAGING_DIGEST"
 config:
   environment: staging
   logLevel: INFO

@@ -20,11 +20,12 @@ environments at that digest ([../ci/promotion.example.yml](../ci/promotion.examp
 ```
 
 1. **Build** the image once; record its digest.
-2. **dev**: overlay tag → that digest; merge to `main`; Argo CD auto-syncs.
+2. **dev**: replace `REPLACE_WITH_DEV_DIGEST` with that digest; merge to `main`;
+   Argo CD auto-syncs.
    Run unit/smoke checks against dev.
-3. **staging**: a promotion PR sets `k8s/overlays/staging` image tag to dev's
+3. **staging**: a promotion PR sets `k8s/overlays/staging` image digest to dev's
    digest. Merge → Argo CD auto-syncs. Run integration/smoke tests; bake.
-4. **prod**: a promotion PR sets `k8s/overlays/prod` image tag to staging's
+4. **prod**: a promotion PR sets `k8s/overlays/prod` image digest to staging's
    digest. Merge requires **manual approval + a change record**, and prod's Argo
    CD Application is **manual-sync**, so a human performs the release.
 
@@ -40,19 +41,23 @@ Each promotion is an ordinary Git change — reviewable, auditable, revertible.
 
 ## What a promotion changes in Git
 
-Just the image tag/digest in the target overlay:
+Only the image digest in the target overlay:
 
 ```yaml
 # k8s/overlays/staging/kustomization.yaml
 images:
-  - name: my-cloud-native-java-app
-    newTag: 1.4.0        # ← set to the digest verified in dev
+  - name: registry.example.invalid/cloud-native-app
+    digest: sha256:REPLACE_WITH_STAGING_DIGEST
 ```
+
+The committed `REPLACE_WITH_*_DIGEST` strings are obvious placeholders, not real
+digests. A promotion copies the exact `sha256:<real digest>` verified in the
+source environment into the target environment field.
 
 Config and scale for each environment are already defined in that environment's
 overlay, so a promotion never accidentally changes them.
 
 ## What was NOT done
 
-- No image was built or pushed; no digest exists.
+- No image was pushed to a registry and no real registry digest is recorded.
 - No promotion PR was opened; no environment was synced or deployed.

@@ -10,5 +10,5 @@
 | Approval | promoted from dev after checks pass |
 
 Production-like rehearsal. The **same immutable image** that ran in dev is
-promoted here (same tag/digest). Config: [../../k8s/overlays/staging/](../../k8s/overlays/staging/);
+promoted here (the exact same digest). Config: [../../k8s/overlays/staging/](../../k8s/overlays/staging/);
 delivery: [application.yaml](application.yaml).

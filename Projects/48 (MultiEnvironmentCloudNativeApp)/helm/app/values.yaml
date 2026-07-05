@@ -3,8 +3,9 @@
 replicaCount: 1
 
 image:
-  repository: my-cloud-native-java-app   # placeholder
-  tag: "1.4.0"
+  repository: registry.example.invalid/cloud-native-app
+  digest: "sha256:REPLACE_WITH_DIGEST"
+  tag: "placeholder"
   pullPolicy: IfNotPresent
 
 containerPort: 8080
@@ -13,6 +14,13 @@ config:
   environment: base
   logLevel: INFO
   featureNewUi: "false"
+
+# Disabled by default. If enabled, the Deployment consumes this separately
+# managed Secret. create=true renders placeholder values for demonstration only.
+secret:
+  enabled: false
+  create: false
+  name: app-secret
 
 service:
   type: ClusterIP

@@ -1,0 +1,32 @@
+# Example-safe Argo CD project for the three application namespaces and the
+# argocd namespace used by the app-of-apps root. No real cluster is referenced.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: cloud-native-app
+  namespace: argocd
+spec:
+  description: Multi-environment cloud-native application example
+  sourceRepos:
+    - https://example.invalid/cloud-native-app.git
+  destinations:
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+    - namespace: app-dev
+      server: https://kubernetes.default.svc
+    - namespace: app-staging
+      server: https://kubernetes.default.svc
+    - namespace: app-prod
+      server: https://kubernetes.default.svc
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Service
+    - group: apps
+      kind: Deployment
+    - group: argoproj.io
+      kind: Application
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace

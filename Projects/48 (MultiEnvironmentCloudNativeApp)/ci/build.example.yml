@@ -1,6 +1,7 @@
 # BUILD-ONCE pipeline — EXAMPLE / NON-EXECUTED TEMPLATE (parked under ci/, not
 # .github/workflows/, so it never runs). Produces ONE immutable image that is
-# later promoted unchanged through every environment. No image was built.
+# later promoted unchanged through every environment. This workflow is inert and
+# no registry image or real registry digest is claimed.
 name: build (template)
 
 on:

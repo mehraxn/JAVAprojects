@@ -4,12 +4,14 @@ namespace: app-staging
 resources:
   - ../../base
 nameSuffix: -staging
-commonLabels:
-  environment: staging
+labels:
+  - pairs:
+      environment: staging
+    includeSelectors: true
 images:
-  # Same immutable artifact that passed dev, now promoted to staging.
-  - name: my-cloud-native-java-app
-    newTag: 1.4.0
+  # Promotion copies the exact digest verified in dev into this field.
+  - name: registry.example.invalid/cloud-native-app
+    digest: sha256:REPLACE_WITH_STAGING_DIGEST
 patches:
   - path: deployment-patch.yaml
   - path: configmap-patch.yaml

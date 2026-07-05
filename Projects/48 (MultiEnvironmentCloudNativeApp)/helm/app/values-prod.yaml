@@ -1,4 +1,6 @@
 replicaCount: 4
+image:
+  digest: "sha256:REPLACE_WITH_PROD_DIGEST"
 config:
   environment: prod
   logLevel: WARN

@@ -1,6 +1,6 @@
 # "App of apps" root. This single Argo CD Application watches the environments/
 # directory and creates one child Application per environment (dev/staging/prod).
-# Registering just this root bootstraps the whole delivery tree. NOT deployed.
+# Apply appproject.yaml before registering this root. NOT deployed.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

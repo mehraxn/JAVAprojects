@@ -10,8 +10,8 @@ this repo** — only `secret.example.yaml` placeholders.
 2. **Secrets are per environment**, in each environment's own namespace
    (`app-dev` / `app-staging` / `app-prod`), and are separate from config.
 3. **Secrets are not baked into the image.** The image is environment-agnostic;
-   secrets are injected at runtime via a Kubernetes `Secret` the app reads as
-   env vars.
+   the optional Kubernetes `Secret` makes values available as runtime environment
+   variables without putting them in the image or ConfigMap.
 
 ## How real secrets would be delivered (NOT done here)
 
@@ -31,6 +31,10 @@ Each `environments/<env>/secret.example.yaml` shows the **shape** of the Secret
 expects without any real credential being present. The Helm chart's
 `secret.example.yaml` template is disabled unless explicitly enabled, and also
 only emits placeholders.
+
+The Kustomize base consumes `app-secret` through an optional `secretRef`, so the
+pod can start when no example Secret exists. The Helm Deployment consumes the
+Secret only when `secret.enabled=true`; `secret.create` remains false by default.
 
 ## What was NOT done
 

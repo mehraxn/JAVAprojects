@@ -1,5 +1,5 @@
 # PROMOTION pipeline — EXAMPLE / NON-EXECUTED TEMPLATE. Promotes the SAME
-# immutable image (by digest) dev -> staging -> prod by updating the image tag in
+# immutable image (by digest) dev -> staging -> prod by updating the digest in
 # the target overlay and committing to Git; Argo CD then syncs it. No promotion
 # was performed and nothing was deployed.
 name: promote (template)
@@ -24,14 +24,14 @@ gates:
 
 # Conceptual step a promotion job would run (NOT executed):
 #   1. read the digest currently running in <from-env>
-#   2. set images[].newTag to that digest in k8s/overlays/<to-env>/kustomization.yaml
+#   2. set images[].digest to that digest in k8s/overlays/<to-env>/kustomization.yaml
 #   3. open a PR; on merge Argo CD syncs <to-env>
 steps:
   - name: promote-to-staging
     from: dev
     to: staging
-    action: "update k8s/overlays/staging image tag -> dev's digest, commit, PR"
+    action: "update k8s/overlays/staging images[].digest -> dev's digest, commit, PR"
   - name: promote-to-prod
     from: staging
     to: prod
-    action: "update k8s/overlays/prod image tag -> staging's digest, commit, PR, manual sync"
+    action: "update k8s/overlays/prod images[].digest -> staging's digest, commit, PR, manual sync"

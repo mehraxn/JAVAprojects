@@ -4,12 +4,14 @@ namespace: app-dev
 resources:
   - ../../base
 nameSuffix: -dev
-commonLabels:
-  environment: dev
+labels:
+  - pairs:
+      environment: dev
+    includeSelectors: true
 images:
-  # Immutable, environment-specific tag/digest (placeholder).
-  - name: my-cloud-native-java-app
-    newTag: 1.4.0
+  # Replace this placeholder with the immutable digest emitted by CI.
+  - name: registry.example.invalid/cloud-native-app
+    digest: sha256:REPLACE_WITH_DEV_DIGEST
 patches:
   - path: deployment-patch.yaml
   - path: configmap-patch.yaml

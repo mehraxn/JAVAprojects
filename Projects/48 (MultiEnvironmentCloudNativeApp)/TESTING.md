@@ -1,59 +1,106 @@
-# Testing — Multi-Environment Cloud-Native App
+# Local validation workflow
 
-> **Nothing was executed.** No Java, Docker, CI/CD, Kubernetes, Kustomize, Helm,
-> or Argo CD command ran; nothing was installed and **no environment was
-> deployed.** This documents static review and expected behavior.
+Run commands from the Project 48 directory. Record real output in
+`TEST_RESULTS.md`; do not replace placeholders with expected or invented output.
 
-## 1. Static validation checklist
+## 1. Compile the Java app
 
-- [ ] App compiles conceptually (`package multienvironmentcloudnativeapp`).
-- [ ] Each `k8s/overlays/<env>/` references `../../base` + adds replica/resource/config patches.
-- [ ] Per-env values distinct (replicas 1/2/4; log DEBUG/INFO/WARN; feature flag), matching between Kustomize and Helm.
-- [ ] All three overlays pin the **same** image tag (config differs, image does not).
-- [ ] app-of-apps includes `environments/*/application.yaml`; prod has no `automated:` block.
-
-## 2. File existence checks
-
-- [ ] `app/src/**`, `Dockerfile`
-- [ ] `k8s/base/*`, `k8s/overlays/{dev,staging,prod}/*`
-- [ ] `helm/app/**` (Chart.yaml, values*, templates)
-- [ ] `environments/{dev,staging,prod}/` (application.yaml, secret.example.yaml, README)
-- [ ] `gitops/*`, `ci/*`, `docs/*`, `README.md`, `TESTING.md`
-
-## 3. YAML / config review checklist
-
-- [ ] All YAML well-formed across k8s/helm/environments/gitops/ci.
-- [ ] Namespaces per env (`app-dev`/`app-staging`/`app-prod`) are consistent.
-- [ ] CI templates parked/inert (`workflow_dispatch` / `enabled: false`); promotion is build-once, by digest.
-
-## 4. Security checks
-
-- [ ] **No real secrets** — only `*.example.yaml` with `REPLACE_ME`; `.gitignore` excludes real `secret.yaml`.
-- [ ] **No real credentials** — no registry/cluster creds.
-- [ ] **No production endpoints** — `example.invalid`/placeholders only.
-- [ ] Non-root, read-only rootfs, dropped capabilities.
-
-## 5. Commands normally used — NOT executed
+Requires JDK 21 or another JDK that provides the `jdk.httpserver` module.
 
 ```bash
-# NOT executed
-kubectl kustomize "Projects/48 (MultiEnvironmentCloudNativeApp)/k8s/overlays/prod"
-helm template app helm/app -f helm/app/values-prod.yaml
-kubectl apply -f gitops/app-of-apps.yaml
-argocd app sync cloud-native-app-prod
+javac -d out app/src/multienvironmentcloudnativeapp/*.java
 ```
 
-## 6. Expected results in a proper environment
+## 2. Run the Java app
 
-- `kubectl kustomize` renders distinct dev/staging/prod manifests (1/2/4 replicas, different config).
-- `helm template`/`lint` produce equivalent output to the overlays.
-- Registering the app-of-apps creates three child apps; dev/staging auto-sync, prod waits for manual sync.
-- A promotion PR (image tag → verified digest) rolls out via Argo CD; `git revert` rolls back.
+```bash
+APP_ENVIRONMENT=dev APP_PORT=8080 java -cp out multienvironmentcloudnativeapp.Main
+```
 
-## 7. Manual review checklist (portfolio quality)
+Keep that terminal running. In a second terminal, test every endpoint:
 
-- [ ] README makes "build once, promote the artifact" explicit.
-- [ ] Per-env divergence is visible and consistent (Kustomize ↔ Helm).
-- [ ] Promotion + rollback flows are clear and auditable.
-- [ ] Every command marked NOT executed; no fake badges/screenshots.
-- [ ] Honest that no environment was deployed.
+```bash
+curl http://localhost:8080/health
+curl http://localhost:8080/ready
+curl http://localhost:8080/config
+curl http://localhost:8080/
+```
+
+Stop the server with `Ctrl+C`, then remove compiled output:
+
+```bash
+rm -rf out
+```
+
+PowerShell equivalents for starting and cleaning up are:
+
+```powershell
+$env:APP_ENVIRONMENT = "dev"
+$env:APP_PORT = "8080"
+java -cp out multienvironmentcloudnativeapp.Main
+Remove-Item Env:APP_ENVIRONMENT, Env:APP_PORT
+Remove-Item -Recurse -Force out
+```
+
+## 3. Render Kustomize overlays
+
+Optional; requires `kubectl` with built-in Kustomize support. Rendering does not
+deploy anything.
+
+```bash
+kubectl kustomize k8s/overlays/dev
+kubectl kustomize k8s/overlays/staging
+kubectl kustomize k8s/overlays/prod
+```
+
+Check that renders contain namespaces `app-dev`, `app-staging`, and `app-prod`;
+replica counts 1, 2, and 4; optional `app-secret`; writable `/tmp`; and the
+matching `REPLACE_WITH_*_DIGEST` placeholder.
+
+## 4. Render the Helm chart
+
+Optional; requires Helm. These commands render locally and do not install a
+release:
+
+```bash
+helm template cloud-native-app helm/app
+helm template cloud-native-app helm/app -f helm/app/values-dev.yaml
+helm template cloud-native-app helm/app -f helm/app/values-staging.yaml
+helm template cloud-native-app helm/app -f helm/app/values-prod.yaml
+```
+
+To demonstrate optional Secret wiring with placeholder values only:
+
+```bash
+helm template cloud-native-app helm/app \
+  --set secret.enabled=true \
+  --set secret.create=true
+```
+
+Never pass a real secret through `--set` or commit one to a values file.
+
+## 5. Optional Docker build
+
+Requires a running Docker daemon. This builds locally; it does not push to the
+placeholder registry:
+
+```bash
+docker build -t registry.example.invalid/cloud-native-app:local .
+docker run --rm -p 8080:8080 \
+  -e APP_ENVIRONMENT=dev \
+  registry.example.invalid/cloud-native-app:local
+```
+
+Use the endpoint commands from step 2 in a second terminal.
+
+## 6. GitOps static review
+
+Verify before using a real Argo CD installation:
+
+- `gitops/appproject.yaml` is applied before Applications;
+- the placeholder repository URL is replaced with the real public repository;
+- each overlay digest placeholder is replaced with a real CI-produced digest;
+- dev/staging use automatic sync and prod remains manual;
+- real Secrets are provided by an approved external mechanism.
+
+These repository files do not prove that Argo CD synchronized a cluster.

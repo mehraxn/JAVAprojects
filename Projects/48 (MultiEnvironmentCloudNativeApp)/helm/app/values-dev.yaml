@@ -1,4 +1,6 @@
 replicaCount: 1
+image:
+  digest: "sha256:REPLACE_WITH_DEV_DIGEST"
 config:
   environment: dev
   logLevel: DEBUG

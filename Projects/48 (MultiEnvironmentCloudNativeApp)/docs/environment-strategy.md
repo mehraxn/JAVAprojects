@@ -4,8 +4,9 @@ Why three environments, and how they differ. **Nothing was deployed.**
 
 ## Build once, configure per environment
 
-The single most important rule: **one immutable image** (`...:1.4.0`, pinned by
-digest) is built once and promoted **unchanged** through dev → staging → prod.
+The single most important rule: **one immutable image** from
+`registry.example.invalid/cloud-native-app`, pinned by digest, is built once and
+promoted **unchanged** through dev → staging → prod.
 Only *configuration* differs between environments. Rebuilding per environment
 would mean prod runs a different artifact than the one you tested — the classic
 "works in staging, breaks in prod" trap.

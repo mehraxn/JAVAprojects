@@ -1,92 +1,166 @@
-# Multi-Environment Cloud-Native App
+# Multi-Environment Cloud-Native Java App
 
-*A resume-grade, end-to-end multi-environment structure for a Java service — one immutable image promoted through dev → staging → prod with per-environment config, GitOps delivery, and documented rollback.*
+This project demonstrates one small Java HTTP service built into one container
+image and promoted through development, staging, and production by changing
+GitOps desired state. The core rule is:
 
-## Problem this project solves
+> One Java app → one container image → the same immutable digest promoted through
+> dev, staging, and prod.
 
-Shipping straight to production, or rebuilding a different image per environment,
-is how "worked in staging, broke in prod" happens. This project shows the
-disciplined alternative: **build once, promote the same artifact**, with each
-environment differing only in **config, scale, and secrets**, delivered by
-**GitOps** and reversible by `git revert`.
+Environment-specific configuration and scale change; application code and the
+promoted image do not.
 
-## Technologies & concepts
+## Architecture
 
-- **Java 21** config-aware service (`/health`, `/ready`, `/config`) + multi-stage Dockerfile
-- **Kustomize** base + `dev`/`staging`/`prod` overlays (per-env replicas/resources/config)
-- **Helm** — an equivalent chart with `values-<env>.yaml` (alternative packaging)
-- **Argo CD GitOps** — app-of-apps / ApplicationSet; dev+staging auto, prod manual
-- **Promotion by immutable digest**; example secrets; rollback via Git
-
-## Architecture overview
-
+```text
+app/src/Main.java
+       |
+       v
+Dockerfile / CI build
+       |
+       v
+registry.example.invalid/cloud-native-app@sha256:<CI digest>
+       |
+       +--> dev overlay      app-dev       auto-sync
+       +--> staging overlay  app-staging   auto-sync after checks
+       +--> prod overlay     app-prod      manual approval and sync
+                    |
+                    v
+              Argo CD + Kustomize
 ```
- build once (one image digest)
-   → dev  (auto-sync)  → staging (auto-sync) → prod (manual approval + sync)
-        └──────────── same immutable image the whole way ───────────┘
- Git = source of truth → Argo CD reconciles each namespace
+
+The repository URL, registry, image digests, Secret values, and cluster are
+example placeholders. No real production deployment is represented.
+
+## Application endpoints
+
+The framework-free Java service under
+`app/src/multienvironmentcloudnativeapp/Main.java` exposes:
+
+| Endpoint | Purpose |
+| --- | --- |
+| `/health` | liveness response |
+| `/ready` | readiness response |
+| `/config` | non-secret effective environment, log level, and feature flag |
+| `/` | service greeting and active environment |
+
+Compile and run it locally:
+
+```bash
+javac -d out app/src/multienvironmentcloudnativeapp/*.java
+APP_ENVIRONMENT=dev APP_PORT=8080 java -cp out multienvironmentcloudnativeapp.Main
 ```
+
+See [TESTING.md](TESTING.md) for endpoint and manifest validation commands.
+
+## Image and promotion model
+
+Every container reference uses this safe placeholder repository:
+
+```text
+registry.example.invalid/cloud-native-app
+```
+
+Each Kustomize overlay contains an obvious digest placeholder:
+
+```yaml
+images:
+  - name: registry.example.invalid/cloud-native-app
+    digest: sha256:REPLACE_WITH_DEV_DIGEST
+```
+
+CI should build the image once, push it, and record the registry-provided
+`sha256:<real digest>`. Dev receives that digest first. A staging promotion PR
+copies the exact dev digest into the staging overlay; a production promotion PR
+copies the verified staging digest into prod. The image is never rebuilt during
+promotion.
+
+The committed `REPLACE_WITH_*_DIGEST` values are not real digests and cannot be
+deployed successfully until replaced. The Helm values use matching placeholders
+for rendering demonstrations.
+
+## Environment differences
+
+| | dev | staging | prod |
+| --- | --- | --- | --- |
+| Namespace | `app-dev` | `app-staging` | `app-prod` |
+| Replicas | 1 | 2 | 4 |
+| Log level | DEBUG | INFO | WARN |
+| New UI flag | true | true | false |
+| Argo CD sync | automatic | automatic | manual |
+
+Kustomize is the GitOps deployment path. The Helm chart is an equivalent
+packaging example; a real platform should choose one deployment mechanism rather
+than operate both for the same release.
+
+## Argo CD structure
+
+`gitops/appproject.yaml` defines the `cloud-native-app` AppProject used by every
+Application. It allows the example repository and the `argocd`, `app-dev`,
+`app-staging`, and `app-prod` destinations. Apply it before choosing either:
+
+- `gitops/app-of-apps.yaml`, which discovers the environment Applications; or
+- `gitops/applicationset.example.yaml`, which generates them from a list.
+
+All Argo CD files use `example.invalid` and are examples only. They were not
+registered with an Argo CD controller by this project.
+
+## Configuration and secrets
+
+Non-secret values come from `app-config`. The Kubernetes Deployment also uses an
+optional `app-secret` reference, allowing local rendering and startup when no
+Secret exists. Files under `environments/*/secret.example.yaml` contain only
+obvious placeholders and are not included in the Kustomize resources.
+
+For Helm, Secret consumption is disabled by default. Set `secret.enabled=true`
+only when `app-secret` is provisioned separately. `secret.create=true` renders
+placeholder example values and must not be used for real credentials.
+
+Production-style GitOps should use Sealed Secrets or External Secrets backed by
+a secret manager. Never commit plaintext credentials.
+
+## Container and pod security
+
+- non-root user `10001`;
+- no privilege escalation;
+- all Linux capabilities dropped;
+- read-only root filesystem;
+- writable `/tmp` backed by an `emptyDir` volume;
+- liveness/readiness probes and resource requests/limits.
 
 ## Project structure
 
 ```text
-app/  Dockerfile                one service, one immutable image
-k8s/base/                       shared manifests
-k8s/overlays/{dev,staging,prod}/   per-env replicas, resources, config (Kustomize)
-helm/app/                       equivalent chart (+ values-<env>.yaml)
-environments/{dev,staging,prod}/   Argo CD Application + secret.example.yaml + README
-gitops/                         app-of-apps root + ApplicationSet
-ci/                             build-once + promotion pipeline templates
-docs/environment-strategy.md  promotion-model.md  rollback.md  secrets.md  gitops.md
-README.md  TESTING.md
+app/src/                 real Java application source
+Dockerfile               multi-stage Java 21 image build
+ci/                      inert build and promotion workflow examples
+k8s/base/                shared Deployment, Service, and ConfigMap
+k8s/overlays/            dev, staging, and prod digest/config/scale overlays
+helm/app/                equivalent optional Helm packaging
+environments/            Argo CD Applications and Secret shape examples
+gitops/                  AppProject plus app-of-apps/ApplicationSet examples
+docs/                    environment, promotion, rollback, GitOps, secret docs
+TESTING.md               exact local validation workflow
+TEST_RESULTS.md           blank evidence template for measured outputs
 ```
 
-## Important files explained
+## Executable versus example-only
 
-- **k8s/overlays/{dev,staging,prod}/** — patches for replicas (1/2/4), resources, and config (DEBUG/INFO/WARN, feature flag), all pinning the **same image tag**.
-- **environments/<env>/** — per-env Argo CD `Application` (prod has no `automated:` block), `secret.example.yaml` (placeholders), and a properties README.
-- **gitops/app-of-apps.yaml** / **applicationset.example.yaml** — two equivalent ways to generate the three env apps.
-- **helm/app/** — the same app as a chart; `values-<env>.yaml` mirror the overlays.
-- **ci/build.example.yml** (build once) + **promotion.example.yml** (promote the digest dev→staging→prod).
+Executable locally:
 
-## How it would work in a real environment
+- Java compilation and HTTP service;
+- Docker image build, if Docker is available;
+- Kustomize rendering with `kubectl kustomize`;
+- Helm rendering with `helm template`.
 
-CI builds one image and records its digest. A promotion PR sets the target
-overlay's image tag to that digest; on merge Argo CD reconciles — dev and staging
-automatically, prod on a human's manual sync. Config and scale for each
-environment already live in its overlay, so a promotion never accidentally
-changes them. Rollback is `git revert` (or `argocd app rollback`).
+Example-only until real infrastructure and credentials are supplied:
 
-## What was prepared but NOT executed
+- pushing to `registry.example.invalid`;
+- replacing placeholders with registry-produced digests;
+- CI promotion pull requests;
+- Argo CD registration, synchronization, and production deployment;
+- Secret manager integration.
 
-Prepared: app + Dockerfile, Kustomize base/overlays, equivalent Helm chart,
-per-env delivery + example secrets, GitOps app-of-apps/ApplicationSet, and
-build/promote CI templates. **Not executed:** no image built, no
-`kubectl`/`kustomize`/`helm` render or apply, no CI run, no Argo CD sync, no
-secret created. **No environment was deployed.**
-
-## Security notes
-
-- **No real secrets** — only `*.example.yaml` with `REPLACE_ME` placeholders; `.gitignore` blocks real `secret.yaml`.
-- **No real credentials / production endpoints** — registries/hosts are `example.invalid`.
-- Non-root container, read-only rootfs, dropped capabilities.
-- Real secrets would come from a sealed-secret / External Secrets Operator, never Git ([docs/secrets.md](docs/secrets.md)).
-
-## Limitations
-
-- Nothing was built, rendered, applied, or synced; no environment exists.
-- Both Kustomize overlays and a Helm chart are provided (pick one for real use); GitOps here wires the overlays.
-- Java compilation not run (no JDK on the authoring machine).
-
-## Future improvements
-
-- Real digest-based promotion automation and Argo CD Projects with least-privilege RBAC.
-- Progressive delivery (Argo Rollouts) for staging→prod; policy-as-code gates.
-- External Secrets Operator + sealed secrets; DB migration (expand/contract) automation.
-
-## What I learned
-
-- **Build once, promote the artifact** — why rebuilding per environment is a trap.
-- Structuring per-environment differences cleanly with **Kustomize overlays** (and the Helm equivalent).
-- **GitOps promotion** as reviewable Git changes, with dev-auto / prod-manual gates.
-- Keeping **secrets out of Git** while staying GitOps-friendly.
+Do not claim any of those example-only operations succeeded without real
+evidence. [TEST_RESULTS.md](TEST_RESULTS.md) intentionally contains blank
+placeholders for outputs produced on the machine running the tests.

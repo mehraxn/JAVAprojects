@@ -9,12 +9,17 @@ Per-environment differences live in `app/values-<env>.yaml` (replicas, resources
 config) — the Helm equivalent of the overlays.
 
 ```bash
-# NOT executed — render each environment:
+# Render each environment locally:
 helm template app helm/app -f helm/app/values-dev.yaml
 helm template app helm/app -f helm/app/values-staging.yaml
 helm template app helm/app -f helm/app/values-prod.yaml
 ```
 
-Secrets: `templates/secret.example.yaml` is disabled unless `--set
-secret.create=true`, and even then only renders placeholders. Real secrets come
-from a sealed-secret / External Secrets Operator, never from values.
+The chart uses `registry.example.invalid/cloud-native-app` and renders the
+environment-specific digest placeholder from each values file. Replace it with a
+real CI-produced digest before deployment.
+
+Secret consumption is disabled by default. Set both `secret.enabled=true` and
+`secret.create=true` only to render the placeholder example Secret. In a real
+environment, enable consumption but provision `app-secret` with Sealed Secrets
+or External Secrets rather than putting plaintext in values.

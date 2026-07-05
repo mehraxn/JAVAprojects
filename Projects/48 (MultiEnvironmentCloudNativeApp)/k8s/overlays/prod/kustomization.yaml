@@ -5,12 +5,14 @@ namespace: app-prod
 resources:
   - ../../base
 nameSuffix: -prod
-commonLabels:
-  environment: prod
+labels:
+  - pairs:
+      environment: prod
+    includeSelectors: true
 images:
-  # The exact same immutable artifact that passed dev AND staging.
-  - name: my-cloud-native-java-app
-    newTag: 1.4.0
+  # Promotion copies the exact digest verified in staging into this field.
+  - name: registry.example.invalid/cloud-native-app
+    digest: sha256:REPLACE_WITH_PROD_DIGEST
 patches:
   - path: deployment-patch.yaml
   - path: configmap-patch.yaml

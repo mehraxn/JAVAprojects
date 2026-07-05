@@ -1,5 +1,5 @@
 # Builds the app in app/. ONE immutable image is built and promoted through all
-# environments (build once, configure per env). NOT built in this repo.
+# environments (build once, configure per env). See TESTING.md for a local build.
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /workspace
 COPY app/src ./src

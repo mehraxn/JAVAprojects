@@ -19,6 +19,9 @@ self-heals back to Git if it drifts, and rollback is `git revert`.
 
 ## Wiring (see ../gitops/)
 
+- **AppProject** (`gitops/appproject.yaml`) — defines the allowed example source
+  repository and the `argocd`, `app-dev`, `app-staging`, and `app-prod`
+  destinations. Apply it before either application bootstrap option.
 - **app-of-apps** (`gitops/app-of-apps.yaml`) — one root Application that
   discovers `environments/*/application.yaml` and creates a child app per env.
 - **ApplicationSet** (`gitops/applicationset.example.yaml`) — an equivalent
@@ -35,7 +38,7 @@ Each environment Application targets its Kustomize overlay in
 
 ## Promotion & rollback under GitOps
 
-- **Promotion** = a Git change bumping the image tag/digest in the target
+- **Promotion** = a Git change copying the verified image digest into the target
   overlay (see [promotion-model.md](promotion-model.md)); Argo CD rolls it out.
 - **Rollback** = `git revert` that change, or `argocd app rollback` to a prior
   synced revision (see [rollback.md](rollback.md)).

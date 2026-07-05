@@ -1,6 +1,6 @@
 # ALTERNATIVE to app-of-apps: a single ApplicationSet that generates the three
 # environment Applications from a list. Editing one generator entry (e.g. a tag)
-# is how a promotion is expressed in Git. NOT deployed.
+# is how a promotion is expressed in Git. Apply appproject.yaml first. NOT deployed.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:

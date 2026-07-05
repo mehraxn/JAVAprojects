@@ -15,7 +15,8 @@ import java.nio.charset.StandardCharsets;
  *
  * All configuration arrives through environment variables (populated by the
  * per-environment ConfigMap; secrets, when present, come from a Secret — never
- * baked into the image). This app is NOT built or run in this repo.
+ * baked into the image). The app can be compiled and run locally without a
+ * framework; the Kubernetes, Helm, and Argo CD resources are deployment examples.
  *
  *   GET /health   liveness
  *   GET /ready    readiness
@@ -35,8 +36,8 @@ public final class Main {
         int port = Integer.parseInt(env("APP_PORT", "8080"));
 
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.createContext("/health", ex -> respond(ex, 200, "ok"));
-        server.createContext("/ready", ex -> respond(ex, 200, "ready"));
+        server.createContext("/health", ex -> respond(ex, 200, "{\"status\":\"ok\"}"));
+        server.createContext("/ready", ex -> respond(ex, 200, "{\"status\":\"ready\"}"));
         server.createContext("/config", ex -> respond(ex, 200,
                 "{\"environment\":\"" + ENVIRONMENT + "\","
                         + "\"logLevel\":\"" + LOG_LEVEL + "\","

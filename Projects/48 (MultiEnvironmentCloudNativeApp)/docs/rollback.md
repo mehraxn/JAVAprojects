@@ -59,5 +59,5 @@ kubectl apply -k "Projects/48 (MultiEnvironmentCloudNativeApp)/k8s/overlays/prod
 
 ## What was NOT done
 
-- No `git revert`, `argocd`, or `kubectl` command was run.
+- No rollback or Argo CD synchronization command was run.
 - No environment was rolled back; no cluster exists.

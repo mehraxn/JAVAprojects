@@ -1,6 +1,7 @@
 ---
 # App role: lay down configuration and a systemd unit, then ensure the service
-# is running. Idempotent. NOT executed in this repo.
+# is running. Idempotent. Validated with `--syntax-check`; not applied to any
+# host by the default workflow.
 
 - name: Validate required app variables are set
   ansible.builtin.assert:

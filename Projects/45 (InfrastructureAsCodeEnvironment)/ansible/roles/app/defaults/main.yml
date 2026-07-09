@@ -1,6 +1,7 @@
 ---
-# Role defaults (lowest precedence). Overridden by group_vars/dev.yml and
-# group_vars/prod.yml so the same role produces per-environment config.
+# Role defaults (lowest precedence, used as a fallback). In the normal workflow
+# `app_environment` comes from the generated inventory ([app:vars]), and
+# group_vars/all.yml derives app_log_level / app_replicas from it.
 app_environment: dev
 app_log_level: INFO
 app_replicas: 1

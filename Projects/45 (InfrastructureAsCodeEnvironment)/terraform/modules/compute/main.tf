@@ -13,8 +13,9 @@ resource "terraform_data" "instance" {
     subnet_id         = element(var.subnet_ids, count.index)
     allowed_ssh_cidrs = var.allowed_ssh_cidrs
     labels            = var.labels
-    # Placeholder private address from the RFC 5737 TEST-NET-2 documentation
-    # range. Reserved and non-routable — never a real host.
-    private_ip = "198.51.100.${count.index + 10}"
+    # Deterministic RFC 1918 private address, derived from the node's subnet CIDR
+    # (e.g. 10.10.1.0/24 -> 10.10.1.10). Private and non-routable on the public
+    # internet; dev (10.10.x) and prod (10.20.x) are distinguishable.
+    private_ip = cidrhost(element(var.public_subnet_cidrs, count.index), 10 + count.index)
   }
 }

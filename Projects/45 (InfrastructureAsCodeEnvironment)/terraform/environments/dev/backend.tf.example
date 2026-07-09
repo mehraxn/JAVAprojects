@@ -1,14 +1,22 @@
 # EXAMPLE remote-state backend for DEV — rename to backend.tf to use (NOT done).
-# Separate state per environment is the core of dev/prod isolation. Values are
-# placeholders; the real bucket/table would be provisioned separately and its
-# name supplied at `terraform init` time, never committed.
+#
+# This is EXAMPLE-ONLY. It is intentionally NOT runnable as-is:
+#   * The bucket and lock table must be created OUTSIDE this safe lab, in a real
+#     account you control — this project never provisions them for you.
+#   * Region/bucket/table below are literal REPLACE_WITH_* placeholders, not real
+#     values, so `terraform init` will fail until you fill them in deliberately.
+#   * Never commit real backend names or credentials.
+#   * Do NOT run remote-backend `init` until you understand who can read/write the
+#     state bucket — state can contain secrets (see docs/state-and-secrets.md).
+#
+# Separate state per environment is the core of dev/prod isolation.
 #
 # terraform {
 #   backend "s3" {
-#     bucket         = "REPLACE-with-your-dev-tfstate-bucket"
+#     bucket         = "REPLACE_WITH_REAL_DEV_TFSTATE_BUCKET"
 #     key            = "iac-lab/dev/terraform.tfstate"
-#     region         = "example-region-1"
-#     dynamodb_table = "REPLACE-with-your-dev-lock-table"  # state locking
-#     encrypt        = true                                 # encrypt state at rest
+#     region         = "REPLACE_WITH_REAL_AWS_REGION"
+#     dynamodb_table = "REPLACE_WITH_REAL_DEV_LOCK_TABLE"  # state locking
+#     encrypt        = true                                # encrypt state at rest
 #   }
 # }

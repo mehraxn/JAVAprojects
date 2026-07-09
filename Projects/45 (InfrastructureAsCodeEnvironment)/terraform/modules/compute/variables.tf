@@ -28,6 +28,17 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
+variable "public_subnet_cidrs" {
+  description = "Subnet CIDRs used to derive deterministic RFC 1918 private IPs (model only)."
+  type        = list(string)
+}
+
+variable "ansible_user" {
+  description = "SSH login user carried through to the Ansible handoff."
+  type        = string
+  default     = "ubuntu"
+}
+
 variable "allowed_ssh_cidrs" {
   description = "Source CIDRs allowed for SSH (documentation ranges only)."
   type        = list(string)

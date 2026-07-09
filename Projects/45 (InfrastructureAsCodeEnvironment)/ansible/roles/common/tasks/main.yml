@@ -1,6 +1,7 @@
 ---
 # Baseline configuration applied to every host. Idempotent: safe to run
-# repeatedly. NOT executed in this repo — shown for study.
+# repeatedly. Validated with `--syntax-check`; not applied to any host by the
+# default workflow.
 
 - name: Install common base packages
   ansible.builtin.package:

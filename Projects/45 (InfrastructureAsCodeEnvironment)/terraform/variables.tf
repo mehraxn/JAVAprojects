@@ -66,3 +66,11 @@ variable "additional_labels" {
   type        = map(string)
   default     = {}
 }
+
+# The login user Ansible would use on each host. Non-sensitive; carried through to
+# the ansible_hosts handoff so the generated inventory sets ansible_user.
+variable "ansible_user" {
+  description = "SSH login user for the modeled hosts (used in the Ansible handoff)."
+  type        = string
+  default     = "ubuntu"
+}

@@ -1,7 +1,10 @@
 # Provisioning Flow
 
-How the two layers connect, end to end. **Every step below is documented but
-NOT executed** — no command in this file was run, and no resource or host exists.
+How the two layers connect, end to end. **No real infrastructure is created** —
+every Terraform resource is a built-in `terraform_data` record and no host is
+contacted. The steps below are validatable safely (`terraform validate`,
+inventory generation, `ansible-playbook --syntax-check`); `terraform apply` is
+intentionally not part of the workflow.
 
 ## Provisioning vs configuration
 
@@ -18,37 +21,48 @@ into useful application nodes. Using the right tool for each avoids two classic
 mistakes — hand-editing servers Terraform thinks it owns, and scripting VM
 creation imperatively inside Ansible.
 
-## The end-to-end flow (NOT executed)
+## The end-to-end flow
 
 ```
-1. terraform -chdir=terraform/environments/dev init      # NOT executed
-2. terraform -chdir=terraform/environments/dev plan       # NOT executed
-3. terraform -chdir=terraform/environments/dev apply       # NOT executed
+1. terraform -chdir=terraform/environments/dev init -backend=false   # safe: validatable
+2. terraform -chdir=terraform/environments/dev validate               # safe: validatable
+   (terraform apply is intentionally NOT part of this workflow)
         │
-        ▼  output: ansible_hosts = [ {name, ansible_host, private_ip, environment}, ... ]
-4. generate ansible/inventory.ini from that output          # NOT executed
-5. ansible-playbook -i inventory.ini playbook.yml           # NOT executed
+        ▼  output: ansible_hosts = [ {name, ansible_host, ansible_user, private_ip, environment}, ... ]
+3. python3 scripts/generate-inventory.py <output.json> ansible/inventory.ini
         │
-        ▼  common role → app role on every host
-6. application node is configured and the service is running
+        ▼  [app] group + app_environment, RFC 1918 private IPs
+4. ansible-playbook -i ansible/inventory.ini playbook.yml --syntax-check
+        │
+        ▼  common role → app role would configure each host
+5. application node is configured and the (placeholder) service is running
 ```
+
+Steps 1–2 and 3–4 run without any cloud. The `terraform output` in step 3 only
+produces real host records against a real, disposable environment; for offline
+testing use the bundled `examples/terraform-output/ansible_hosts.dev.json`.
 
 ## The handoff contract
 
 The compute module emits one record per node:
 
 ```hcl
-# terraform/modules/compute/outputs.tf  (placeholder values)
+# terraform/modules/compute/outputs.tf  (placeholder values, RFC 1918 private IPs)
 ansible_hosts = [
-  { name = "iac-lab-dev-app-0", ansible_host = "iac-lab-dev-app-0.example.invalid",
-    private_ip = "198.51.100.10", environment = "dev" }
+  { name = "iac-lab-dev-app-0", ansible_host = "10.10.1.10",
+    ansible_user = "ubuntu", private_ip = "10.10.1.10", environment = "dev" }
 ]
 ```
 
-A real pipeline feeds this into an inventory generator (e.g.
-`terraform output -json ansible_hosts | <template> > inventory.ini`, or a
-dynamic-inventory plugin). Here the same shape is shown statically in
-`ansible/inventory.ini.example`. No `terraform output` was actually run.
+`scripts/generate-inventory.py` feeds this into an inventory:
+
+```bash
+terraform output -json ansible_hosts | \
+  python3 scripts/generate-inventory.py - ansible/inventory.ini
+```
+
+The same shape is shown statically in `ansible/inventory.ini.example` and in the
+bundled sample JSON under `examples/terraform-output/`.
 
 ## Why the boundary matters
 
@@ -58,8 +72,9 @@ Keeping provisioning and configuration separate means:
 - Ansible can re-run any time to fix drift *without* Terraform re-creating hosts.
 - Each side can be reviewed, versioned, and gated independently.
 
-## What was NOT done
+## Safety boundaries
 
-- No `terraform init/plan/apply` ran; no state file was created.
-- No `terraform output` was produced; no inventory was generated.
-- No `ansible-playbook` ran; no host was contacted.
+- No cloud provider is declared; every resource is a `terraform_data` model.
+- No `terraform apply` in the default workflow — validation only.
+- Generated `ansible/inventory.ini` is git-ignored and local-only.
+- No credentials, keys, tokens, or real endpoints are created or used.

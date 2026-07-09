@@ -1,6 +1,6 @@
 ---
 # Non-sensitive defaults shared by all hosts. NEVER store passwords, tokens, or
-# private keys here — use ansible-vault for secrets (see docs/security-notes.md).
+# private keys here — use ansible-vault for secrets (see docs/state-and-secrets.md).
 common_packages:
   - curl
   - unzip
@@ -14,3 +14,18 @@ app_service_name: learning-app
 app_root: /opt/learning-app
 app_config_directory: /etc/learning-app
 app_config_file: /etc/learning-app/application.conf
+
+# Environment separation on the CONFIGURATION side. The generated inventory sets
+# `app_environment` (from Terraform's per-environment output), and these values
+# are selected from it — so the SAME roles produce dev vs prod config without
+# duplicating group_vars files. Mirrors the dev/prod split on the Terraform side.
+app_env_settings:
+  dev:
+    log_level: DEBUG
+    replicas: 1
+  prod:
+    log_level: INFO
+    replicas: 3
+
+app_log_level: "{{ app_env_settings[app_environment].log_level }}"
+app_replicas: "{{ app_env_settings[app_environment].replicas }}"

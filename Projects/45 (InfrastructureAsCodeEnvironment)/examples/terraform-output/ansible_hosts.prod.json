@@ -1,0 +1,16 @@
+[
+  {
+    "name": "iac-lab-prod-app-0",
+    "ansible_host": "10.20.1.10",
+    "ansible_user": "ubuntu",
+    "private_ip": "10.20.1.10",
+    "environment": "prod"
+  },
+  {
+    "name": "iac-lab-prod-app-1",
+    "ansible_host": "10.20.2.11",
+    "ansible_user": "ubuntu",
+    "private_ip": "10.20.2.11",
+    "environment": "prod"
+  }
+]

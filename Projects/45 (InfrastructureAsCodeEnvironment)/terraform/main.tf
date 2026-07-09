@@ -28,12 +28,14 @@ module "network" {
 module "compute" {
   source = "./modules/compute"
 
-  project_name      = var.project_name
-  environment       = var.environment
-  region            = var.region
-  instance_count    = var.instance_count
-  instance_size     = var.instance_size
-  subnet_ids        = module.network.subnet_ids
-  allowed_ssh_cidrs = var.allowed_ssh_cidrs
-  labels            = local.common_labels
+  project_name        = var.project_name
+  environment         = var.environment
+  region              = var.region
+  instance_count      = var.instance_count
+  instance_size       = var.instance_size
+  subnet_ids          = module.network.subnet_ids
+  public_subnet_cidrs = var.public_subnet_cidrs
+  allowed_ssh_cidrs   = var.allowed_ssh_cidrs
+  ansible_user        = var.ansible_user
+  labels              = local.common_labels
 }

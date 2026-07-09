@@ -1,5 +1,0 @@
----
-# PROD-specific configuration values. Quieter logging, more replicas.
-app_environment: prod
-app_log_level: INFO
-app_replicas: 3

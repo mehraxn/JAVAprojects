@@ -1,7 +1,14 @@
 # SAFE EXAMPLE for the PROD environment. Copy to terraform.tfvars (git-ignored).
-# No secrets or real IPs — ever. See docs/security-notes.md.
-project_name      = "iac-lab"
-region            = "example-region-1"
-instance_count    = 3
-instance_size     = "large"
-allowed_ssh_cidrs = ["198.51.100.10/32"] # RFC 5737 documentation range
+# These values override the defaults in variables.tf. No secrets or real IPs.
+# See docs/state-and-secrets.md.
+project_name        = "iac-lab"
+environment         = "prod"
+region              = "example-region-1"
+vpc_cidr            = "10.20.0.0/16"
+public_subnet_cidrs = ["10.20.1.0/24", "10.20.2.0/24"]
+instance_count      = 2
+instance_size       = "medium"
+
+# Prod SSH is scoped to a single /32 (a would-be bastion). RFC 5737 TEST-NET-1
+# documentation range — a reserved placeholder, not a real IP.
+allowed_ssh_cidrs = ["192.0.2.10/32"]

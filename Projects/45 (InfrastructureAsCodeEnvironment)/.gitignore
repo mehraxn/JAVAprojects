@@ -1,18 +1,23 @@
 # Never commit real state, credentials, or the concrete inventory.
 # Only the *.example files in this project are tracked.
+# NOTE: gitignore comments must be on their OWN line — a "#" after a pattern
+# becomes part of the pattern and silently breaks the ignore rule.
 
 # --- Terraform ---
 **/.terraform/
 **/.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
-*.tfvars          # keep terraform.tfvars.example, ignore the real one
+# keep terraform.tfvars.example, ignore the real one
+*.tfvars
 !*.tfvars.example
-backend.tf        # real backend config; keep backend.tf.example
+# real backend config; keep backend.tf.example
+backend.tf
 crash.log
 
 # --- Ansible ---
-inventory.ini     # keep inventory.ini.example, ignore the real one
+# keep inventory.ini.example, ignore the real generated one
+inventory.ini
 *.retry
 vault-password*
 *.vault

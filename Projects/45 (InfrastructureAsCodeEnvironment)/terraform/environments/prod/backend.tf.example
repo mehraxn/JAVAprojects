@@ -1,14 +1,23 @@
 # EXAMPLE remote-state backend for PROD — rename to backend.tf to use (NOT done).
+#
+# This is EXAMPLE-ONLY. It is intentionally NOT runnable as-is:
+#   * The bucket and lock table must be created OUTSIDE this safe lab, in a real
+#     account you control — this project never provisions them for you.
+#   * Region/bucket/table below are literal REPLACE_WITH_* placeholders, not real
+#     values, so `terraform init` will fail until you fill them in deliberately.
+#   * Never commit real backend names or credentials.
+#   * Do NOT run remote-backend `init` until you understand who can read/write the
+#     state bucket — state can contain secrets (see docs/state-and-secrets.md).
+#
 # NOTE the DIFFERENT key/bucket from dev: prod state is fully isolated so a dev
-# apply can never mutate prod. Placeholders only; real names are supplied at
-# `terraform init` time and never committed.
+# apply can never mutate prod.
 #
 # terraform {
 #   backend "s3" {
-#     bucket         = "REPLACE-with-your-PROD-tfstate-bucket"
+#     bucket         = "REPLACE_WITH_REAL_PROD_TFSTATE_BUCKET"
 #     key            = "iac-lab/prod/terraform.tfstate"
-#     region         = "example-region-1"
-#     dynamodb_table = "REPLACE-with-your-PROD-lock-table"
+#     region         = "REPLACE_WITH_REAL_AWS_REGION"
+#     dynamodb_table = "REPLACE_WITH_REAL_PROD_LOCK_TABLE"
 #     encrypt        = true
 #   }
 # }

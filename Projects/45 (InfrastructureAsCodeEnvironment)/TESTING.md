@@ -1,60 +1,110 @@
 # Testing — Infrastructure as Code Environment
 
-> **Nothing was executed.** No Terraform, Ansible, cloud, or SSH command ran; no
-> state file exists and **no infrastructure was applied.** This documents static
-> review and expected behavior in a disposable environment.
+This project can be **validated safely without creating any real infrastructure.**
+Terraform is validated with `fmt`/`validate` (no `apply`), the Terraform →
+Ansible handoff is exercised with a bundled sample, and Ansible is validated with
+`--syntax-check`. **No cloud provider is declared, no host is contacted, and
+`terraform apply` is never part of this workflow.**
 
-## 1. Static validation checklist
+Recorded results live in [TEST_RESULTS.md](TEST_RESULTS.md).
 
-- [ ] Terraform declares only the built-in provider; every resource is `terraform_data`.
-- [ ] Root `main.tf` references `./modules/network` + `./modules/compute`; env roots reference `../../`.
-- [ ] `ansible_hosts` output fields match what the inventory example models.
-- [ ] `playbook.yml` targets `app_servers` and applies `common` then `app`.
-- [ ] Handler names match `notify:` strings.
+> Commands assume you run them from the project root
+> (`Projects/45 (InfrastructureAsCodeEnvironment)/`). On Windows, run the
+> multi-line commands on a single line or use the PowerShell line-continuation
+> backtick instead of `\`.
 
-## 2. File existence checks
-
-- [ ] `terraform/`: versions/main/variables/outputs/tfvars.example, `modules/{network,compute}/*`, `environments/{dev,prod}/*`
-- [ ] `ansible/`: ansible.cfg, inventory.ini.example, playbook.yml, `group_vars/*`, `roles/{common,app}/*`
-- [ ] `docs/architecture.md`, `provisioning-flow.md`, `security-notes.md`
-- [ ] `.gitignore`, `README.md`, `TESTING.md`
-
-## 3. YAML / HCL / config review checklist
-
-- [ ] HCL parses; module variable/output names line up.
-- [ ] dev vs prod `backend.tf.example` use **distinct** state keys/buckets.
-- [ ] dev vs prod sizing/access differ (e.g. prod SSH = single `/32`).
-- [ ] Ansible roles have tasks/handlers/templates/defaults as needed.
-
-## 4. Security checks
-
-- [ ] **No real secrets** — no creds/keys/tokens in `*.tf`, tfvars.example, group_vars, or inventory.
-- [ ] **No real credentials** — no provider auth; real creds from env/secrets manager.
-- [ ] **No production endpoints / real IPs** — `*.example.invalid`, RFC 5737/1918 only.
-- [ ] `.gitignore` excludes real `*.tfvars`, `inventory.ini`, `backend.tf`, vault files.
-
-## 5. Commands normally used — NOT executed
+## 1. Terraform formatting
 
 ```bash
-# NOT executed
-terraform -chdir="terraform/environments/dev" init
-terraform -chdir="terraform/environments/dev" plan
-terraform -chdir="terraform/environments/dev" apply
-terraform -chdir="terraform/environments/dev" output -json ansible_hosts
-ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
+terraform fmt -check -recursive terraform
 ```
 
-## 6. Expected results in a proper environment
+## 2. Terraform init (no backend) — dev
 
-- `terraform validate`/`plan` succeed and show the modeled resources.
-- dev and prod plans are independent (separate state); no cross-impact.
-- `ansible-playbook --check` (dry run) reports intended, idempotent changes only.
-- The `ansible_hosts` output renders cleanly into an inventory.
+`-backend=false` skips any remote state; nothing is created.
 
-## 7. Manual review checklist (portfolio quality)
+```bash
+terraform -chdir=terraform/environments/dev init -backend=false
+```
+
+## 3. Terraform validate — dev
+
+```bash
+terraform -chdir=terraform/environments/dev validate
+```
+
+## 4. Terraform init (no backend) — prod
+
+```bash
+terraform -chdir=terraform/environments/prod init -backend=false
+```
+
+## 5. Terraform validate — prod
+
+```bash
+terraform -chdir=terraform/environments/prod validate
+```
+
+## 6. Generate a sample inventory (no real infrastructure)
+
+Uses the bundled sample output, so no Terraform run is required:
+
+```bash
+python3 scripts/generate-inventory.py \
+  examples/terraform-output/ansible_hosts.dev.json \
+  ansible/inventory.ini
+```
+
+The full pipeline (only when you have a real, disposable environment) would be:
+
+```bash
+terraform -chdir=terraform/environments/dev output -json ansible_hosts \
+  > /tmp/ansible_hosts.json
+python3 scripts/generate-inventory.py /tmp/ansible_hosts.json ansible/inventory.ini
+```
+
+## 7. Ansible syntax check
+
+```bash
+ansible-playbook -i ansible/inventory.ini ansible/playbook.yml --syntax-check
+```
+
+## 8. Optional: Ansible check mode (dry run)
+
+```bash
+ansible-playbook -i ansible/inventory.ini ansible/playbook.yml --check
+```
+
+> Check mode **connects to the hosts** to gather facts and report intended
+> changes. The bundled hosts use RFC 1918 placeholder IPs that are not reachable,
+> so `--check` only works against real, reachable, disposable hosts. Use step 7
+> (`--syntax-check`) for offline validation.
+
+## 9. Cleanup
+
+The generated inventory is local-only and git-ignored — remove it when done:
+
+```bash
+rm -f ansible/inventory.ini
+```
+
+## 10. What NOT to run
+
+```bash
+terraform apply     # intentionally NOT part of this workflow
+```
+
+Only run `terraform apply` if you have deliberately swapped in a real provider
+and are pointing at a disposable account you own. By default every resource is a
+built-in `terraform_data` record, so even an apply would create nothing in a
+cloud — but `apply` is still excluded from the default workflow on purpose.
+
+## 11. Manual review checklist (portfolio quality)
 
 - [ ] README makes the provisioning-vs-configuration distinction clear.
 - [ ] Module + dev/prod structure reads like real-world Terraform.
-- [ ] Secret/state handling is explicit and safe.
-- [ ] Every command marked NOT executed; no fake outputs/badges.
-- [ ] Honest that no infrastructure was applied.
+- [ ] tfvars/variables are actually used (env roots pass `var.*`, not literals).
+- [ ] `private_ip` values are RFC 1918 (`10.x`), not documentation ranges.
+- [ ] The generator turns `ansible_hosts` JSON into a valid inventory.
+- [ ] Secret/state handling is explicit and safe (docs/state-and-secrets.md).
+- [ ] No real secrets, credentials, or real IPs anywhere.

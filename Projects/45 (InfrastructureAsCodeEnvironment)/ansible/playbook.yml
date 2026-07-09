@@ -1,9 +1,10 @@
 ---
 # Configuration play: turn a bare provisioned host into a running app node.
-# Targets the app_servers group from the inventory. This was NOT executed — no
-# host was contacted and no change was made anywhere.
+# Targets the `app` group from the generated inventory. Validate offline with
+# `--syntax-check`; no host is contacted and no change is made unless you run it
+# against real, reachable, disposable hosts.
 - name: Configure application servers
-  hosts: app_servers
+  hosts: app
   become: true
   gather_facts: true
 

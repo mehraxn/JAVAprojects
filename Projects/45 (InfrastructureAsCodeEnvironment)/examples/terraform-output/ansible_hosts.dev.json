@@ -1,0 +1,9 @@
+[
+  {
+    "name": "iac-lab-dev-app-0",
+    "ansible_host": "10.10.1.10",
+    "ansible_user": "ubuntu",
+    "private_ip": "10.10.1.10",
+    "environment": "dev"
+  }
+]

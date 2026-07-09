@@ -1,7 +1,13 @@
 # SAFE EXAMPLE for the DEV environment. Copy to terraform.tfvars (git-ignored).
-# No secrets or real IPs — ever. See docs/security-notes.md.
-project_name      = "iac-lab"
-region            = "example-region-1"
-instance_count    = 1
-instance_size     = "small"
-allowed_ssh_cidrs = ["192.0.2.0/24"] # RFC 5737 documentation range
+# These values override the defaults in variables.tf. No secrets or real IPs.
+# See docs/state-and-secrets.md.
+project_name        = "iac-lab"
+environment         = "dev"
+region              = "example-region-1"
+vpc_cidr            = "10.10.0.0/16"
+public_subnet_cidrs = ["10.10.1.0/24", "10.10.2.0/24"]
+instance_count      = 1
+instance_size       = "small"
+
+# RFC 5737 TEST-NET-1 documentation range — a reserved placeholder, not a real IP.
+allowed_ssh_cidrs = ["192.0.2.0/24"]

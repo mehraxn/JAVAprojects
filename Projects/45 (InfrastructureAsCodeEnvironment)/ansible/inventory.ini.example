@@ -1,25 +1,22 @@
-# SAFE EXAMPLE inventory. Copy to inventory.ini (git-ignored) and edit ONLY with
-# approved, disposable hosts. Every host below is an unreachable *.example.invalid
-# name — the reserved `.invalid` TLD can never resolve. No real IPs, no secrets.
+# SAFE EXAMPLE inventory (dev). This mirrors what scripts/generate-inventory.py
+# produces from Terraform's `ansible_hosts` output. Every host uses an RFC 1918
+# private IP placeholder — no real address, no secrets.
 #
-# In the full workflow these entries would be GENERATED from Terraform's
-# `ansible_hosts` output (see docs/provisioning-flow.md), not hand-written.
+# PREFERRED workflow: generate the real inventory instead of copying this file:
+#   terraform -chdir=terraform/environments/dev output -json ansible_hosts \
+#     > /tmp/ansible_hosts.json
+#   python3 scripts/generate-inventory.py /tmp/ansible_hosts.json ansible/inventory.ini
+#
+# Or, for a quick local test without Terraform, generate from the bundled sample:
+#   python3 scripts/generate-inventory.py \
+#     examples/terraform-output/ansible_hosts.dev.json ansible/inventory.ini
+#
+# The concrete inventory.ini is git-ignored; only this .example is tracked.
 
-[dev]
-iac-lab-dev-app-0 ansible_host=iac-lab-dev-app-0.example.invalid
+[app]
+iac-lab-dev-app-0 ansible_host=10.10.1.10 ansible_user=ubuntu environment=dev
 
-[prod]
-iac-lab-prod-app-0 ansible_host=iac-lab-prod-app-0.example.invalid
-iac-lab-prod-app-1 ansible_host=iac-lab-prod-app-1.example.invalid
-iac-lab-prod-app-2 ansible_host=iac-lab-prod-app-2.example.invalid
-
-# `app_servers` groups both tiers so the playbook can target them together while
-# group_vars/dev.yml and group_vars/prod.yml still apply per-environment values.
-[app_servers:children]
-dev
-prod
-
-[app_servers:vars]
-ansible_user=lab_user
+[app:vars]
+app_environment=dev
 # Never store a password/private key here. Use an SSH agent or --key-file at run
-# time, and ansible-vault for any secret variables (see docs/security-notes.md).
+# time, and ansible-vault for any secret variables (see docs/state-and-secrets.md).

@@ -8,6 +8,9 @@ Ansible handoff is exercised with a bundled sample, and Ansible is validated wit
 
 Recorded results live in [TEST_RESULTS.md](TEST_RESULTS.md).
 
+The inventory generator is executable on Unix-like systems. The commands below
+use `python3 scripts/generate-inventory.py` because it also works on Windows.
+
 > Commands assume you run them from this project's root folder —
 > `45 (InfrastructureAsCodeEnvironment)/`, the directory containing this file.
 > On Windows, run the multi-line commands on a single line or use the PowerShell
@@ -54,6 +57,9 @@ python3 scripts/generate-inventory.py \
   examples/terraform-output/ansible_hosts.dev.json \
   ansible/inventory.ini
 ```
+
+The generator is deliberately per-environment. If a JSON file mixes dev and prod
+hosts, it fails instead of producing an ambiguous inventory.
 
 The full pipeline (only when you have a real, disposable environment) would be:
 

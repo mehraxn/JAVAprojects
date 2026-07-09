@@ -106,7 +106,11 @@ Because state is separate, a dev change can never touch prod.
 
 The compute module's `ansible_hosts` output is the contract between the two
 layers. `scripts/generate-inventory.py` converts that JSON into an Ansible
-inventory:
+inventory. The script is executable and can also be run as
+`./scripts/generate-inventory.py`; the examples below use `python3` for Windows
+compatibility. It intentionally generates **one inventory per environment** and
+rejects mixed dev/prod input so `app_environment` is never ambiguous.
+
 
 ```bash
 # straight from Terraform (real, disposable environment only):
@@ -117,6 +121,7 @@ python3 scripts/generate-inventory.py /tmp/ansible_hosts.json ansible/inventory.
 # or, fully offline, from the bundled sample:
 python3 scripts/generate-inventory.py \
   examples/terraform-output/ansible_hosts.dev.json ansible/inventory.ini
+# or: ./scripts/generate-inventory.py examples/terraform-output/ansible_hosts.dev.json ansible/inventory.ini
 ```
 
 Generated inventory:
@@ -165,6 +170,7 @@ terraform -chdir=terraform/environments/prod init -backend=false && \
   terraform -chdir=terraform/environments/prod validate
 python3 scripts/generate-inventory.py \
   examples/terraform-output/ansible_hosts.dev.json ansible/inventory.ini
+# or: ./scripts/generate-inventory.py examples/terraform-output/ansible_hosts.dev.json ansible/inventory.ini
 ansible-playbook -i ansible/inventory.ini ansible/playbook.yml --syntax-check
 rm -f ansible/inventory.ini   # generated, not committed
 ```

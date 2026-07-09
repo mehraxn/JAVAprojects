@@ -4,12 +4,11 @@ Records the outcome of the safe validation steps in [TESTING.md](TESTING.md).
 **`terraform apply` was not run and no real infrastructure was created.**
 
 - Date: 2026-07-09
-- Environment: Windows 11, Python 3.14.6
-- Tooling present: Python 3 (with PyYAML). **Terraform and Ansible are NOT
-  installed on this machine** (checked in both Git Bash and PowerShell), so
-  their steps were not executed here — see "Tools unavailable" below. Re-run
-  those steps on a machine with the tools and paste the real output into the
-  matching section.
+- Environment used for this corrected ZIP validation: ChatGPT container, Python 3.13.5
+- Tooling present here: Python 3 (with PyYAML). **Terraform and Ansible are NOT
+  installed in this environment**, so their steps were not executed here — see
+  "Tools unavailable" below. Re-run those steps on a machine with the tools and
+  paste the real output into the matching section.
 
 ## Python cache cleanup
 
@@ -17,6 +16,12 @@ Result: **PASS (really executed).** `scripts/__pycache__/` (containing one
 `.pyc` from an earlier local `py_compile` run) was deleted and removed from git
 tracking. A recursive search for `__pycache__` and `*.pyc` afterwards found
 nothing. `.gitignore` now blocks `__pycache__/` and `*.pyc`.
+
+## Script permission
+
+Result: **PASS (really executed).** `scripts/generate-inventory.py` is executable
+in this corrected ZIP (`rwxr-xr-x`). The documentation still uses `python3` for
+Windows compatibility.
 
 ## Inventory generation — dev sample
 
@@ -79,6 +84,13 @@ app_environment=prod
 
 Both generated inventories were deleted after validation — `inventory.ini` is
 local-only and git-ignored.
+
+## Mixed environment safety check
+
+Result: **PASS (really executed).** A temporary input containing both dev and
+prod hosts was rejected with a clear error. The generator intentionally writes
+one inventory per environment so `[app:vars] app_environment=...` is never
+ambiguous.
 
 ## Terraform fmt
 
@@ -157,8 +169,7 @@ all private IPs are RFC 1918 (`10.x`). Backend examples use literal
 
 ## Tools unavailable
 
-- **Terraform** — not installed on this machine (neither Git Bash nor
-  PowerShell). `fmt`, `init`, and `validate` were not executed here. The
+- **Terraform** — not installed in this environment. `fmt`, `init`, and `validate` were not executed here. The
   configuration was reviewed statically and is structured so `validate`
   succeeds (env roots declare variables with defaults and pass them to the
   shared module; no provider is required).

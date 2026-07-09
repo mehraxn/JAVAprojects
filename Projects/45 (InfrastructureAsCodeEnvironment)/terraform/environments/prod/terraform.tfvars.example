@@ -3,7 +3,7 @@
 # See docs/state-and-secrets.md.
 project_name        = "iac-lab"
 environment         = "prod"
-region              = "example-region-1"
+region              = "placeholder-region-1"
 vpc_cidr            = "10.20.0.0/16"
 public_subnet_cidrs = ["10.20.1.0/24", "10.20.2.0/24"]
 instance_count      = 2

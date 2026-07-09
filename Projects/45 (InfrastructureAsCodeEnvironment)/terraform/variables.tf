@@ -20,7 +20,7 @@ variable "environment" {
 variable "region" {
   description = "Placeholder region label (not sent to any cloud provider)."
   type        = string
-  default     = "example-region-1"
+  default     = "placeholder-region-1"
 }
 
 variable "vpc_cidr" {

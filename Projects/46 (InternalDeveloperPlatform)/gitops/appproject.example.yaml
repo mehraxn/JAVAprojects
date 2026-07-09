@@ -19,7 +19,10 @@ spec:
       namespace: "*-dev"
     - server: https://kubernetes.default.svc
       namespace: "*-prod"
-  # Keep the allowed resource kinds broad for this learning example.
+  # NOTE: This AppProject is intentionally permissive for a learning/demo
+  # environment — it allows all cluster and namespace resource kinds. A production
+  # platform should restrict destinations, source repos, and the cluster/namespace
+  # resource whitelists much more tightly (least privilege).
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"

@@ -35,6 +35,29 @@ TEMPLATE_DIR="$ROOT/template"
 log()  { echo "[new-service] $*"; }
 die()  { echo "ERROR: $*" >&2; exit 1; }
 
+# Turn a path into an absolute, tidy form without requiring it to exist.
+normalize_dir() {
+  local p="$1"
+  [[ "$p" = /* ]] || p="$PWD/$p"
+  # Collapse "/./", drop trailing "/.", squeeze slashes, drop a trailing slash.
+  printf '%s' "$p" | sed -e 's|/\./|/|g' -e 's|/\.$|/|' -e 's|//*|/|g' -e 's|\(.\)/$|\1|'
+}
+
+# Guard --force from removing important locations (the repo, home, protected dirs).
+is_dangerous_output_dir() {
+  local abs root cwd home d
+  abs="$(normalize_dir "$1")"
+  root="$(normalize_dir "$ROOT")"
+  cwd="$(normalize_dir "$PWD")"
+  home="$(normalize_dir "${HOME:-/nonexistent-home}")"
+  case "$abs" in "" | "/") return 0 ;; esac
+  [[ "$abs" == "$root" || "$abs" == "$cwd" || "$abs" == "$home" ]] && return 0
+  for d in scripts template templates examples helm gitops src; do
+    [[ "$abs" == "$root/$d" ]] && return 0
+  done
+  return 1
+}
+
 usage() {
   cat >&2 <<'EOF'
 Usage:
@@ -87,12 +110,20 @@ if [[ ! "$SERVICE_PORT" =~ ^[0-9]+$ ]] || (( SERVICE_PORT < 1 || SERVICE_PORT > 
   die "--port '$SERVICE_PORT' is invalid: use a number between 1 and 65535."
 fi
 
-# Image: must be non-empty (validated above) and must not include a tag.
-if [[ "$SERVICE_IMAGE" == *:* ]]; then
-  die "--image '$SERVICE_IMAGE' must not include a tag; provide the repository only."
+# Image: repository only (no tag). A colon is allowed before the last slash
+# (a registry port like localhost:5000), but a colon in the final path component
+# means a tag (e.g. payments-api:latest), which the Helm chart controls instead.
+image_last="${SERVICE_IMAGE##*/}"
+if [[ "$image_last" == *:* ]]; then
+  die "--image '$SERVICE_IMAGE' must not include a tag; provide the repository only (the Helm chart sets the tag)."
 fi
 
 [[ -d "$TEMPLATE_DIR" ]] || die "template directory not found at $TEMPLATE_DIR"
+
+# Refuse to scaffold into (and potentially --force-delete) a dangerous location.
+if is_dangerous_output_dir "$OUT_DIR"; then
+  die "Refusing to remove dangerous output directory: $OUT_DIR"
+fi
 
 # --- Prepare the output directory --------------------------------------------
 if [[ -e "$OUT_DIR" ]]; then

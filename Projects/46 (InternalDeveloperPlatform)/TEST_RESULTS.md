@@ -1,142 +1,143 @@
 # Test Results
 
-Real output from running the tests in [TESTING.md](TESTING.md). Sections that
-required a tool not available in the authoring environment are marked so you can
-fill them in from your own run. **Nothing here is invented.**
+Real output from running the tests in [TESTING.md](TESTING.md). **Nothing here is
+invented.** Where a step was not run, it says so explicitly.
 
 Environment used for the recorded runs:
 
 - Shell: GNU bash 5.3 (Cygwin) on Windows
 - Helm: v4.2.2
-- JDK: **not installed** (Java compile/run steps not executed here)
-- Docker: CLI present, **daemon not running** (image build not executed here)
+- Docker: daemon running (used for the build + run below)
+- Host JDK: **not installed** — Java was compiled and run **inside the container
+  image** (the image ships its own JDK/JRE), not on the host.
+
+Not attempted: no Kubernetes cluster and no Argo CD were involved; nothing was
+deployed or synced.
 
 ---
 
-## 1. Generator command
+## 1. Generator command — PASSED
 
 ```
 $ ./scripts/new-service.sh \
     --name payments-api --owner payments-team --port 8080 \
     --image registry.example.invalid/payments-api \
-    --out examples/new-service --force
+    --out /tmp/payments-api --force
 
 Generated service: payments-api
 Owner: payments-team
 Port: 8080
 Image: registry.example.invalid/payments-api
-Output: examples/new-service
+Output: /tmp/payments-api
 ```
 
-## 2. Generated file tree
+## 2. Generated example matches committed example — PASSED
 
 ```
-examples/new-service/Dockerfile
-examples/new-service/README.md
-examples/new-service/catalog-info.yaml
-examples/new-service/gitops/app-dev.yaml
-examples/new-service/gitops/app-prod.yaml
-examples/new-service/helm/.helmignore
-examples/new-service/helm/Chart.yaml
-examples/new-service/helm/templates/_helpers.tpl
-examples/new-service/helm/templates/configmap.yaml
-examples/new-service/helm/templates/deployment.yaml
-examples/new-service/helm/templates/service.yaml
-examples/new-service/helm/values-dev.yaml
-examples/new-service/helm/values-prod.yaml
-examples/new-service/helm/values.yaml
-examples/new-service/src/app/Main.java
+$ diff -r /tmp/payments-api examples/new-service
+(no output; directories are identical)
 ```
 
-## 3. Placeholder check
+## 3. Placeholder check — PASSED
 
 ```
-$ grep -R "__SERVICE_" examples/new-service || echo "(no matches)"
+$ grep -R "__SERVICE_" /tmp/payments-api || echo "(no matches)"
 (no matches)
 ```
 
-Empty-value checks (`SERVICE_NAME=$`, `SERVICE_PORT=$`, `EXPOSE $`, empty
-`name:` / `owner:`) also returned no matches.
-
-## 4. Java compile result
-
-Tool unavailable: no JDK on the authoring machine. Run locally and paste output:
+## 4. Empty value check — PASSED
 
 ```
-$ javac -d /tmp/payments-api-out /tmp/payments-api/src/app/*.java
-(paste real output here after running the command)
+$ grep -R "SERVICE_NAME=$" /tmp/payments-api ; grep -R "SERVICE_PORT=$" /tmp/payments-api
+$ grep -R "EXPOSE $" /tmp/payments-api ; grep -R "name: $" /tmp/payments-api
+$ grep -R "owner: $" /tmp/payments-api
+(no matches for any check)
 ```
 
-## 5. App run result
-
-Tool unavailable (no JDK). Run locally and paste output:
+## 5. Image / input validation — PASSED
 
 ```
-$ SERVICE_NAME=payments-api SERVICE_PORT=8080 java -cp /tmp/payments-api-out app.Main
-(paste real output here — expected: "payments-api listening on port 8080")
+$ ./scripts/new-service.sh ... --image localhost:5000/local-api --out /tmp/local-api --force
+Generated service: local-api        # registry port accepted
+
+$ ./scripts/new-service.sh ... --image registry.example.invalid/bad-api:latest ...
+ERROR: --image '...bad-api:latest' must not include a tag; provide the repository only ...
 ```
 
-## 6. `/` endpoint output
+## 6. Dangerous --out safety — PASSED (nothing deleted)
 
 ```
-$ curl http://localhost:8080/
-(paste real output here — expected: {"service":"payments-api","message":"hello from payments-api"})
+$ ./scripts/new-service.sh ... --out . --force
+ERROR: Refusing to remove dangerous output directory: .
+
+$ ./scripts/new-service.sh ... --out examples --force
+ERROR: Refusing to remove dangerous output directory: examples
+# examples/new-service left intact
 ```
 
-## 7. `/health` output
+## 7. Java compile — PASSED (inside the container)
+
+No host JDK was available, so compilation was verified by the Docker build's
+`javac` stage:
 
 ```
-$ curl http://localhost:8080/health
-(paste real output here — expected: {"status":"ok","service":"payments-api"})
+#11 [build 4/4] RUN javac -d out src/app/*.java
+#11 DONE 0.9s
 ```
 
-## 8. `/ready` output
+## 8. App run + endpoints — PASSED (container)
 
 ```
-$ curl http://localhost:8080/ready
-(paste real output here — expected: {"status":"ready","service":"payments-api"})
+$ docker run -d --name pay-test -p 18080:8080 registry.example.invalid/payments-api:0.1.0
+$ docker logs pay-test
+payments-api listening on port 8080
+
+$ curl -s http://localhost:18080/
+{"service":"payments-api","message":"hello from payments-api"}
+
+$ curl -s http://localhost:18080/health
+{"status":"ok","service":"payments-api"}
+
+$ curl -s http://localhost:18080/ready
+{"status":"ready","service":"payments-api"}
+
+$ curl -s -D - -o /dev/null http://localhost:18080/ | grep -i content-type
+Content-type: application/json; charset=utf-8
 ```
 
-## 9. Helm template result
-
-Run with Helm v4.2.2. `helm lint` passed and `helm template` rendered valid
-manifests. Rendered ConfigMap (dev values):
+## 9. Helm validation — PASSED
 
 ```
 $ helm lint examples/new-service/helm
 1 chart(s) linted, 0 chart(s) failed
 
-$ helm template payments-api examples/new-service/helm \
-    -f examples/new-service/helm/values.yaml \
-    -f examples/new-service/helm/values-dev.yaml
-# Source: payments-api/templates/configmap.yaml
-apiVersion: v1
+$ helm template payments-api examples/new-service/helm | grep '^kind:'
 kind: ConfigMap
-metadata:
-  name: payments-api
-data:
-  SERVICE_NAME: "payments-api"
-  SERVICE_PORT: "8080"
-  APP_ENV: "dev"
-  LOG_LEVEL: "DEBUG"
-# ... Service and Deployment also rendered (probes /health & /ready,
-#     image registry.example.invalid/payments-api:0.1.0, non-root, tmp volume) ...
+kind: Service
+kind: Deployment
 ```
 
-## 10. Docker build result
+Rendered values were correct: `SERVICE_NAME: "payments-api"`,
+`SERVICE_PORT: "8080"`, image `registry.example.invalid/payments-api:0.1.0`,
+probes on `/health` and `/ready`, non-root, read-only root FS with a writable
+`/tmp` volume.
 
-Tool unavailable: Docker daemon not running in the authoring environment. Run
-locally and paste output:
+## 10. Docker build — PASSED
 
 ```
-$ docker build -t registry.example.invalid/payments-api:0.1.0 /tmp/payments-api
-(paste real output here after running the command)
+$ docker build -t registry.example.invalid/payments-api:0.1.0 examples/new-service
+...
+#15 naming to registry.example.invalid/payments-api:0.1.0 done
+BUILD_EXIT=0
 ```
+
+(The test image was removed after the run.)
 
 ## Known limitations
 
-- No JDK or running Docker daemon was available here, so Java compile/run and the
-  image build were not executed. The commands are correct; paste your own output.
+- No host JDK was installed; Java was compiled and executed **inside the built
+  image**, not directly on the host. The `javac`/`java` commands in TESTING.md are
+  correct for a host with JDK 21.
 - Helm renders manifests locally only — no Kubernetes cluster or Argo CD was
   contacted, and nothing was deployed or synced.
 - All registries and repo URLs are `example.invalid` placeholders.

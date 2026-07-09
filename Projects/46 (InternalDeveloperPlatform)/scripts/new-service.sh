@@ -64,8 +64,8 @@ Usage:
   new-service.sh --name NAME --owner TEAM --image REPO --out DIR [--port PORT] [--force]
 
 Options:
-  --name   Service name (DNS-safe: lowercase letters, digits, hyphens; starts with a letter)
-  --owner  Owning team (lowercase letters, digits, hyphens)
+  --name   Service name (DNS-safe: lowercase letters, digits, hyphens; starts with a letter, ends with a letter/digit, max 50 chars)
+  --owner  Owning team (lowercase letters, digits, hyphens; starts/ends safely, max 63 chars)
   --port   Container port (1-65535). Default: 8080
   --image  Container image repository, no tag (e.g. registry.example.invalid/payments-api)
   --out    Output directory to create
@@ -95,14 +95,15 @@ done
 [[ -n "$SERVICE_IMAGE" ]] || die "--image is required"
 [[ -n "$OUT_DIR"       ]] || die "--out is required"
 
-# Name: lowercase letters, digits, hyphens; must start with a lowercase letter.
-if [[ ! "$SERVICE_NAME" =~ ^[a-z][a-z0-9-]*$ ]]; then
-  die "--name '$SERVICE_NAME' is invalid: use lowercase letters, digits, and hyphens, starting with a letter."
+# Name: Kubernetes/DNS-safe, short enough to leave room for -dev/-prod suffixes.
+# Must start with a lowercase letter and end with a lowercase letter or digit.
+if (( ${#SERVICE_NAME} > 50 )) || [[ ! "$SERVICE_NAME" =~ ^[a-z]([a-z0-9-]*[a-z0-9])?$ ]]; then
+  die "--name '$SERVICE_NAME' is invalid: use lowercase letters, digits, and hyphens; start with a letter; end with a letter or digit; max 50 chars."
 fi
 
-# Owner: lowercase letters, digits, hyphens; must start with a lowercase letter.
-if [[ ! "$SERVICE_OWNER" =~ ^[a-z][a-z0-9-]*$ ]]; then
-  die "--owner '$SERVICE_OWNER' is invalid: use lowercase letters, digits, and hyphens, starting with a letter."
+# Owner: lowercase letters, digits, hyphens; must start with a lowercase letter and end with a letter or digit.
+if (( ${#SERVICE_OWNER} > 63 )) || [[ ! "$SERVICE_OWNER" =~ ^[a-z]([a-z0-9-]*[a-z0-9])?$ ]]; then
+  die "--owner '$SERVICE_OWNER' is invalid: use lowercase letters, digits, and hyphens; start with a letter; end with a letter or digit; max 63 chars."
 fi
 
 # Port: numeric and in range 1..65535.
@@ -110,10 +111,17 @@ if [[ ! "$SERVICE_PORT" =~ ^[0-9]+$ ]] || (( SERVICE_PORT < 1 || SERVICE_PORT > 
   die "--port '$SERVICE_PORT' is invalid: use a number between 1 and 65535."
 fi
 
-# Image: repository only (no tag). A colon is allowed before the last slash
-# (a registry port like localhost:5000), but a colon in the final path component
-# means a tag (e.g. payments-api:latest), which the Helm chart controls instead.
+# Image: repository only (no tag). Keep validation simple and safe for template substitution.
+# A colon is allowed before the last slash (registry port like localhost:5000), but
+# a colon in the final path component means a tag (e.g. payments-api:latest), which
+# the Helm chart controls instead.
+if [[ "$SERVICE_IMAGE" =~ [[:space:]] ]] || [[ "$SERVICE_IMAGE" =~ [^a-z0-9._:/-] ]]; then
+  die "--image '$SERVICE_IMAGE' is invalid: use lowercase repository characters only (letters, digits, '.', '_', '-', '/', optional registry port)."
+fi
 image_last="${SERVICE_IMAGE##*/}"
+if [[ -z "$image_last" || "$SERVICE_IMAGE" == */ || "$image_last" == .* || "$image_last" == -* || "$image_last" == _* ]]; then
+  die "--image '$SERVICE_IMAGE' is invalid: provide a non-empty repository name."
+fi
 if [[ "$image_last" == *:* ]]; then
   die "--image '$SERVICE_IMAGE' must not include a tag; provide the repository only (the Helm chart sets the tag)."
 fi
@@ -142,14 +150,26 @@ cp -R "$TEMPLATE_DIR/." "$OUT_DIR/"
 
 # --- Substitute placeholders -------------------------------------------------
 # Portable approach: sed to a temp file, then move back (no in-place -i needed).
-# Helm templates use {{ }} and contain no __TOKEN__, so they are untouched.
+# Escape replacement values so special sed characters such as '&' cannot reinsert
+# the matched placeholder. Input validation rejects unsafe values, but escaping is
+# kept as a defensive guard.
+sed_replacement_escape() {
+  printf '%s' "$1" | sed -e 's/[\&|]/\\&/g'
+}
+
 substitute() {
   local file="$1"
+  local esc_name esc_owner esc_port esc_image
+  esc_name="$(sed_replacement_escape "$SERVICE_NAME")"
+  esc_owner="$(sed_replacement_escape "$SERVICE_OWNER")"
+  esc_port="$(sed_replacement_escape "$SERVICE_PORT")"
+  esc_image="$(sed_replacement_escape "$SERVICE_IMAGE")"
+
   sed \
-    -e "s|__SERVICE_NAME__|$SERVICE_NAME|g" \
-    -e "s|__SERVICE_OWNER__|$SERVICE_OWNER|g" \
-    -e "s|__SERVICE_PORT__|$SERVICE_PORT|g" \
-    -e "s|__SERVICE_IMAGE__|$SERVICE_IMAGE|g" \
+    -e "s|__SERVICE_NAME__|$esc_name|g" \
+    -e "s|__SERVICE_OWNER__|$esc_owner|g" \
+    -e "s|__SERVICE_PORT__|$esc_port|g" \
+    -e "s|__SERVICE_IMAGE__|$esc_image|g" \
     "$file" > "$file.tmp"
   mv "$file.tmp" "$file"
 }

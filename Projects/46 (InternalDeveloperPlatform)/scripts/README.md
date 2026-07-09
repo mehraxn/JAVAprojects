@@ -8,8 +8,10 @@ Scaffolds a new, self-contained Java service by copying the
 [../template/](../template/) folder and substituting `__TOKEN__` placeholders
 with your inputs. It is conservative and safe:
 
-- validates `--name` and `--owner` (DNS-safe: lowercase, digits, hyphens, starts with a letter),
-- validates `--port` (numeric, 1-65535) and `--image` (non-empty, no tag),
+- validates `--name` and `--owner` (DNS-safe: lowercase, digits, hyphens, starts with a letter, ends with a letter/digit),
+- keeps service names short enough for generated Kubernetes names (max 50 chars),
+- validates `--port` (numeric, 1-65535),
+- validates `--image` (repository only, no tag, no whitespace/special shell characters; registry ports like `localhost:5000/name` are allowed),
 - refuses to overwrite an existing `--out` directory unless `--force` is given,
 - writes only into the given `--out` folder,
 - leaves Helm `{{ }}` templates untouched (they carry no `__TOKEN__`; per-service

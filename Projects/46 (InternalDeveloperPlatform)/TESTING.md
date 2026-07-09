@@ -44,19 +44,45 @@ grep -R "^ *name: *$"    /tmp/payments-api || true
 grep -R "^ *owner: *$"   /tmp/payments-api || true
 ```
 
-## 6. Compile the Java service (requires JDK 21)
+
+## 6. Check input validation
+
+Valid image with a registry port should pass:
+
+```bash
+./scripts/new-service.sh \
+  --name local-api \
+  --owner platform-team \
+  --port 8081 \
+  --image localhost:5000/local-api \
+  --out /tmp/local-api \
+  --force
+```
+
+These invalid inputs should fail safely:
+
+```bash
+./scripts/new-service.sh --name payments- --owner payments-team --port 8080 --image registry.example.invalid/payments-api --out /tmp/bad-api --force
+./scripts/new-service.sh --name bad-api --owner platform-team --port 8082 --image "bad image" --out /tmp/bad-api --force
+./scripts/new-service.sh --name bad-api --owner platform-team --port 8082 --image "registry.example.invalid/bad&api" --out /tmp/bad-api --force
+./scripts/new-service.sh --name bad-api --owner platform-team --port 8082 --image registry.example.invalid/bad-api:latest --out /tmp/bad-api --force
+./scripts/new-service.sh --name bad-api --owner platform-team --port 8082 --image registry.example.invalid/bad-api --out . --force
+./scripts/new-service.sh --name bad-api --owner platform-team --port 8082 --image registry.example.invalid/bad-api --out examples --force
+```
+
+## 7. Compile the Java service (requires JDK 21)
 
 ```bash
 javac -d /tmp/payments-api-out /tmp/payments-api/src/app/*.java
 ```
 
-## 7. Run it
+## 8. Run it
 
 ```bash
 SERVICE_NAME=payments-api SERVICE_PORT=8080 java -cp /tmp/payments-api-out app.Main
 ```
 
-## 8. Test the endpoints (in another terminal)
+## 9. Test the endpoints (in another terminal)
 
 ```bash
 curl http://localhost:8080/
@@ -72,23 +98,23 @@ Expected:
 {"status":"ready","service":"payments-api"}
 ```
 
-## 9. Optional: render the Helm chart (requires Helm)
+## 10. Optional: render the Helm chart (requires Helm)
 
 ```bash
 helm lint /tmp/payments-api/helm
 helm template payments-api /tmp/payments-api/helm
 ```
 
-## 10. Optional: build the image (requires a running Docker daemon)
+## 11. Optional: build the image (requires a running Docker daemon)
 
 ```bash
 docker build -t registry.example.invalid/payments-api:0.1.0 /tmp/payments-api
 ```
 
-## 11. Clean up
+## 12. Clean up
 
 ```bash
-rm -rf /tmp/payments-api /tmp/payments-api-out
+rm -rf /tmp/payments-api /tmp/local-api /tmp/bad-api /tmp/payments-api-out
 ```
 
 ## Notes

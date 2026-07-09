@@ -16,14 +16,14 @@ spec:
     - name: SERVICE_NAME
       flag: --name
       token: __SERVICE_NAME__
-      description: DNS-safe service name (lowercase, digits, hyphens; starts with a letter).
-      pattern: "^[a-z][a-z0-9-]*$"
+      description: DNS-safe service name (lowercase, digits, hyphens; starts with a letter; ends with a letter or digit; max 50 chars).
+      pattern: "^[a-z]([a-z0-9-]*[a-z0-9])?$"
       example: payments-api
     - name: SERVICE_OWNER
       flag: --owner
       token: __SERVICE_OWNER__
-      description: Owning team (used for catalog metadata).
-      pattern: "^[a-z][a-z0-9-]*$"
+      description: Owning team (lowercase, digits, hyphens; starts with a letter; ends with a letter or digit; max 63 chars).
+      pattern: "^[a-z]([a-z0-9-]*[a-z0-9])?$"
       example: payments-team
     - name: SERVICE_PORT
       flag: --port
@@ -33,7 +33,7 @@ spec:
     - name: SERVICE_IMAGE
       flag: --image
       token: __SERVICE_IMAGE__
-      description: Container image repository, no tag. Placeholder registry only.
+      description: Container image repository, no tag. Allows registry ports; rejects whitespace and unsafe special characters.
       example: registry.example.invalid/payments-api
   # Files the generator emits for a new service (see examples/new-service/).
   produces:

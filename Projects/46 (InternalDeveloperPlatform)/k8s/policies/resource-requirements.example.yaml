@@ -1,9 +1,15 @@
-# Example LimitRange for a disposable platform-learning namespace only.
+# Example platform guardrail: default CPU/memory requests and limits for any
+# container that does not set its own.
+#
+# This LimitRange is an example only. It is namespace-neutral (no `namespace:`
+# field) so it is not tied to any single service. In a real setup the platform
+# bootstrap process would copy it into each generated service namespace
+# (e.g. payments-api-dev, payments-api-prod). It is NOT applied automatically by
+# this repo.
 apiVersion: v1
 kind: LimitRange
 metadata:
-  name: java-service-defaults
-  namespace: platform-learning
+  name: default-resource-requirements
 spec:
   limits:
     - type: Container
@@ -12,6 +18,4 @@ spec:
         memory: 128Mi
       default:
         cpu: 500m
-        memory: 256Mi
-
-# TODO: Confirm policy engine, enforcement, exceptions, and ownership.
+        memory: 512Mi

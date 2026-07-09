@@ -7,12 +7,12 @@ fullnameOverride: ""
 
 image:
   # Placeholder registry set by the generator at scaffold time.
-  repository: registry.example.invalid/payments-api
+  repository: __SERVICE_IMAGE__
   tag: "0.1.0"
   pullPolicy: IfNotPresent
 
 # Port the container (and the Java app) listens on.
-containerPort: 8080
+containerPort: __SERVICE_PORT__
 
 config:
   environment: base

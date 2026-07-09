@@ -1,4 +1,4 @@
-# payments-api
+# __SERVICE_NAME__
 
 A Java HTTP service generated from the Internal Developer Platform golden path.
 Everything needed to build, run, containerize, and deploy the service is included
@@ -7,10 +7,10 @@ metadata.
 
 | Setting | Value |
 | --- | --- |
-| Service name | `payments-api` |
-| Owner | `payments-team` |
-| Port | `8080` |
-| Image | `registry.example.invalid/payments-api` |
+| Service name | `__SERVICE_NAME__` |
+| Owner | `__SERVICE_OWNER__` |
+| Port | `__SERVICE_PORT__` |
+| Image | `__SERVICE_IMAGE__` |
 
 ## Layout
 
@@ -27,9 +27,9 @@ gitops/                Argo CD Applications (app-dev.yaml, app-prod.yaml)
 
 | Method | Path | Response |
 | --- | --- | --- |
-| GET | `/` | `{"service":"payments-api","message":"hello from payments-api"}` |
-| GET | `/health` | `{"status":"ok","service":"payments-api"}` |
-| GET | `/ready` | `{"status":"ready","service":"payments-api"}` |
+| GET | `/` | `{"service":"__SERVICE_NAME__","message":"hello from __SERVICE_NAME__"}` |
+| GET | `/health` | `{"status":"ok","service":"__SERVICE_NAME__"}` |
+| GET | `/ready` | `{"status":"ready","service":"__SERVICE_NAME__"}` |
 
 ## Run it locally
 
@@ -38,22 +38,22 @@ gitops/                Argo CD Applications (app-dev.yaml, app-prod.yaml)
 javac -d out src/app/*.java
 
 # Run (reads SERVICE_NAME and SERVICE_PORT from the environment)
-SERVICE_NAME=payments-api SERVICE_PORT=8080 java -cp out app.Main
+SERVICE_NAME=__SERVICE_NAME__ SERVICE_PORT=__SERVICE_PORT__ java -cp out app.Main
 
 # Test the endpoints
-curl http://localhost:8080/
-curl http://localhost:8080/health
-curl http://localhost:8080/ready
+curl http://localhost:__SERVICE_PORT__/
+curl http://localhost:__SERVICE_PORT__/health
+curl http://localhost:__SERVICE_PORT__/ready
 ```
 
 ## Optional: Helm and Docker
 
 ```bash
 # Render the Kubernetes manifests (no cluster needed)
-helm template payments-api helm
+helm template __SERVICE_NAME__ helm
 
 # Build the image (requires a running Docker daemon)
-docker build -t registry.example.invalid/payments-api:0.1.0 .
+docker build -t __SERVICE_IMAGE__:0.1.0 .
 ```
 
 ## Deployment

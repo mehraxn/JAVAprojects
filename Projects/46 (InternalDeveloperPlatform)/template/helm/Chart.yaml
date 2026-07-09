@@ -1,0 +1,6 @@
+apiVersion: v2
+name: __SERVICE_NAME__
+description: Helm chart for __SERVICE_NAME__, generated from the platform golden path.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

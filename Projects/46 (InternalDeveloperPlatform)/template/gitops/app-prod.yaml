@@ -1,0 +1,31 @@
+# Argo CD Application for the PROD environment of __SERVICE_NAME__.
+# Note the differences from dev: prod values, prod namespace, and MANUAL sync
+# (no automated block) so a human promotes releases.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: __SERVICE_NAME__-prod
+  namespace: argocd
+  # The resources finalizer tells Argo CD to clean up managed resources when this
+  # Application is deleted. Real production deletion protection is enforced with
+  # RBAC, code review, and branch protection — not by this finalizer.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform-learning
+  source:
+    repoURL: https://example.invalid/__SERVICE_NAME__-config.git
+    targetRevision: main
+    path: helm
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: __SERVICE_NAME__-prod
+  syncPolicy:
+    # No `automated:` block on purpose — prod syncs only when a human clicks sync
+    # (or an approved promotion job runs), giving a deliberate control gate.
+    syncOptions:
+      - CreateNamespace=true

@@ -1,59 +1,99 @@
 # Testing — Internal Developer Platform
 
-> **Nothing was executed.** No generator, Docker, Kubernetes, Helm, or Argo
-> CD/Flux command ran; nothing was installed and **nothing was deployed.** This
-> documents static review and expected behavior.
+Exact commands to generate a service and verify it end to end. Run them from the
+project root. On Windows, use Git Bash or WSL. Record real output in
+[TEST_RESULTS.md](TEST_RESULTS.md) — do not paste invented output.
 
-## 1. Static validation checklist
-
-- [ ] Template Java compiles (fixed `package service;`, no `__TOKEN__` in code).
-- [ ] Same `__TOKEN__` names appear in `template.yaml` and the files that use them.
-- [ ] `examples/new-service/` has no leftover `__...__`; values match the documented inputs.
-- [ ] Helm `_helpers` names referenced by templates are defined; no `__TOKEN__` in Helm `{{ }}`.
-- [ ] Generator validates name + refuses to overwrite an existing dir.
-
-## 2. File existence checks
-
-- [ ] `service-template/` (template.yaml, service.yaml, app/Dockerfile, app/src/service/Main.java, README)
-- [ ] `helm-template/` (Chart.yaml, values*, templates/*)
-- [ ] `gitops-template/environments/{dev,prod}/application.yaml` + README
-- [ ] `scripts/new-service.sh` + README; `examples/new-service/**`
-- [ ] `docs/onboarding-guide.md`, `platform-architecture.md`, `service-lifecycle.md`, `README.md`, `TESTING.md`
-
-## 3. YAML / config review checklist
-
-- [ ] All YAML/JSON well-formed.
-- [ ] dev Application auto-syncs; prod is manual; namespaces differ.
-- [ ] Rendered example's helm values point at the chosen image repo.
-
-## 4. Security checks
-
-- [ ] **No real secrets** — none present.
-- [ ] **No real credentials** — no tokens/registry creds.
-- [ ] **No production endpoints** — all `example.invalid`/placeholders.
-- [ ] Template enforces non-root, resource limits, probes.
-
-## 5. Commands normally used — NOT executed
+## 1. Make the generator executable
 
 ```bash
-# NOT executed — result already committed under examples/new-service/
-scripts/new-service.sh --name payments-api --owner payments-team \
-  --port 8080 --image registry.example.invalid/payments-api --out examples/new-service
-helm template payments-api helm-template -f helm-template/values-dev.yaml
-kubectl apply -f gitops-template/environments/dev/application.yaml
+chmod +x scripts/new-service.sh
 ```
 
-## 6. Expected results in a proper environment
+## 2. Generate an example service
 
-- The generator produces a folder identical to `examples/new-service/`.
-- `helm lint`/`helm template` render valid manifests.
-- The generated app compiles and containerizes.
-- Argo CD dev auto-syncs; prod waits for a manual sync.
+```bash
+./scripts/new-service.sh \
+  --name payments-api \
+  --owner payments-team \
+  --port 8080 \
+  --image registry.example.invalid/payments-api \
+  --out /tmp/payments-api \
+  --force
+```
 
-## 7. Manual review checklist (portfolio quality)
+## 3. Check the generated files
 
-- [ ] README explains the IDP/golden-path idea and the onboarding flow.
-- [ ] Template + generator + rendered example tell one coherent story.
-- [ ] `__TOKEN__` vs Helm `{{ }}` separation is explained.
-- [ ] Every command marked NOT executed; no fake badges/screenshots.
-- [ ] Honest that the generator was not run and nothing deployed.
+```bash
+find /tmp/payments-api -maxdepth 3 -type f | sort
+```
+
+## 4. Check for unresolved placeholders (should print nothing)
+
+```bash
+grep -R "__SERVICE_" /tmp/payments-api || true
+```
+
+## 5. Check for empty generated values (should print nothing)
+
+```bash
+grep -R "SERVICE_NAME=$" /tmp/payments-api || true
+grep -R "SERVICE_PORT=$" /tmp/payments-api || true
+grep -R "EXPOSE $"       /tmp/payments-api || true
+grep -R "^ *name: *$"    /tmp/payments-api || true
+grep -R "^ *owner: *$"   /tmp/payments-api || true
+```
+
+## 6. Compile the Java service (requires JDK 21)
+
+```bash
+javac -d /tmp/payments-api-out /tmp/payments-api/src/app/*.java
+```
+
+## 7. Run it
+
+```bash
+SERVICE_NAME=payments-api SERVICE_PORT=8080 java -cp /tmp/payments-api-out app.Main
+```
+
+## 8. Test the endpoints (in another terminal)
+
+```bash
+curl http://localhost:8080/
+curl http://localhost:8080/health
+curl http://localhost:8080/ready
+```
+
+Expected:
+
+```json
+{"service":"payments-api","message":"hello from payments-api"}
+{"status":"ok","service":"payments-api"}
+{"status":"ready","service":"payments-api"}
+```
+
+## 9. Optional: render the Helm chart (requires Helm)
+
+```bash
+helm lint /tmp/payments-api/helm
+helm template payments-api /tmp/payments-api/helm
+```
+
+## 10. Optional: build the image (requires a running Docker daemon)
+
+```bash
+docker build -t registry.example.invalid/payments-api:0.1.0 /tmp/payments-api
+```
+
+## 11. Clean up
+
+```bash
+rm -rf /tmp/payments-api /tmp/payments-api-out
+```
+
+## Notes
+
+- The committed [examples/new-service/](examples/new-service/) is the real output
+  of the command in step 2 (with `--out examples/new-service`).
+- No Kubernetes, Argo CD, or cloud infrastructure is contacted by any command
+  here. Helm and Docker steps are local only.

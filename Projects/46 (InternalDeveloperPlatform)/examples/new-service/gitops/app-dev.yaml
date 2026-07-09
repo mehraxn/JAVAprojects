@@ -1,0 +1,30 @@
+# Argo CD Application for the DEV environment of payments-api.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: payments-api-dev
+  namespace: argocd
+  # The resources finalizer tells Argo CD to clean up the resources it manages
+  # when this Application is deleted. It is NOT production deletion protection —
+  # that belongs to RBAC, review, and branch protection (see gitops/README.md).
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform-learning
+  source:
+    repoURL: https://example.invalid/payments-api-config.git
+    targetRevision: main
+    path: helm
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: payments-api-dev
+  syncPolicy:
+    automated:            # dev auto-syncs for fast feedback
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

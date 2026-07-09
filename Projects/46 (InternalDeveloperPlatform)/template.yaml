@@ -1,0 +1,45 @@
+# Golden-path input contract.
+#
+# This descriptor documents the inputs the generator (scripts/new-service.sh)
+# accepts and the placeholders it substitutes across template/. It is metadata
+# about the golden path — it is not copied into generated services.
+apiVersion: platform/v1
+kind: ServiceTemplate
+metadata:
+  name: java-service
+  title: Java Service (golden path)
+  description: Standard HTTP Java service with Dockerfile, Helm chart, and GitOps wiring.
+  owner: platform-team
+spec:
+  # Each parameter maps to a __TOKEN__ the generator replaces in template/.
+  parameters:
+    - name: SERVICE_NAME
+      flag: --name
+      token: __SERVICE_NAME__
+      description: DNS-safe service name (lowercase, digits, hyphens; starts with a letter).
+      pattern: "^[a-z][a-z0-9-]*$"
+      example: payments-api
+    - name: SERVICE_OWNER
+      flag: --owner
+      token: __SERVICE_OWNER__
+      description: Owning team (used for catalog metadata).
+      pattern: "^[a-z][a-z0-9-]*$"
+      example: payments-team
+    - name: SERVICE_PORT
+      flag: --port
+      token: __SERVICE_PORT__
+      description: Container port the app listens on (1-65535).
+      default: "8080"
+    - name: SERVICE_IMAGE
+      flag: --image
+      token: __SERVICE_IMAGE__
+      description: Container image repository, no tag. Placeholder registry only.
+      example: registry.example.invalid/payments-api
+  # Files the generator emits for a new service (see examples/new-service/).
+  produces:
+    - "README.md"
+    - "catalog-info.yaml"
+    - "Dockerfile"
+    - "src/app/Main.java"
+    - "helm/ (Chart.yaml, values*.yaml, templates/)"
+    - "gitops/ (app-dev.yaml, app-prod.yaml)"

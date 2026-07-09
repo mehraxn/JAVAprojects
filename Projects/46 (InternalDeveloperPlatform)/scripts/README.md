@@ -1,32 +1,34 @@
 # scripts/
 
-Automation for the golden path. **These scripts were NOT run.**
+Automation for the golden path.
 
 ## `new-service.sh`
 
-Scaffolds a new service from the templates by substituting `__TOKEN__`
-placeholders. It is deliberately conservative:
+Scaffolds a new, self-contained Java service by copying the
+[../template/](../template/) folder and substituting `__TOKEN__` placeholders
+with your inputs. It is conservative and safe:
 
-- validates `--name` against a DNS-safe pattern,
-- **refuses to overwrite** an existing output directory,
+- validates `--name` and `--owner` (DNS-safe: lowercase, digits, hyphens, starts with a letter),
+- validates `--port` (numeric, 1-65535) and `--image` (non-empty, no tag),
+- refuses to overwrite an existing `--out` directory unless `--force` is given,
 - writes only into the given `--out` folder,
-- touches Helm `{{ }}` templates *not at all* — per-service values go through
-  `values.yaml`, not template edits.
+- leaves Helm `{{ }}` templates untouched (they carry no `__TOKEN__`; per-service
+  values go through `values.yaml`).
 
-Reference invocation (**NOT executed**):
+### Usage
 
 ```bash
-./new-service.sh \
+./scripts/new-service.sh \
   --name payments-api \
   --owner payments-team \
   --port 8080 \
   --image registry.example.invalid/payments-api \
-  --out ../examples/new-service
+  --out examples/new-service \
+  --force
 ```
 
-The committed [../examples/new-service/](../examples/new-service/) is what that
-exact command would produce — provided so you can inspect the output without
-running anything.
+The committed [../examples/new-service/](../examples/new-service/) is the real
+output of exactly this command.
 
-> On Windows, run under Git Bash / WSL. Nothing here is executed by this repo,
-> and no Docker/Helm/Kubernetes/Argo CD command is invoked by the script.
+> On Windows, run under Git Bash / WSL. The generator only copies and substitutes
+> files; it does not invoke Docker, Helm, Kubernetes, or Argo CD.

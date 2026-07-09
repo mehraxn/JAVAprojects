@@ -1,0 +1,14 @@
+# Catalog metadata (Backstage-style catalog-info) for payments-api.
+# Makes the service discoverable and gives it a clear owner and lifecycle.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: payments-api
+  description: Generated Java service from the Internal Developer Platform golden path.
+  annotations:
+    platform.example/image-repo: registry.example.invalid/payments-api
+spec:
+  type: service
+  lifecycle: experimental
+  owner: payments-team
+  system: platform-learning

@@ -1,92 +1,140 @@
 # Internal Developer Platform (mini)
 
-*A mini Internal Developer Platform showing self-service onboarding of a new Java service — a golden-path template, Helm chart, GitOps wiring, and a generator script, with a fully rendered example.*
+A small **Internal Developer Platform** built around one idea: a **golden path**.
+A developer runs a self-service generator, and out comes a complete, consistent,
+locally testable Java service — source, Dockerfile, Helm chart, Argo CD
+Applications, catalog metadata, and per-environment values — instead of
+copy-pasting YAML from an old repo.
 
-## Problem this project solves
-
-Every new service shouldn't mean filing tickets and copy-pasting YAML from an old
-repo. This project demonstrates the **platform-engineering** answer: a **golden
-path** where a developer answers a few questions and gets a consistent,
-guardrail-compliant service — source, Dockerfile, Helm chart, and GitOps
-manifests — while still owning it.
-
-## Technologies & concepts
-
-- **Golden-path templating** with `__TOKEN__` placeholders + a generator script
-- **Java 21** service template (compiles as-is) + hardened Dockerfile
-- **Helm** chart template with dev/prod values
-- **GitOps** (Argo CD `Application` per environment; dev auto, prod manual)
-- **Self-service / paved road**, catalog metadata, ownership
-
-## Architecture overview
+## The story
 
 ```
- developer inputs (name, owner, port, image)
-        │  scripts/new-service.sh  (substitutes __TOKEN__)
+developer runs the generator
+        │  scripts/new-service.sh  (substitutes __TOKEN__ placeholders)
         ▼
- service-template/  +  helm-template/  +  gitops-template/
-        │  PR → merge
+template/  (the golden path)
         ▼
- CI builds image  →  Argo CD syncs Helm release  (dev auto · prod manual)
+examples/new-service/  — a complete, self-contained service:
+   Java source · Dockerfile · Helm chart · Argo CD apps · catalog · env values
 ```
+
+## What problem it solves
+
+Every new service should not mean filing tickets and hand-writing a Dockerfile,
+Helm chart, Argo CD Application, catalog entry, and config from scratch. This
+project shows the platform-engineering answer: developers answer a few questions
+and get a guardrail-compliant service they still own.
+
+## What is implemented (and actually works)
+
+- **Working generator** — [scripts/new-service.sh](scripts/new-service.sh):
+  validates inputs, supports `--force`, substitutes placeholders, prints a summary.
+- **Working golden-path template** — [template/](template/): Java service,
+  Dockerfile, Helm chart (with `templates/`), Argo CD apps, catalog metadata.
+- **A generated example** — [examples/new-service/](examples/new-service/) is the
+  real output of the generator (not hand-written).
+- **Helm chart** that renders valid Kubernetes manifests (`helm template` / `helm lint`).
+- **Java service** exposing `/`, `/health`, `/ready`, configured via env vars.
+- **Platform guardrail examples** — [k8s/policies/](k8s/policies/) and the
+  Argo CD [gitops/appproject.example.yaml](gitops/appproject.example.yaml).
+- **A testing guide** — [TESTING.md](TESTING.md) with exact commands.
+
+## What is example-only (not executed here)
+
+These are illustrative and were **not** run against real infrastructure:
+
+- Argo CD deployment / sync (manifests only; no controller here)
+- Kubernetes cluster deployment
+- The CI workflow ([.github/workflows/golden-path-validation.example.yml](.github/workflows/golden-path-validation.example.yml)) — a valid example, triggered manually, not run in this repo
+- The policy / AppProject examples
+- Any cloud infrastructure
+
+All repo URLs and registries are `example.invalid` placeholders. No real secrets.
 
 ## Project structure
 
 ```text
-service-template/     Java app + Dockerfile + template.yaml + catalog metadata
-helm-template/        reusable chart (+ values-dev/staging via values)
-gitops-template/      Argo CD Application per environment
-scripts/              new-service.sh generator (+ README)
-examples/new-service/ rendered output for a "payments-api" service
-ci/  k8s/policies/     supporting pipeline + guardrail
-docs/onboarding-guide.md  docs/platform-architecture.md  docs/service-lifecycle.md
-README.md  TESTING.md
+template/               the golden path (mirrors a generated service 1:1)
+template.yaml           input contract (parameters the generator accepts)
+scripts/new-service.sh  the generator (+ scripts/README.md)
+examples/new-service/   generated output for "payments-api"
+gitops/                 AppProject example + GitOps explainer
+k8s/policies/           example resource guardrail (LimitRange)
+.github/workflows/      example CI workflow (manual trigger)
+docs/                   golden path, onboarding, architecture, lifecycle
+README.md  TESTING.md  TEST_RESULTS.md
 ```
 
-## Important files explained
+## Generate a service
 
-- **service-template/** — `template.yaml` (input contract), a **compiling** Java app (fixed `package service`, per-service values via env/config), hardened Dockerfile, catalog `service.yaml`.
-- **helm-template/** — values-driven chart (deployment/service/configmap/_helpers), non-root, probes, resource limits.
-- **gitops-template/** — dev `Application` auto-syncs; prod is manual; both with deletion-protection finalizers.
-- **scripts/new-service.sh** — validates the name, refuses to overwrite, substitutes `__TOKEN__`s (only in non-Helm files, so Helm's `{{ }}` is untouched).
-- **examples/new-service/** — the exact `payments-api` output, committed so you can inspect it without running the generator.
+```bash
+chmod +x scripts/new-service.sh
+./scripts/new-service.sh \
+  --name payments-api \
+  --owner payments-team \
+  --port 8080 \
+  --image registry.example.invalid/payments-api \
+  --out examples/new-service \
+  --force
+```
 
-## How it would work in a real environment
+## Compile and run the generated service
 
-A developer runs `new-service.sh` (or a Backstage-style portal), gets a generated
-folder, opens a PR, and on merge CI builds the image and Argo CD deploys it —
-automatically to dev, on a human's click to prod. The `__TOKEN__` design keeps
-generation simple and collision-free with Helm templating.
+Requires a JDK 21 (for `com.sun.net.httpserver`, bundled with the JDK).
 
-## What was prepared but NOT executed
+```bash
+# Compile
+javac -d out examples/new-service/src/app/*.java
 
-Prepared: all three templates, the generator, supporting CI/policy, three docs,
-and a fully rendered example. **Not executed:** the generator was **not run**
-(output is committed instead), no image built, no `helm`/`kubectl`, no Argo
-CD/Flux sync. **Nothing was deployed.**
+# Run (reads SERVICE_NAME and SERVICE_PORT from the environment)
+SERVICE_NAME=payments-api SERVICE_PORT=8080 java -cp out app.Main
+```
 
-## Security notes
+## Test the endpoints
 
-- **No real secrets or credentials** anywhere; all repo URLs/registries are `example.invalid`.
-- Guardrails baked into the template: non-root, resource limits, probes.
-- The generator is conservative: name validation + refuses to overwrite an existing dir.
-- Ownership is explicit (catalog `service.yaml`), so self-service ≠ ownerless.
+```bash
+curl http://localhost:8080/
+curl http://localhost:8080/health
+curl http://localhost:8080/ready
+```
 
-## Limitations
+Expected responses:
 
-- The generator/Helm/kubectl/Argo CD were never run; the example is illustrative.
-- Java compilation not run (no JDK on the authoring machine).
-- No live catalog/portal; templating is token-substitution, not a full scaffolder.
+```json
+{"service":"payments-api","message":"hello from payments-api"}
+{"status":"ok","service":"payments-api"}
+{"status":"ready","service":"payments-api"}
+```
 
-## Future improvements
+## Optional: Helm and Docker
 
-- Back the golden path with Backstage software templates + a service catalog.
-- Add CI that lints/tests the generated service and `helm lint`s the chart.
-- Template versioning + an upgrade path for existing services; policy-as-code gates.
+```bash
+# Render the Kubernetes manifests (no cluster needed)
+helm template payments-api examples/new-service/helm
+
+# Build the image (requires a running Docker daemon)
+docker build -t registry.example.invalid/payments-api:0.1.0 examples/new-service
+```
+
+## Honesty notes
+
+- No real cluster deployment happened. The `gitops/` manifests are desired state,
+  not a live sync.
+- CI is an example workflow; it was not run in this repo.
+- Argo CD was not installed and nothing was synced.
+- See [TEST_RESULTS.md](TEST_RESULTS.md) to record your own run's real output.
 
 ## What I learned
 
-- What an **Internal Developer Platform / golden path** is and why it reduces toil without removing ownership.
-- Designing a **template + generator** that stays collision-free with Helm syntax.
+- What an **Internal Developer Platform / golden path** is, and why it reduces
+  toil without removing ownership.
+- Designing a **template + generator** that stays collision-free with Helm's
+  `{{ }}` syntax by using `__TOKEN__` placeholders.
 - Wiring **GitOps per environment** with sane dev-auto / prod-manual defaults.
-- Committing a **worked example** so reviewers see output without running anything.
+- Committing a **generated example** so reviewers see real output.
+
+## Future improvements
+
+- Back the golden path with Backstage software templates and a live catalog.
+- Add template versioning and an upgrade path for existing services.
+- Add policy-as-code gates (e.g. OPA/Kyverno) to the CI workflow.

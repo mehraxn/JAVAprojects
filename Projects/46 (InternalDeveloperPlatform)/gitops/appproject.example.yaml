@@ -1,0 +1,28 @@
+# Example Argo CD AppProject that generated services deploy into.
+# This is an example-safe guardrail: it is NOT applied to any real cluster here.
+# In a real platform, the bootstrap process would create one AppProject that the
+# generated per-service Applications (see template/gitops/) reference via
+# `spec.project: platform-learning`.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform-learning
+  namespace: argocd
+spec:
+  description: Project for services created from the golden path.
+  # Where config repos may live (placeholder registry only).
+  sourceRepos:
+    - "https://example.invalid/*"
+  # Allow deployment only to per-service dev/prod namespaces on the in-cluster API.
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "*-dev"
+    - server: https://kubernetes.default.svc
+      namespace: "*-prod"
+  # Keep the allowed resource kinds broad for this learning example.
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

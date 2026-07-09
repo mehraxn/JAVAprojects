@@ -1,6 +1,0 @@
-apiVersion: v2
-name: java-service-template
-description: Design-only chart for the internal developer platform golden path
-type: application
-version: 0.1.0
-appVersion: "0.1.0"

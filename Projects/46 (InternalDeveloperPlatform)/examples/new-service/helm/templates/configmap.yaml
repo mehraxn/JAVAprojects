@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "service.fullname" . }}
+  labels:
+    {{- include "service.labels" . | nindent 4 }}
+data:
+  # These become environment variables in the container (via envFrom).
+  SERVICE_NAME: {{ include "service.name" . | quote }}
+  SERVICE_PORT: {{ .Values.containerPort | quote }}
+  APP_ENV: {{ .Values.config.environment | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}

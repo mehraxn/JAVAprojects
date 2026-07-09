@@ -1,0 +1,56 @@
+# Example GitHub Actions workflow that validates the golden path end to end.
+#
+# This is an EXAMPLE. It assumes the Internal Developer Platform project is the
+# repository root. GitHub only runs workflows found at the repository's own
+# .github/workflows/ directory, so this file — nested inside a project folder —
+# does not run automatically. Copy it to your repo root to use it. It is
+# triggered manually (workflow_dispatch) so it never surprises you.
+name: golden-path-validation (example)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Generate a service from the golden path
+        run: |
+          chmod +x scripts/new-service.sh
+          ./scripts/new-service.sh \
+            --name payments-api \
+            --owner payments-team \
+            --port 8080 \
+            --image registry.example.invalid/payments-api \
+            --out /tmp/payments-api \
+            --force
+
+      - name: Check for unresolved placeholders
+        run: |
+          if grep -R "__SERVICE_" /tmp/payments-api; then
+            echo "Unresolved placeholders found" >&2
+            exit 1
+          fi
+
+      - name: Compile the generated Java service
+        run: javac -d /tmp/payments-api-out /tmp/payments-api/src/app/*.java
+
+      - name: Render the Helm chart
+        run: |
+          if command -v helm >/dev/null 2>&1; then
+            helm template payments-api /tmp/payments-api/helm
+          else
+            echo "helm not available on this runner; skipping"
+          fi
+
+      - name: Build the container image
+        run: docker build -t registry.example.invalid/payments-api:0.1.0 /tmp/payments-api

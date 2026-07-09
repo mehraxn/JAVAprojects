@@ -8,10 +8,10 @@ Ansible handoff is exercised with a bundled sample, and Ansible is validated wit
 
 Recorded results live in [TEST_RESULTS.md](TEST_RESULTS.md).
 
-> Commands assume you run them from the project root
-> (`Projects/45 (InfrastructureAsCodeEnvironment)/`). On Windows, run the
-> multi-line commands on a single line or use the PowerShell line-continuation
-> backtick instead of `\`.
+> Commands assume you run them from this project's root folder —
+> `45 (InfrastructureAsCodeEnvironment)/`, the directory containing this file.
+> On Windows, run the multi-line commands on a single line or use the PowerShell
+> line-continuation backtick instead of `\`.
 
 ## 1. Terraform formatting
 

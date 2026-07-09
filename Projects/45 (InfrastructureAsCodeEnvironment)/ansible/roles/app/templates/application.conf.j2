@@ -1,6 +1,7 @@
 # Managed by Ansible — do not edit by hand.
 # Rendered per environment: the SAME template produces different config for dev
-# vs prod because the variables come from group_vars/{dev,prod}.yml.
+# vs prod because group_vars/all.yml derives app_log_level/app_replicas from
+# app_env_settings[app_environment], set by the generated inventory.
 app.name={{ app_service_name }}
 app.environment={{ app_environment }}
 app.log_level={{ app_log_level }}

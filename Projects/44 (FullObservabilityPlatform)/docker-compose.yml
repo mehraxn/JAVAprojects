@@ -1,39 +1,50 @@
 # =============================================================================
-# Full observability stack — DO NOT RUN.
+# Full observability lab — a local, runnable stack.
 # =============================================================================
-# This compose file is a STUDY ARTIFACT. It was never executed: no container was
-# built, pulled, or started; no dashboard was imported; nothing was tested.
-# Image tags are pinned for realism only. There are NO real secrets here.
+# `docker compose up -d` builds the Java app image (observable-java-app:0.1.0),
+# starts Prometheus, Loki, Promtail, Grafana (auto-provisioned with datasources +
+# dashboard), and — as a tracing-backend EXTENSION — the OpenTelemetry Collector
+# and Tempo. It is a LOCAL DEMO: no real secrets, no external endpoints, no
+# persistence tuned for production. See TESTING.md for validation steps.
 #
 # Signal flow (see diagrams/observability-flow.md):
 #   app ──/metrics──────────────▶ Prometheus ─┐
-#   app ──stdout JSON──▶ Promtail ▶ Loki ──────┤
-#   app ──OTLP──▶ OTel Collector ▶ Tempo ──────┼─▶ Grafana (metrics+logs+traces)
-#                          └──/metrics :8889──▶ Prometheus
+#   app ──JSON log file──▶ Promtail ▶ Loki ────┼─▶ Grafana (metrics + logs)
+#   app ──trace_id in logs/headers (correlation)┘
+#
+# Tracing note: the app produces W3C trace context (trace_id/span_id) for log
+# correlation but does NOT export spans. The OTel Collector + Tempo below are
+# included and run as an example tracing backend, ready for real instrumentation
+# (see docs/traces.md → Future improvements); they are not exercised by the app.
 # =============================================================================
 services:
   app:
     build:
       context: .
       dockerfile: docker/Dockerfile.example
-    image: my-observable-java-app:latest
+    image: observable-java-app:0.1.0
     environment:
       APP_PORT: "8080"
-      OTEL_SERVICE_NAME: observable-java-app
       APP_ENV: dev
-      # A real run would add the OTel Java agent + OTEL_EXPORTER_OTLP_ENDPOINT.
+      APP_LOG_FILE: /var/log/app/app.log
+      OTEL_SERVICE_NAME: observable-java-app
+    volumes:
+      # App writes JSON logs here; Promtail reads the same directory (below).
+      - ./logs/app:/var/log/app
     ports:
       - "8080:8080"
 
+  # --- Tracing backend EXTENSION (not exercised by the app; see note above) ---
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.104.0
     command: ["--config=/etc/otelcol/config.yml"]
     volumes:
       - ./monitoring/otel-collector.example.yml:/etc/otelcol/config.yml:ro
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
+      - "4318:4318"   # OTLP HTTP (ready to receive spans from a future exporter)
       - "8889:8889"   # Prometheus metrics exposed by the collector
+    depends_on:
+      - tempo
 
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -57,7 +68,10 @@ services:
     command: ["-config.file=/etc/promtail/config.yml"]
     volumes:
       - ./logging/promtail-config.example.yml:/etc/promtail/config.yml:ro
-      # A real run would mount the app's log directory here.
+      # Read-only view of the app's log directory (written by the app service).
+      - ./logs/app:/var/log/app:ro
+    depends_on:
+      - loki
 
   tempo:
     image: grafana/tempo:2.5.0
@@ -70,10 +84,13 @@ services:
   grafana:
     image: grafana/grafana:11.1.0
     environment:
-      # Placeholder only. A real deployment would use a secret, not a literal.
-      GF_SECURITY_ADMIN_PASSWORD: change-me-placeholder
+      # Placeholder only — a real deployment would inject a secret, not a literal.
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
       GF_AUTH_ANONYMOUS_ENABLED: "false"
     volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./monitoring/grafana-dashboard.example.json:/var/lib/grafana/dashboards/app.json:ro
     ports:
       - "3000:3000"
@@ -82,6 +99,6 @@ services:
       - loki
       - tempo
 
-# No named volumes/networks are defined on purpose — this stack is not meant to
-# be brought up. Add persistent volumes and a dedicated network before any real
-# use.
+# No named volumes are defined: signal storage is in-container and disposable, so
+# `docker compose down` leaves a clean machine. Add persistent volumes, a
+# dedicated network, and real secret management before any non-lab use.

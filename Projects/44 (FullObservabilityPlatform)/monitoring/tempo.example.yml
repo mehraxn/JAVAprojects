@@ -1,6 +1,7 @@
-# Grafana Tempo configuration — EXAMPLE ONLY, NOT run here.
-# Tempo is the distributed-tracing backend: it ingests spans (via OTLP from the
-# Collector), stores them cheaply, and lets Grafana look a trace up by trace_id.
+# Grafana Tempo configuration (local demo). Tempo RUNS and is provisioned as a
+# Grafana datasource, ready to ingest spans (via OTLP from the Collector) and let
+# Grafana look a trace up by trace_id. The app does not currently export spans,
+# so Tempo holds no app traces yet (see ../docs/traces.md).
 # (Jaeger is an equally valid alternative; Tempo is used here because it shares
 # Grafana as its UI, matching the rest of this stack.)
 

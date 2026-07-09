@@ -1,4 +1,6 @@
-# OpenTelemetry Collector configuration — EXAMPLE ONLY, NOT run here.
+# OpenTelemetry Collector configuration (local demo). The Collector RUNS as a
+# tracing-backend extension, but the app does not currently export spans to it,
+# so its pipelines are idle until real instrumentation is added (docs/traces.md).
 #
 # The Collector is the central "router" for telemetry. It RECEIVES signals from
 # the app, PROCESSES them (batching, memory limits, attribute scrubbing), and

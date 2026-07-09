@@ -1,0 +1,16 @@
+# Grafana dashboard provisioning. Grafana loads every dashboard JSON found under
+# the path below on startup, so the app dashboard appears automatically. The
+# JSON is mounted at /var/lib/grafana/dashboards/app.json by docker-compose.yml.
+apiVersion: 1
+
+providers:
+  - name: observability-lab
+    orgId: 1
+    folder: Observability Lab
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

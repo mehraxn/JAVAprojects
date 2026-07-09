@@ -1,5 +1,5 @@
-# Prometheus scrape configuration for the observability lab.
-# EXAMPLE ONLY — Prometheus is NOT run in this repository.
+# Prometheus scrape configuration for the observability lab (local demo).
+# Mounted into the Prometheus container by docker-compose.yml.
 global:
   scrape_interval: 15s        # how often to pull /metrics from each target
   evaluation_interval: 15s    # how often to evaluate alerting rules

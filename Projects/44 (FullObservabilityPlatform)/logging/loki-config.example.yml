@@ -1,6 +1,6 @@
-# Grafana Loki configuration — EXAMPLE ONLY, NOT run here.
-# Loki is the log backend: Promtail (see promtail-config.example.yml) ships the
-# app's stdout JSON logs to Loki, and Grafana queries them with LogQL. Loki
+# Grafana Loki configuration (local demo). Loki is the log backend: Promtail
+# (see promtail-config.example.yml) ships the app's JSON log file to Loki, and
+# Grafana queries them with LogQL. Loki
 # indexes only LABELS (service, env, level), not full log text, which keeps it
 # cheap — the opposite of a full-text engine.
 auth_enabled: false

@@ -1,90 +1,142 @@
 # Full Observability Platform
 
-*A complete observability stack for a Java service — metrics, logs, and traces correlated through Prometheus, Loki, Tempo, an OpenTelemetry Collector, and Grafana.*
+*A local, runnable observability lab for one Java service — metrics, logs, and
+traces, collected by Prometheus, Loki/Promtail, Tempo, and an OpenTelemetry
+Collector, and visualized in an auto-provisioned Grafana.*
 
 ## Problem this project solves
 
-When something breaks in production, one signal is rarely enough: metrics tell
-you *that* it's slow, logs tell you *what* happened, traces tell you *where* the
-time went. This project wires up **all three pillars** for one Java app and — the
-hard part — **correlates** them through a shared `trace_id`, so you can pivot from
-a latency spike to the exact failing request.
+When something breaks, one signal is rarely enough: metrics tell you *that* it's
+slow, logs tell you *what* happened, traces tell you *where* the time went. This
+project wires up **all three pillars** for one Java app and correlates them
+through shared trace context, so you can pivot from a latency spike to the exact
+failing request — all on a laptop with `docker compose up`.
 
-## Technologies & concepts
+## What it includes
 
-- **Java 21** app emitting all three signals from one place
-- **Prometheus** (metrics, pull-based scraping) + **Grafana** (single pane of glass)
-- **Loki + Promtail** (logs); **Tempo** (traces)
-- **OpenTelemetry Collector** (vendor-neutral receive → process → export)
-- **W3C trace context**, PromQL/LogQL, RED-method alerting
+- A dependency-free **Java 21** app: Prometheus `/metrics`, structured **JSON
+  logs** (to file), and W3C **trace IDs** in headers + logs.
+- **Prometheus** (metrics + SLI alert rules), **Loki + Promtail** (logs),
+  **Tempo** (traces), the **OpenTelemetry Collector** (OTLP router).
+- **Grafana**, auto-provisioned with datasources (stable UIDs `prometheus`,
+  `loki`, `tempo`) and a dashboard.
 
-## Architecture overview
+## What is implemented (be specific)
+
+- **Metrics** — real: Prometheus scrapes `app:8080/metrics` every 15s.
+- **Logs** — real: the app writes JSON to `/var/log/app/app.log`; Promtail ships
+  it to Loki; queryable in Grafana with LogQL.
+- **Traces** — **correlation-only (honest)**: the app generates W3C
+  `trace_id`/`span_id`, returns them in a `traceparent` header, and stamps them
+  into every log line. It does **not** export OpenTelemetry spans — the OTel
+  Java agent does not instrument the JDK `com.sun.net.httpserver` this app uses
+  (verified). The OTel **Collector + Tempo** run as a ready tracing backend that
+  the app does not feed; see [docs/traces.md](docs/traces.md) for the boundary
+  and how to make traces real.
+- **Dashboards + alerts** — Grafana dashboard and Prometheus SLI/RED alert rules
+  are provisioned/loaded (alerts are evaluated but **not routed** — no
+  Alertmanager).
+
+## Architecture
 
 ```
 app ──/metrics──────────────▶ Prometheus ─┐
-app ──stdout JSON──▶ Promtail ▶ Loki ──────┤
-app ──OTLP──▶ OTel Collector ▶ Tempo ──────┼─▶ Grafana (metrics + logs + traces)
-                       └──/metrics :8889──▶ Prometheus
+app ──JSON log file──▶ Promtail ▶ Loki ────┼─▶ Grafana (metrics + logs)
+app ──trace_id in logs/headers (correlation)┘
+   (OTel Collector + Tempo run as a ready-but-unexercised tracing backend)
 ```
+
+See [docs/observability-architecture.md](docs/observability-architecture.md) for
+the full design (metrics, logs, traces, sampling, redaction, retention,
+dashboarding, alerting, and the incident workflow).
 
 ## Project structure
 
 ```text
-src/fullobservabilityplatform/Main.java   emits metrics + JSON logs + trace IDs
-docker/Dockerfile.example  docker-compose.yml   full stack (NOT run)
+src/fullobservabilityplatform/Main.java     metrics + JSON file logs + trace IDs
+docker/Dockerfile.example                    app image (dependency-free, non-root)
+docker-compose.yml                           the full stack (runnable)
 monitoring/prometheus.yml  alerts.example.yml
 monitoring/otel-collector.example.yml  tempo.example.yml
 monitoring/grafana-dashboard.example.json
+grafana/provisioning/{datasources,dashboards}/   auto-provision Grafana
 logging/loki-config.example.yml  promtail-config.example.yml
-docs/metrics.md  docs/logs.md  docs/traces.md  docs/alerting.md
-diagrams/observability-flow.md   README.md  TESTING.md
+logs/app/                                    app writes app.log here (git-ignored)
+docs/*.md   diagrams/observability-flow.md   README.md  TESTING.md  TEST_RESULTS.md
 ```
 
-## Important files explained
+## How to run locally
 
-- **Main.java** — `/metrics` (Prometheus), one structured JSON log per request, and a generated W3C `trace_id`/`span_id` returned in a `traceparent` header **and** stamped into every log line (that's the correlation).
-- **prometheus.yml / alerts.example.yml** — 15s scrape + SLI/RED alerts (target-down, 5xx>5%, p95>1s, heap).
-- **otel-collector.example.yml** — OTLP in → memory_limiter/resource/batch → Tempo / Prometheus / debug.
-- **grafana-dashboard.example.json** — request rate, 5xx-ratio, latency p50/p95/p99 (`histogram_quantile`), JVM heap, and a Loki logs panel.
-- **loki + promtail configs** — label-only indexing; `trace_id` kept in the body (not a label) to avoid cardinality blow-ups.
+**Java only** (needs a JDK 21) — quick endpoint check without the stack:
 
-## How it would work in a real environment
+```bash
+javac -d out src/fullobservabilityplatform/*.java
+APP_PORT=8080 java -cp out fullobservabilityplatform.Main
+```
 
-`docker compose up` starts app + collector + Prometheus + Loki + Promtail +
-Tempo + Grafana. Generate load against `/work`; Prometheus scrapes metrics,
-Promtail ships logs to Loki, spans flow through the Collector to Tempo. In
-Grafana you pivot: latency spike (metric) → error logs at that moment (Loki via
-`trace_id`) → the exact span tree (Tempo).
+**Docker image** (compiles Java in-container; no local JDK needed):
 
-## What was prepared but NOT executed
+```bash
+docker build -t observable-java-app:0.1.0 -f docker/Dockerfile.example .
+```
 
-Prepared: the app and every config. **Not executed:** no image built, no
-`docker compose up`, no Prometheus scrape, no alert evaluation, no logs shipped,
-no spans exported, **no dashboard imported**. All configs are static examples;
-**observability was not tested.**
+**Full stack:**
+
+```bash
+docker compose up -d
+# app http://localhost:8080 | Prometheus http://localhost:9090
+# Grafana http://localhost:3000 (admin/admin)
+```
+
+## How to validate
+
+Full command list is in [TESTING.md](TESTING.md); recorded real results are in
+[TEST_RESULTS.md](TEST_RESULTS.md). In short:
+
+- **Endpoints:** `curl localhost:8080/` `/health` `/work` `/work?fail=1`
+  (returns 500) `/metrics` `/unknown` (returns 404).
+- **Metrics:** Prometheus → Status → Targets shows `observable-java-app` **UP**;
+  `http_requests_total` is queryable at `http://localhost:9090`.
+- **Logs:** Grafana Explore → Loki → `{service="observable-java-app"}` shows the
+  JSON request logs (with `trace_id` in the body).
+- **Trace context:** every response carries a `traceparent` header and every log
+  line a `trace_id`; the app exports no spans, so Tempo has no app traces (by
+  design — see [docs/traces.md](docs/traces.md)).
+- **Grafana:** the dashboard and the Prometheus/Loki/Tempo datasources appear
+  automatically after `docker compose up`.
 
 ## Security notes
 
-- **No real secrets/credentials** — Grafana admin password is a placeholder only.
-- No external endpoints — the Collector exports only in-stack (Tempo/Prometheus/debug).
-- **Label-cardinality discipline**: high-cardinality fields (`trace_id`, user IDs) never become metric/log labels.
-- Image tags are pinned for realism; nothing is pushed.
+- **No real secrets** — the Grafana admin password is a placeholder (`admin`).
+- No external endpoints — the Collector exports only in-stack (Tempo).
+- **Label-cardinality discipline** — `trace_id`/`span_id`/user IDs are never
+  promoted to Prometheus or Loki labels.
+- The app image runs as a non-root user; the app image tag is pinned (`0.1.0`,
+  not `latest`), as are all stack images.
 
-## Limitations
+## What is example-only / not production-ready
 
-- The stack was never run; no signal was collected, stored, or rendered.
-- No sampling policy enforced; the app's `/metrics` is illustrative (not the HPA/OTLP path).
-- Java compilation not run (no JDK on the authoring machine).
+- **Real span export** — traces are correlation-only; adding it is a documented
+  next step ([docs/traces.md](docs/traces.md)).
+- Production **retention** and long-term storage (signals are in-container,
+  discarded on `docker compose down`).
+- **Access control** (only a placeholder Grafana password; no TLS/SSO).
+- **Alert routing** (rules are evaluated but no Alertmanager / notifications).
+- **Sampling** policy, multi-tenancy, and **real incident response** tooling.
+- **Cloud deployment** — this runs locally only.
 
 ## Future improvements
 
-- Add the OpenTelemetry Java agent for real auto-instrumentation + tail-based sampling.
+- **Make traces real:** add the OpenTelemetry SDK/API to the app, create a span
+  per request, and export via OTLP to the already-running Collector → Tempo
+  (see [docs/traces.md](docs/traces.md)).
+- Tail-based sampling in the Collector; exemplars linking metrics→traces.
 - Alertmanager routing (Slack/PagerDuty) and SLO burn-rate alerts.
-- Exemplars linking metrics directly to traces; long-term metric storage.
 
 ## What I learned
 
-- The distinct jobs of **metrics vs logs vs traces** and when each answers the question.
-- How **trace-context propagation** correlates logs and traces.
-- The **OpenTelemetry Collector** as a swappable router so the app only speaks OTLP.
+- The distinct jobs of **metrics vs logs vs traces** and when each answers.
+- How **trace-context propagation** correlates logs via a shared `trace_id`.
+- The **OpenTelemetry Collector + Tempo** as the tracing backend, and honestly
+  what the OTel Java agent does and does not auto-instrument.
 - Why **label cardinality** is the make-or-break cost decision in metrics/logs.

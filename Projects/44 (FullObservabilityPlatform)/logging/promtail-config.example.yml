@@ -1,7 +1,8 @@
-# Promtail configuration — EXAMPLE ONLY, NOT run here.
-# Promtail tails the app's log output, parses the structured JSON, promotes a
-# few low-cardinality fields to Loki labels, and pushes the rest as the log
-# body. Promoting trace_id is what lets Grafana link a log line to its trace.
+# Promtail configuration for the observability lab.
+# Promtail tails the app's JSON log files, parses each line, promotes a few
+# LOW-cardinality fields to Loki labels, and ships the whole line as the log
+# body. The full JSON — including trace_id — is always kept in the body, so
+# Grafana can still search or correlate on trace_id via LogQL / derived fields.
 server:
   http_listen_port: 9080
 
@@ -15,17 +16,18 @@ scrape_configs:
         labels:
           job: observable-java-app
           service: observable-java-app
+          # The app writes JSON here; docker-compose mounts ./logs/app read-only.
           __path__: /var/log/app/*.log
     pipeline_stages:
-      # Parse the JSON produced by the app's StructuredLogger.
+      # Parse the JSON the app emits, exposing a few fields for labelling.
       - json:
           expressions:
             level: level
             env: env
-            trace_id: trace_id
             event: event
-      # Promote ONLY low-cardinality fields to labels (never trace_id — it is
-      # high-cardinality; keep it in the body for lookups instead).
+      # Promote ONLY low-cardinality fields to Loki labels. trace_id and span_id
+      # are deliberately NOT labels — they are high-cardinality and would blow up
+      # the index. They stay in the log body and are searchable there.
       - labels:
           level:
           env:

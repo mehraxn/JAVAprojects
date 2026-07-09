@@ -1,7 +1,7 @@
 {
-  "__comment": "EXAMPLE dashboard model. NOT imported into any Grafana. Panels reference the Prometheus and Loki datasources by uid; adjust uids on import.",
+  "__comment": "Auto-provisioned into Grafana by grafana/provisioning/dashboards. Panels reference the Prometheus and Loki datasources by the stable uids 'prometheus' and 'loki'.",
   "title": "Full Observability Platform - Example",
-  "tags": ["example", "unverified", "java", "observability"],
+  "tags": ["java", "observability", "local-demo"],
   "schemaVersion": 39,
   "version": 1,
   "editable": true,

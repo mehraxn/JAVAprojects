@@ -1,8 +1,8 @@
 # Metrics
 
-Covers the metrics pillar. **Prometheus was not run**; this explains what the
-config in [`../monitoring/prometheus.yml`](../monitoring/prometheus.yml) and the
-app's `/metrics` endpoint would do.
+Covers the metrics pillar: Prometheus scrapes the app's `/metrics` endpoint using
+[`../monitoring/prometheus.yml`](../monitoring/prometheus.yml). This explains what
+the config and the endpoint do.
 
 ## What metrics are
 
@@ -67,8 +67,7 @@ labels (user IDs, `trace_id`, raw URLs with IDs) explode memory. The app labels
 by **route template** (`/work`), never the raw path — keep IDs out of labels and
 put them in logs/traces instead.
 
-## What was NOT done
+## Local-only caveats
 
-- Prometheus was not started and scraped nothing.
-- No time series were stored and no query was executed.
-- The panels in the Grafana dashboard were not rendered.
+- Prometheus stores series on local disk, discarded on `docker compose down`.
+- No long-term/remote storage, downsampling, or federation — this is a local demo.

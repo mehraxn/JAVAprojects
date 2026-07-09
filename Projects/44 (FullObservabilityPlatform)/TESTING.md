@@ -1,62 +1,129 @@
 # Testing — Full Observability Platform
 
-> **Nothing was executed.** No image build, `docker compose up`, Prometheus,
-> Grafana, Loki, Tempo, or Collector ran; **no dashboard was imported and
-> observability was not tested.** This documents static review and expected
-> runtime behavior.
+This is a **runnable** local lab. Commands below are exact; recorded real results
+are in [TEST_RESULTS.md](TEST_RESULTS.md). Run from the project root
+(`44 (FullObservabilityPlatform)/`). `curl`/URLs assume the default ports.
 
-## 1. Static validation checklist
+> Nothing here contacts a cloud or uses real secrets. `docker compose down`
+> leaves a clean machine.
 
-- [ ] Metric names in the app match PromQL in `alerts.example.yml` + the dashboard.
-- [ ] Log field names in the app match Promtail's `json` stage (`level`, `env`, `trace_id`).
-- [ ] `service`/`env`/`trace_id` consistent across metrics, logs, traces.
-- [ ] Scrape target matches the app Service/port (`app:8080`, `/metrics`).
-- [ ] Collector exports only in-stack destinations (Tempo/Prometheus/debug).
-
-## 2. File existence checks
-
-- [ ] `src/fullobservabilityplatform/Main.java`, `docker/Dockerfile.example`, `docker-compose.yml`
-- [ ] `monitoring/`: `prometheus.yml`, `alerts.example.yml`, `otel-collector.example.yml`, `tempo.example.yml`, `grafana-dashboard.example.json`
-- [ ] `logging/`: `loki-config.example.yml`, `promtail-config.example.yml`
-- [ ] `docs/metrics.md`, `logs.md`, `traces.md`, `alerting.md`
-- [ ] `README.md`, `TESTING.md`
-
-## 3. YAML / config review checklist
-
-- [ ] All `*.yml` well-formed; dashboard JSON parses.
-- [ ] Prometheus scrape interval + rule_files reference present.
-- [ ] Collector pipelines: receivers → memory_limiter/resource/batch → exporters.
-- [ ] Compose mounts each config into the right container.
-
-## 4. Security checks
-
-- [ ] **No real secrets** — Grafana admin password is a placeholder.
-- [ ] **No real credentials** — no external service creds.
-- [ ] **No production endpoints** — all targets in-stack/localhost.
-- [ ] No high-cardinality label used in Prometheus/Loki.
-
-## 5. Commands normally used — NOT executed
+## 1. Java-only validation (needs a JDK 21)
 
 ```bash
-# NOT executed
-javac -d out src/fullobservabilityplatform/*.java && java -cp out fullobservabilityplatform.Main
-docker compose up -d
-#   Grafana http://localhost:3000 | Prometheus http://localhost:9090
-curl "localhost:8080/work" ; curl "localhost:8080/work?fail=1"
+javac -d out src/fullobservabilityplatform/*.java
+APP_PORT=8080 java -cp out fullobservabilityplatform.Main
 ```
 
-## 6. Expected results in a proper environment
+In another terminal:
 
-- Prometheus scrapes the app (`up == 1`); metrics appear.
-- Load makes rate/error/latency panels move; JVM heap tracks usage.
-- Logs reach Loki and render; spans reach Tempo and are searchable by `trace_id`.
-- One request is traceable across all three signals via its `trace_id`.
-- An induced error/latency moves an alert to pending/firing.
+```bash
+curl -i http://localhost:8080/            # 200 {"message":"observability example"}
+curl -i http://localhost:8080/health      # 200 {"status":"UP"}
+curl -i http://localhost:8080/work        # 200 {"worked":true}
+curl -i "http://localhost:8080/work?fail=1"  # 500 {"error":"internal"}
+curl -i http://localhost:8080/metrics     # 200 Prometheus text
+curl -i http://localhost:8080/unknown     # 404 {"error":"not found"}
+```
 
-## 7. Manual review checklist (portfolio quality)
+Expected: `/unknown` returns **404**, `/work?fail=1` returns **500**. Without a
+JDK, use the Docker build below (it compiles Java inside the container).
 
-- [ ] README explains the three pillars and correlation clearly.
-- [ ] Dashboard uses proper PromQL (`rate`, `histogram_quantile`) + a LogQL panel.
-- [ ] Cardinality discipline is visible in the configs.
-- [ ] Every command marked NOT executed; no fake dashboards/screenshots/badges.
-- [ ] Honest that nothing was collected or rendered.
+## 2. Docker image build
+
+```bash
+docker build -t observable-java-app:0.1.0 -f docker/Dockerfile.example .
+```
+
+This compiles the dependency-free app (multi-stage build) into a non-root JRE
+image — no local JDK required.
+
+## 3. Compose validation
+
+```bash
+docker compose config      # prints the merged, validated config
+docker compose up -d        # builds app + starts the 7-service stack
+docker compose ps           # all services running
+```
+
+## 4. Verify the signals
+
+```bash
+# App is up and emitting metrics
+curl http://localhost:8080/health
+curl http://localhost:8080/metrics
+
+# Generate some load so panels/alerts/logs have data
+for i in $(seq 1 30); do curl -s http://localhost:8080/work >/dev/null; done
+curl -s "http://localhost:8080/work?fail=1" >/dev/null   # one error
+
+# Core services healthy
+curl http://localhost:9090/-/ready        # Prometheus: "Prometheus Server is Ready."
+curl http://localhost:3000/api/health     # Grafana: {"database":"ok",...}
+curl http://localhost:3100/ready          # Loki: "ready"
+curl http://localhost:3200/ready          # Tempo: "ready"
+```
+
+### Prometheus target check
+
+Open `http://localhost:9090` → **Status → Targets**: `observable-java-app` should
+be **UP**. Or via API:
+
+```bash
+curl -s http://localhost:9090/api/v1/targets \
+  | python -c "import sys,json;[print(t['labels']['job'],t['health']) for t in json.load(sys.stdin)['data']['activeTargets']]"
+```
+
+### Loki log check
+
+In Grafana **Explore → Loki**, run `{service="observable-java-app"}`. Or via API:
+
+```bash
+curl -s -G http://localhost:3100/loki/api/v1/query_range \
+  --data-urlencode 'query={service="observable-java-app"}' | head -c 400
+```
+
+### Tempo / trace-context check
+
+Trace context is **correlation-only**: the app does not export spans, so Tempo
+has no app traces (see [docs/traces.md](docs/traces.md)). What you can verify:
+
+```bash
+# Tempo is running and provisioned as a Grafana datasource:
+curl http://localhost:3200/ready                      # "ready"
+# A search returns no app spans by design (empty result is expected):
+curl -s -G http://localhost:3200/api/search \
+  --data-urlencode 'tags=service.name=observable-java-app'   # {"traces":[]}
+
+# The correlation itself IS real — every response carries a traceparent header:
+curl -si http://localhost:8080/work | grep -i traceparent
+# and every log line carries the same trace_id (see the Loki check above).
+```
+
+### Grafana provisioning check
+
+Open `http://localhost:3000` (admin/admin):
+- **Connections → Data sources** shows Prometheus, Loki, Tempo (provisioned).
+- **Dashboards** shows "Full Observability Platform - Example" under the
+  *Observability Lab* folder.
+
+Or via API:
+
+```bash
+curl -s -u admin:admin http://localhost:3000/api/datasources \
+  | python -c "import sys,json;[print(d['name'],d['uid']) for d in json.load(sys.stdin)]"
+```
+
+## 5. Cleanup
+
+```bash
+docker compose down
+rm -rf out
+rm -f logs/app/*.log
+```
+
+## 6. Notes
+
+- Do not commit `logs/app/*.log` — it is git-ignored (only the `.gitkeep`
+  placeholders are tracked).
+- This is a **local demo**: no persistence, no alert routing, no access control
+  beyond a placeholder Grafana password, no cloud deployment.

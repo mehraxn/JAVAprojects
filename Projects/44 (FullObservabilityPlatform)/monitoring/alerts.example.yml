@@ -1,6 +1,7 @@
-# Prometheus alerting rules — EXAMPLE ONLY, never evaluated in this repo.
-# These are derived from Service Level Indicators (SLIs): availability, error
-# rate, latency, and saturation. Loaded via rule_files in prometheus.yml.
+# Prometheus alerting rules — LOCAL-DEMO examples. Loaded and evaluated by
+# Prometheus (via rule_files in prometheus.yml) but NOT routed anywhere (no
+# Alertmanager), so nothing is ever notified. Derived from Service Level
+# Indicators (SLIs): availability, error rate, latency, and saturation.
 groups:
   - name: observability-lab-slo
     rules:

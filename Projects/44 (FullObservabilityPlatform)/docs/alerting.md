@@ -1,8 +1,9 @@
 # Alerting
 
 Covers the alert rules in
-[`../monitoring/alerts.example.yml`](../monitoring/alerts.example.yml).
-**No rules were evaluated and no alert fired** — Prometheus was never run.
+[`../monitoring/alerts.example.yml`](../monitoring/alerts.example.yml). Prometheus
+loads and evaluates these rules, but they are **local-demo examples** and are
+**not routed** anywhere — Alertmanager is intentionally omitted.
 
 ## What an alert rule is
 
@@ -57,8 +58,8 @@ silences, and routes them to email/Slack/PagerDuty. The Alertmanager block in
 `prometheus.yml` is intentionally commented out so **nothing tries to notify
 anyone**.
 
-## What was NOT done
+## Local-demo caveats
 
-- No rule was loaded or evaluated.
-- No alert entered pending/firing state.
-- No Alertmanager or notification channel exists.
+- Rules are evaluated by Prometheus but **not routed** — there is no Alertmanager
+  and no notification channel, so nothing is ever sent anywhere.
+- Thresholds (5%, 1s, ~250MB) are illustrative for a laptop, not tuned SLOs.

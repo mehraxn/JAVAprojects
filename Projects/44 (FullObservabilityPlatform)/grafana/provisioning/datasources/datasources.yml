@@ -1,0 +1,31 @@
+# Grafana datasource provisioning. Loaded automatically on startup so the three
+# backends are wired without any manual clicks. UIDs are stable (prometheus,
+# loki, tempo) and referenced by the dashboard JSON.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      # Let Grafana turn a log line's trace_id into a link to the Tempo trace.
+      derivedFields:
+        - name: TraceID
+          matcherRegex: '"trace_id":"(\w+)"'
+          url: '${__value.raw}'
+          datasourceUid: tempo
+
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200

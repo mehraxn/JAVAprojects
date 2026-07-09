@@ -1,0 +1,10 @@
+# Build output
+out/
+*.class
+
+# Generated app logs (keep the directory placeholders, ignore the log files).
+logs/**/*.log
+logs/app/*.log
+
+# OS / editor noise
+.DS_Store

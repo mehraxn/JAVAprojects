@@ -1,9 +1,15 @@
+# Keep build contexts minimal: Dockerfiles only need services/<name>/src.
 .git
 .idea
 .vscode
+.gitignore
+.dockerignore
 **/out
 **/*.class
 README.md
 TESTING.md
+TEST_RESULTS.md
+docker-compose.yml
 docs
 k8s
+scripts

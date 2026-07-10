@@ -19,6 +19,12 @@ public class OrderController implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
+        // HttpServer contexts are prefix-based, so "/orders-wrong" and
+        // "/orders/anything" land here too. Only the exact path is served.
+        if (!"/orders".equals(exchange.getRequestURI().getPath())) {
+            send(exchange, 404, "{\"error\":\"endpoint not found\"}");
+            return;
+        }
         try {
             Map<String, String> query = queryParameters(exchange);
             if ("POST".equals(exchange.getRequestMethod())) {
@@ -33,7 +39,7 @@ public class OrderController implements HttpHandler {
                 if (id != null) {
                     Order order = service.find(id).orElse(null);
                     if (order == null) {
-                        send(exchange, 404, "{\"error\":\"Order not found\"}");
+                        send(exchange, 404, "{\"error\":\"order not found\"}");
                     } else {
                         send(exchange, 200, order.toJson());
                     }
@@ -45,9 +51,9 @@ public class OrderController implements HttpHandler {
                 return;
             }
             exchange.getResponseHeaders().set("Allow", "GET, POST");
-            send(exchange, 405, "{\"error\":\"Method not allowed\"}");
+            send(exchange, 405, "{\"error\":\"method not allowed\"}");
         } catch (NumberFormatException exception) {
-            send(exchange, 400, "{\"error\":\"Quantity and unitPrice must be valid numbers\"}");
+            send(exchange, 400, "{\"error\":\"quantity and unitPrice must be valid numbers\"}");
         } catch (IllegalArgumentException exception) {
             send(exchange, 400, "{\"error\":\"" + escape(exception.getMessage()) + "\"}");
         }
@@ -86,6 +92,10 @@ public class OrderController implements HttpHandler {
     }
 
     static String escape(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 }

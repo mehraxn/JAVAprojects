@@ -21,7 +21,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: inventory-service
-          image: microservices-order/inventory-service:local-placeholder
+          image: microservices-order/inventory-service:0.1.0
           imagePullPolicy: IfNotPresent
           env:
             - name: PORT

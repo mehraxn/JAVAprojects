@@ -1,12 +1,27 @@
+# Four-service local topology. Build and run everything with:
+#   docker compose up -d --build
+# Images are tagged with a versioned local name (never `latest`) so the same
+# images can be loaded into a local Kubernetes cluster (kind) unchanged.
+#
+# Healthchecks use wget, which is present (via busybox) in the
+# eclipse-temurin:21-jre-alpine runtime image. order-service waits for all
+# three downstream services to be healthy, not merely started.
 services:
   inventory-service:
     build:
       context: .
       dockerfile: services/inventory-service/Dockerfile
+    image: microservices-order/inventory-service:0.1.0
     environment:
       PORT: "8081"
     ports:
       - "8081:8081"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     networks:
       - order-network
 
@@ -14,10 +29,17 @@ services:
     build:
       context: .
       dockerfile: services/payment-service/Dockerfile
+    image: microservices-order/payment-service:0.1.0
     environment:
       PORT: "8082"
     ports:
       - "8082:8082"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     networks:
       - order-network
 
@@ -25,10 +47,17 @@ services:
     build:
       context: .
       dockerfile: services/notification-service/Dockerfile
+    image: microservices-order/notification-service:0.1.0
     environment:
       PORT: "8083"
     ports:
       - "8083:8083"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8083/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     networks:
       - order-network
 
@@ -36,6 +65,7 @@ services:
     build:
       context: .
       dockerfile: services/order-service/Dockerfile
+    image: microservices-order/order-service:0.1.0
     environment:
       PORT: "8080"
       INVENTORY_SERVICE_URL: http://inventory-service:8081
@@ -43,10 +73,19 @@ services:
       NOTIFICATION_SERVICE_URL: http://notification-service:8083
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     depends_on:
-      - inventory-service
-      - payment-service
-      - notification-service
+      inventory-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
     networks:
       - order-network
 

@@ -20,7 +20,14 @@ public class InventoryController implements HttpHandler {
         try {
             Map<String, String> query = query(exchange);
             String path = exchange.getRequestURI().getPath();
-            if ("GET".equals(exchange.getRequestMethod()) && "/inventory".equals(path)) {
+            String method = exchange.getRequestMethod();
+            // Exact paths only; a known path with the wrong method is 405,
+            // anything else is 404.
+            if ("/inventory".equals(path)) {
+                if (!"GET".equals(method)) {
+                    methodNotAllowed(exchange, "GET");
+                    return;
+                }
                 InventoryItem item = service.find(required(query, "sku")).orElse(null);
                 if (item == null) {
                     send(exchange, 404, "{\"error\":\"SKU not found\"}");
@@ -29,22 +36,30 @@ public class InventoryController implements HttpHandler {
                 }
                 return;
             }
-            if ("POST".equals(exchange.getRequestMethod()) && "/inventory/reserve".equals(path)) {
+            if ("/inventory/reserve".equals(path)) {
+                if (!"POST".equals(method)) {
+                    methodNotAllowed(exchange, "POST");
+                    return;
+                }
                 boolean reserved = service.reserve(required(query, "orderId"), required(query, "sku"),
                         Integer.parseInt(required(query, "quantity")));
                 send(exchange, reserved ? 200 : 409, reserved
-                        ? "{\"reserved\":true}" : "{\"reserved\":false,\"error\":\"Insufficient stock or conflicting reservation\"}");
+                        ? "{\"reserved\":true}" : "{\"reserved\":false,\"error\":\"insufficient stock or conflicting reservation\"}");
                 return;
             }
-            if ("POST".equals(exchange.getRequestMethod()) && "/inventory/release".equals(path)) {
+            if ("/inventory/release".equals(path)) {
+                if (!"POST".equals(method)) {
+                    methodNotAllowed(exchange, "POST");
+                    return;
+                }
                 boolean released = service.release(required(query, "orderId"));
                 send(exchange, released ? 200 : 404, released
-                        ? "{\"released\":true}" : "{\"released\":false,\"error\":\"Reservation not found\"}");
+                        ? "{\"released\":true}" : "{\"released\":false,\"error\":\"reservation not found\"}");
                 return;
             }
-            send(exchange, 404, "{\"error\":\"Endpoint not found\"}");
+            send(exchange, 404, "{\"error\":\"endpoint not found\"}");
         } catch (NumberFormatException exception) {
-            send(exchange, 400, "{\"error\":\"Quantity must be a whole number\"}");
+            send(exchange, 400, "{\"error\":\"quantity must be a whole number\"}");
         } catch (IllegalArgumentException exception) {
             send(exchange, 400, "{\"error\":\"" + escape(exception.getMessage()) + "\"}");
         }
@@ -71,6 +86,11 @@ public class InventoryController implements HttpHandler {
         return value.trim();
     }
 
+    private static void methodNotAllowed(HttpExchange exchange, String allowed) throws IOException {
+        exchange.getResponseHeaders().set("Allow", allowed);
+        send(exchange, 405, "{\"error\":\"method not allowed\"}");
+    }
+
     static void send(HttpExchange exchange, int status, String json) throws IOException {
         byte[] body = json.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
@@ -81,6 +101,10 @@ public class InventoryController implements HttpHandler {
     }
 
     private static String escape(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 }

@@ -21,7 +21,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: notification-service
-          image: microservices-order/notification-service:local-placeholder
+          image: microservices-order/notification-service:0.1.0
           imagePullPolicy: IfNotPresent
           env:
             - name: PORT

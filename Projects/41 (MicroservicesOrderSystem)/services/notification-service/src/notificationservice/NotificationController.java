@@ -18,6 +18,12 @@ public class NotificationController implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
+        // HttpServer contexts are prefix-based, so "/notifications/anything"
+        // lands here too. Only the exact path is served.
+        if (!"/notifications".equals(exchange.getRequestURI().getPath())) {
+            send(exchange, 404, "{\"error\":\"endpoint not found\"}");
+            return;
+        }
         try {
             if ("POST".equals(exchange.getRequestMethod())) {
                 Map<String, String> query = query(exchange);
@@ -32,7 +38,7 @@ public class NotificationController implements HttpHandler {
                 return;
             }
             exchange.getResponseHeaders().set("Allow", "GET, POST");
-            send(exchange, 405, "{\"error\":\"Method not allowed\"}");
+            send(exchange, 405, "{\"error\":\"method not allowed\"}");
         } catch (IllegalArgumentException exception) {
             send(exchange, 400, "{\"error\":\"" + escape(exception.getMessage()) + "\"}");
         }
@@ -69,6 +75,10 @@ public class NotificationController implements HttpHandler {
     }
 
     private static String escape(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 }

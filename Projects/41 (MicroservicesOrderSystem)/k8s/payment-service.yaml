@@ -21,7 +21,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: payment-service
-          image: microservices-order/payment-service:local-placeholder
+          image: microservices-order/payment-service:0.1.0
           imagePullPolicy: IfNotPresent
           env:
             - name: PORT

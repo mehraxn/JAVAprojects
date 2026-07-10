@@ -19,9 +19,14 @@ public class PaymentController implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         try {
-            if (!"POST".equals(exchange.getRequestMethod())
-                    || !"/payments/authorize".equals(exchange.getRequestURI().getPath())) {
-                send(exchange, 404, "{\"error\":\"Endpoint not found\"}");
+            // Exact path only (contexts are prefix-based); wrong method is 405.
+            if (!"/payments/authorize".equals(exchange.getRequestURI().getPath())) {
+                send(exchange, 404, "{\"error\":\"endpoint not found\"}");
+                return;
+            }
+            if (!"POST".equals(exchange.getRequestMethod())) {
+                exchange.getResponseHeaders().set("Allow", "POST");
+                send(exchange, 405, "{\"error\":\"method not allowed\"}");
                 return;
             }
             Map<String, String> query = query(exchange);
@@ -29,7 +34,7 @@ public class PaymentController implements HttpHandler {
                     new BigDecimal(required(query, "amount")));
             send(exchange, payment.isApproved() ? 200 : 402, payment.toJson());
         } catch (NumberFormatException exception) {
-            send(exchange, 400, "{\"error\":\"Amount must be a valid number\"}");
+            send(exchange, 400, "{\"error\":\"amount must be a valid number\"}");
         } catch (IllegalArgumentException exception) {
             send(exchange, 400, "{\"error\":\"" + escape(exception.getMessage()) + "\"}");
         }
@@ -66,6 +71,10 @@ public class PaymentController implements HttpHandler {
     }
 
     private static String escape(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 }

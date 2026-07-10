@@ -1,16 +1,26 @@
 # Full Observability Platform
 
-*A local, runnable observability lab for one Java service — metrics, logs, and
-traces, collected by Prometheus, Loki/Promtail, Tempo, and an OpenTelemetry
-Collector, and visualized in an auto-provisioned Grafana.*
+*A local, runnable observability lab for one Java service — Prometheus metrics,
+structured JSON logs shipped through Promtail to Loki, Grafana dashboards and
+alert rules, plus W3C trace-context correlation across headers and logs. Tempo
+and the OpenTelemetry Collector are included as extension-ready tracing
+backends, but the app does not export real OTLP spans by default.*
+
+**Implemented and validated:** Java service · Prometheus metrics · JSON logs ·
+Promtail → Loki · Grafana datasource + dashboard provisioning · Prometheus alert
+rules · `trace_id`/`span_id` correlation · `traceparent` response header.
+**Extension-ready (not exercised):** Tempo · OpenTelemetry Collector · real OTLP
+span export.
 
 ## Problem this project solves
 
 When something breaks, one signal is rarely enough: metrics tell you *that* it's
 slow, logs tell you *what* happened, traces tell you *where* the time went. This
-project wires up **all three pillars** for one Java app and correlates them
-through shared trace context, so you can pivot from a latency spike to the exact
-failing request — all on a laptop with `docker compose up`.
+project wires up **metrics and logs end-to-end** for one Java app and adds
+**trace-context correlation** (a shared `trace_id` across headers and log lines),
+so you can pivot from a latency spike to the exact failing request — all on a
+laptop with `docker compose up`. The tracing backend (Collector + Tempo) is
+included extension-ready; the app does not export spans to it by default.
 
 ## What it includes
 
@@ -61,7 +71,7 @@ monitoring/otel-collector.example.yml  tempo.example.yml
 monitoring/grafana-dashboard.example.json
 grafana/provisioning/{datasources,dashboards}/   auto-provision Grafana
 logging/loki-config.example.yml  promtail-config.example.yml
-logs/app/                                    app writes app.log here (git-ignored)
+(app-logs named volume)                      app writes app.log; Promtail reads it
 docs/*.md   diagrams/observability-flow.md   README.md  TESTING.md  TEST_RESULTS.md
 ```
 
@@ -71,7 +81,11 @@ docs/*.md   diagrams/observability-flow.md   README.md  TESTING.md  TEST_RESULTS
 
 ```bash
 javac -d out src/fullobservabilityplatform/*.java
-APP_PORT=8080 java -cp out fullobservabilityplatform.Main
+APP_PORT=8080 APP_LOG_FILE=/tmp/observable-java-app.log \
+  java -cp out fullobservabilityplatform.Main
+# APP_LOG_FILE picks a writable log path for local runs (default is
+# /var/log/app/app.log, used inside Docker). If the path is unwritable the app
+# logs to stdout only and keeps running.
 ```
 
 **Docker image** (compiles Java in-container; no local JDK needed):

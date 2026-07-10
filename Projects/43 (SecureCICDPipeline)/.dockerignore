@@ -1,0 +1,18 @@
+# Keep the build context minimal and deterministic: only src/ is needed.
+.git
+.github
+.gitignore
+.dockerignore
+out
+test-out
+artifacts
+*.sarif
+sbom.cyclonedx.json
+gitleaks-report.json
+ci
+docs
+test
+README.md
+TESTING.md
+TEST_RESULTS.md
+Dockerfile

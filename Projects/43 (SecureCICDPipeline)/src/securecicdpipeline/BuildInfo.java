@@ -3,7 +3,7 @@ package securecicdpipeline;
 /**
  * Small, pure, testable logic so the pipeline's compile and test stages have
  * something real to exercise. It validates a semantic version and derives the
- * immutable image reference the pipeline would build, scan, and sign.
+ * traceable image reference the pipeline would build, scan, and sign.
  *
  * Nothing here talks to a registry or runs a build; it only computes strings.
  */

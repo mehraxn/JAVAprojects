@@ -2,9 +2,11 @@
 out/
 *.class
 
-# Generated app logs (keep the directory placeholders, ignore the log files).
-logs/**/*.log
-logs/app/*.log
+# Local app logs. In Docker the app writes to the app-logs named volume; for
+# Java-only runs, point APP_LOG_FILE at a writable path (e.g. /tmp). If a local
+# log ever lands in the repo, ignore it.
+*.log
+logs/
 
 # OS / editor noise
 .DS_Store

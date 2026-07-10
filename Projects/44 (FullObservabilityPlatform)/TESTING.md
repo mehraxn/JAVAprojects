@@ -4,15 +4,20 @@ This is a **runnable** local lab. Commands below are exact; recorded real result
 are in [TEST_RESULTS.md](TEST_RESULTS.md). Run from the project root
 (`44 (FullObservabilityPlatform)/`). `curl`/URLs assume the default ports.
 
-> Nothing here contacts a cloud or uses real secrets. `docker compose down`
+> Nothing here contacts a cloud or uses real secrets. `docker compose down -v`
 > leaves a clean machine.
 
 ## 1. Java-only validation (needs a JDK 21)
 
 ```bash
 javac -d out src/fullobservabilityplatform/*.java
-APP_PORT=8080 java -cp out fullobservabilityplatform.Main
+APP_PORT=8080 APP_LOG_FILE=/tmp/observable-java-app.log \
+  java -cp out fullobservabilityplatform.Main
 ```
+
+`APP_LOG_FILE` points the JSON log file at a locally writable path (the default,
+`/var/log/app/app.log`, is for the Docker setup). If the path is unwritable the
+app logs to stdout only and keeps running.
 
 In another terminal:
 
@@ -25,8 +30,10 @@ curl -i http://localhost:8080/metrics     # 200 Prometheus text
 curl -i http://localhost:8080/unknown     # 404 {"error":"not found"}
 ```
 
-Expected: `/unknown` returns **404**, `/work?fail=1` returns **500**. Without a
-JDK, use the Docker build below (it compiles Java inside the container).
+Expected: `/unknown` returns **404**, `/work?fail=1` returns **500**, normal
+responses carry a `traceparent` header, and JSON log lines land in
+`/tmp/observable-java-app.log`. Without a JDK, use the Docker build below (it
+compiles Java inside the container).
 
 ## 2. Docker image build
 
@@ -75,11 +82,25 @@ curl -s http://localhost:9090/api/v1/targets \
 
 ### Loki log check
 
-In Grafana **Explore → Loki**, run `{service="observable-java-app"}`. Or via API:
+In Docker Compose the app's logs live in the **`app-logs` named volume** (shared
+with Promtail) — there is no host log file, so validate through Loki/Grafana:
+
+- **Grafana UI:** **Explore → Loki datasource** → query
+  `{service="observable-java-app"}`, or search the log body for a `trace_id`.
+- **Loki API** (labels below are the ones Promtail really creates —
+  `service`, `job`, `level`, `env`, `event`):
 
 ```bash
-curl -s -G http://localhost:3100/loki/api/v1/query_range \
-  --data-urlencode 'query={service="observable-java-app"}' | head -c 400
+curl -s -G "http://localhost:3100/loki/api/v1/query_range" \
+  --data-urlencode 'query={service="observable-java-app"}' \
+  --data-urlencode 'limit=5'
+```
+
+- **Container stdout** (the app logs to stdout too):
+
+```bash
+docker compose logs app | tail -5
+docker compose logs promtail | tail -5
 ```
 
 ### Tempo / trace-context check
@@ -116,14 +137,16 @@ curl -s -u admin:admin http://localhost:3000/api/datasources \
 ## 5. Cleanup
 
 ```bash
-docker compose down
+docker compose down -v      # -v also removes the app-logs named volume
 rm -rf out
-rm -f logs/app/*.log
+rm -f /tmp/observable-java-app.log
 ```
 
 ## 6. Notes
 
-- Do not commit `logs/app/*.log` — it is git-ignored (only the `.gitkeep`
-  placeholders are tracked).
+- App logs in Docker live in the `app-logs` named volume (no host file);
+  `docker compose down -v` removes it. Local `*.log` files are git-ignored.
 - This is a **local demo**: no persistence, no alert routing, no access control
   beyond a placeholder Grafana password, no cloud deployment.
+- **Tempo honesty:** no app spans are expected in Tempo by default — the app does
+  not export OTLP spans. Tempo is included as an extension-ready backend.

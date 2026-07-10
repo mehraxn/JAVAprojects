@@ -1,14 +1,42 @@
+# Security policy for the secure CI/CD pipeline.
+# Each required check maps to a named step in ci/github-actions.example.yml
+# and .github/workflows/secure-pipeline.yml. All gates are fail-closed: a
+# failing check blocks every later stage.
 policyVersion: 1
-mode: design-only
+mode: lab # local/manual validation; production enforcement noted below
 requiredChecks:
-  - compile
-  - unit-tests
-  - dependency-review
-  - secret-scan
-  - static-analysis
-  - sbom
-  - container-scan
+  - name: secret-scan
+    implementedBy: "Secret scan (gitleaks)"
+    threshold: any finding fails the build
+  - name: static-analysis
+    implementedBy: "Static analysis and compile (javac -Xlint -Werror)"
+    threshold: any compiler warning fails the build
+  - name: compile
+    implementedBy: "Static analysis and compile (javac -Xlint -Werror)"
+    threshold: must compile cleanly
+  - name: unit-tests
+    implementedBy: "Compile and run tests"
+    threshold: all assertions must pass
+  - name: docker-build
+    implementedBy: "Build image (local only)"
+    threshold: image must build; never pushed
+  - name: dependency-scan
+    implementedBy: "Dependency scan (Trivy fs)"
+    threshold: HIGH/CRITICAL findings fail the build
+  - name: container-scan
+    implementedBy: "Image scan (Trivy image)"
+    threshold: HIGH/CRITICAL findings fail the build
+  - name: sbom
+    implementedBy: "Generate SBOM (Syft)"
+    threshold: CycloneDX SBOM must be produced and uploaded
+recommendedChecks:
+  # Documented as release-stage controls; not executed in this lab because no
+  # image is pushed and no registry digest exists to sign.
+  - name: image-signing
+    documentedIn: docs/image-signing.md
+  - name: sbom-attestation
+    documentedIn: docs/image-signing.md
 deployment:
   automatic: false
   approvalRequired: true
-# TODO: Map these conceptual checks to reviewed tools and thresholds.
+  promotion: by immutable image digest, never by mutable tag

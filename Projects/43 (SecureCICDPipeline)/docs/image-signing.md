@@ -1,25 +1,28 @@
 # Image Signing
 
-Covers stage 9 of [`../ci/github-actions.example.yml`](../ci/github-actions.example.yml).
-**No image was signed in this repository.** The template pushes nothing
-(`push: false`), so there is deliberately no real artifact to sign. Every command
-below is documented and marked **NOT executed**.
+Covers the signing/attestation stage (stage 11) of
+[`../ci/github-actions.example.yml`](../ci/github-actions.example.yml) and the
+runnable workflow. **Signing is a documented release-stage design in this
+project — no image was signed.** The pipeline never pushes an image, so there
+is deliberately no registry digest to sign; the workflow step prints an
+explanation instead of running `cosign sign`.
 
 ## What image signing is
 
-Signing attaches a cryptographic signature to a container image so a consumer can
-**verify two things before running it**:
+Signing attaches a cryptographic signature to a container image so a consumer
+can **verify two things before running it**:
 
 1. **Integrity** — the image has not been modified since it was signed.
-2. **Provenance** — it was produced by a trusted identity (this pipeline), not an
-   attacker who pushed a look-alike to the registry.
+2. **Provenance** — it was produced by a trusted identity (this pipeline), not
+   an attacker who pushed a look-alike to the registry.
 
-Signatures bind to the image **digest** (`@sha256:...`), never a mutable tag like
-`:latest`, because tags can be repointed.
+Signatures bind to the image **digest** (`@sha256:...`), never a tag, because
+tags are mutable and can be repointed. For the same reason, production
+promotion between environments should move digests, not tags.
 
 ## Keyless signing with Cosign
 
-The template uses [Cosign](https://github.com/sigstore/cosign) in **keyless**
+The design uses [Cosign](https://github.com/sigstore/cosign) in **keyless**
 mode (Sigstore). Keyless avoids the biggest risk of signing — a long-lived
 private key that can be stolen:
 
@@ -32,49 +35,47 @@ GitHub OIDC token (workflow identity)
    cosign sign ──▶ signature + cert recorded in Rekor (public transparency log)
 ```
 
-The workflow proves *who it is* with its OIDC identity (hence
-`permissions: id-token: write`), Fulcio issues a throwaway certificate, and the
-signature is logged in the Rekor transparency log. No private key is stored
-anywhere.
+The workflow proves *who it is* with its OIDC identity (which is why a signing
+job needs `permissions: id-token: write`), Fulcio issues a throwaway
+certificate, and the signature is logged in the Rekor transparency log. No
+private key is stored anywhere.
 
-## The flow — NOT executed
+## The release-stage flow (documented, not executed here)
 
 ```bash
-# NOT executed. Sign the image BY DIGEST (never by tag):
-cosign sign --yes ghcr.io/example/secure-cicd-app@sha256:<digest>
+# 1. A release pipeline pushes the image and captures its digest, then signs
+#    BY DIGEST (never by tag):
+cosign sign --yes <registry>/<repo>@sha256:<digest>
 
-# NOT executed. Attach the SBOM as a signed attestation (ties docs/sbom.md
-# evidence to the exact image):
+# 2. Attach the SBOM as a signed attestation (ties docs/sbom.md evidence to
+#    the exact image):
 cosign attest --yes \
-  --predicate sbom.cyclonedx.json \
+  --predicate artifacts/sbom.cyclonedx.json \
   --type cyclonedx \
-  ghcr.io/example/secure-cicd-app@sha256:<digest>
+  <registry>/<repo>@sha256:<digest>
 
-# NOT executed. A deployer/admission controller verifies before running:
+# 3. A deployer/admission controller verifies before running:
 cosign verify \
-  --certificate-identity-regexp 'https://github.com/example/.*' \
+  --certificate-identity-regexp 'https://github.com/<org>/.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  ghcr.io/example/secure-cicd-app@sha256:<digest>
+  <registry>/<repo>@sha256:<digest>
 ```
+
+Running this for real requires a registry you control, a pushed image digest,
+and workflow OIDC permissions — none of which this lab configures, on purpose.
+Do not run signing against a real registry unless all of that is explicitly and
+safely set up (e.g. a disposable test registry).
 
 ## Where verification is enforced
 
 Signing only helps if something **checks** the signature. In a real system that
 happens at deploy time via an admission controller, e.g. Kubernetes with
 **Sigstore Policy Controller** or **Kyverno**, configured to reject any image
-lacking a valid signature from this pipeline's identity. That enforcement is out
-of scope here and was not configured.
+lacking a valid signature from this pipeline's identity. That enforcement is
+out of scope here and was not configured.
 
-## Why this template does not sign anything real
-
-- `push: false` — the image never leaves the runner, so there is no registry
-  digest to sign.
-- No OIDC identity or Fulcio/Rekor interaction was performed.
-- The signing step in the workflow only **echoes** the commands; it does not run
-  `cosign sign` against a real image.
-
-## What was prepared but NOT executed
+## Lab boundary
 
 - No image was pushed, so nothing was signed.
-- No Cosign signature or attestation was created.
-- No Rekor entry was made and no verification policy was applied.
+- No Cosign signature or attestation was created; no Rekor entry exists.
+- No verification policy was applied anywhere.

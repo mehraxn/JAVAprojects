@@ -36,8 +36,13 @@ app JSON log file  ─▶  Promtail  ─▶  Loki  ─▶  Grafana (LogQL)
                         └ ship the rest as the log body
 ```
 
-The app writes to `./logs/app/app.log` (bind-mounted to `/var/log/app` in the
-container); Promtail reads the same directory read-only.
+In Docker Compose the app writes to `/var/log/app/app.log` inside the **`app-logs`
+named volume**, and Promtail mounts the same volume read-only — no host bind
+mount, so the non-root app user never hits host permission issues. Validate logs
+through Loki/Grafana (or `docker compose logs app`), not a host file. For
+Java-only runs, point `APP_LOG_FILE` at a writable path (e.g.
+`/tmp/observable-java-app.log`); if the path is unwritable the app logs to
+stdout only and keeps running.
 
 - **Promtail** ([`../logging/promtail-config.example.yml`](../logging/promtail-config.example.yml))
   tails `/var/log/app/*.log`, parses the JSON, and promotes a few

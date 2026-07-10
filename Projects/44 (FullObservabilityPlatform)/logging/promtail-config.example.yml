@@ -16,7 +16,8 @@ scrape_configs:
         labels:
           job: observable-java-app
           service: observable-java-app
-          # The app writes JSON here; docker-compose mounts ./logs/app read-only.
+          # The app writes JSON here; docker-compose shares the app-logs named
+          # volume with this container read-only.
           __path__: /var/log/app/*.log
     pipeline_stages:
       # Parse the JSON the app emits, exposing a few fields for labelling.

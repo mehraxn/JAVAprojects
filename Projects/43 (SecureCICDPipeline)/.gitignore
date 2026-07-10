@@ -1,0 +1,22 @@
+# Build output
+out/
+test-out/
+*.class
+*.jar
+
+# Generated security evidence (regenerate locally; see TESTING.md)
+artifacts/
+*.sarif
+sbom.cyclonedx.json
+gitleaks-report.json
+
+# Signing material (never commit keys; this lab uses none)
+cosign.pub
+cosign.key
+
+# Coverage / tooling
+coverage/
+
+# OS noise
+.DS_Store
+Thumbs.db

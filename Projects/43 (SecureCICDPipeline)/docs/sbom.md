@@ -1,8 +1,11 @@
 # SBOM (Software Bill of Materials)
 
-Covers stage 8 of [`../ci/github-actions.example.yml`](../ci/github-actions.example.yml).
-**No SBOM was generated in this repository** — the commands below are documented
-and marked **NOT executed**.
+Covers the SBOM stage (stage 10) of
+[`../ci/github-actions.example.yml`](../ci/github-actions.example.yml) and the
+runnable workflow. An SBOM for the locally built image was generated during
+local validation (see [../TEST_RESULTS.md](../TEST_RESULTS.md)); generated
+SBOMs live in `artifacts/` and are gitignored, so regenerate one with the
+commands in [../TESTING.md](../TESTING.md).
 
 ## What an SBOM is
 
@@ -13,7 +16,7 @@ their exact versions, and often their licenses and hashes. Think of it as the
 
 Two common standard formats:
 
-- **CycloneDX** — security-focused, from OWASP (used in this template).
+- **CycloneDX** — security-focused, from OWASP (used in this project).
 - **SPDX** — license/compliance-focused, a Linux Foundation / ISO standard.
 
 ## Why it matters
@@ -26,24 +29,24 @@ Two common standard formats:
 - **Provenance.** Combined with signing (see [image-signing.md](image-signing.md)),
   a signed SBOM *attestation* lets consumers trust the inventory, not just read it.
 
-## How it's generated — Syft (NOT executed)
+## How it's generated — Syft
 
-The template uses [Syft](https://github.com/anchore/syft) via
-`anchore/sbom-action` to emit a CycloneDX JSON SBOM for the built image.
+The pipeline uses [Syft](https://github.com/anchore/syft) via
+`anchore/sbom-action` to emit a CycloneDX JSON SBOM for the built image:
 
 ```bash
-# NOT executed — requires Syft installed and the image present locally.
-syft ghcr.io/example/secure-cicd-app:<tag> \
-  -o cyclonedx-json=sbom.cyclonedx.json
+syft secure-cicd-java-app:0.1.0 \
+  -o cyclonedx-json=artifacts/sbom.cyclonedx.json
 
-# The image scanner can also consume the SBOM instead of re-analyzing the image:
-# NOT executed
-trivy sbom sbom.cyclonedx.json --severity HIGH,CRITICAL
+# The scanner can also consume the SBOM instead of re-analyzing the image:
+trivy sbom artifacts/sbom.cyclonedx.json --severity HIGH,CRITICAL
 ```
 
-In the pipeline this runs after the image is built (stage 8) and the resulting
-`sbom.cyclonedx.json` is uploaded as a build artifact (stage 10) and, in a real
-setup, attached to the image as a signed attestation (stage 9).
+In the pipeline this runs after the image is built and scanned, and the
+resulting `sbom.cyclonedx.json` is uploaded as a build artifact. In a real
+release setup it would additionally be attached to the pushed image as a
+signed attestation (see [image-signing.md](image-signing.md)) — that step is
+documented only, since this project never pushes an image.
 
 ## SBOM vs vulnerability scan
 
@@ -58,8 +61,8 @@ They are complementary, not the same:
 You generate the SBOM once at build time; you can re-scan that SBOM against
 fresh CVE data any time afterward without rebuilding.
 
-## What was prepared but NOT executed
+## Lab boundary
 
-- No image existed to inventory.
-- Syft was not installed or run; no `sbom.cyclonedx.json` was produced.
-- No SBOM was uploaded, attested, or signed.
+- SBOMs are generated for the **local** image only; none is published.
+- No SBOM attestation was signed — that requires a pushed image digest and an
+  OIDC identity, which this lab intentionally does not use.

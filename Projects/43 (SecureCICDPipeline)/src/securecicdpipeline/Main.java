@@ -11,7 +11,7 @@ public final class Main {
     }
 
     public static void main(String[] args) {
-        String version = envOr("APP_VERSION", "1.0.0");
+        String version = envOr("APP_VERSION", "0.1.0");
         String gitSha = envOr("GIT_SHA", "0000000");
         BuildInfo info = new BuildInfo(version, gitSha);
 
@@ -19,7 +19,7 @@ public final class Main {
         System.out.println("version: " + info.version());
         System.out.println("commit:  " + info.gitSha());
         System.out.println("would-build image: "
-                + info.imageReference("ghcr.io", "example/secure-cicd-app"));
+                + info.imageReference("ghcr.io", "example/secure-cicd-java-app"));
     }
 
     private static String envOr(String name, String fallback) {

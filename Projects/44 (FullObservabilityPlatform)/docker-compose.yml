@@ -29,8 +29,9 @@ services:
       APP_LOG_FILE: /var/log/app/app.log
       OTEL_SERVICE_NAME: observable-java-app
     volumes:
-      # App writes JSON logs here; Promtail reads the same directory (below).
-      - ./logs/app:/var/log/app
+      # Named volume shared with Promtail — avoids host bind-mount permission
+      # issues for the non-root app user. Removed by `docker compose down -v`.
+      - app-logs:/var/log/app
     ports:
       - "8080:8080"
 
@@ -68,8 +69,8 @@ services:
     command: ["-config.file=/etc/promtail/config.yml"]
     volumes:
       - ./logging/promtail-config.example.yml:/etc/promtail/config.yml:ro
-      # Read-only view of the app's log directory (written by the app service).
-      - ./logs/app:/var/log/app:ro
+      # Read-only view of the app's log volume (written by the app service).
+      - app-logs:/var/log/app:ro
     depends_on:
       - loki
 
@@ -99,6 +100,9 @@ services:
       - loki
       - tempo
 
-# No named volumes are defined: signal storage is in-container and disposable, so
-# `docker compose down` leaves a clean machine. Add persistent volumes, a
-# dedicated network, and real secret management before any non-lab use.
+# The only named volume is app-logs (shared app -> Promtail). Signal storage in
+# the backends is in-container and disposable, so `docker compose down -v`
+# leaves a clean machine. Add persistent volumes, a dedicated network, and real
+# secret management before any non-lab use.
+volumes:
+  app-logs:

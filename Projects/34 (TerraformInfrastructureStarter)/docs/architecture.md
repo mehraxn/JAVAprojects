@@ -36,7 +36,7 @@ Terraform still uses state for built-in resources. A future local apply would wr
 
 ## Dependency boundary
 
-`terraform_data` is part of Terraform's built-in provider, so this configuration declares no external providers. `terraform init` would still normally initialize the working directory and child module, but no command was executed here.
+`terraform_data` is part of Terraform's built-in provider, so this configuration declares no external providers. `terraform init` initializes the working directory and local child module without downloading anything — verified in [../TEST_RESULTS.md](../TEST_RESULTS.md).
 
 ## Safe extension boundary
 
@@ -55,4 +55,9 @@ Until those decisions exist, the architecture should remain local-only.
 
 ## Verification status
 
-The source structure and references were inspected statically. Terraform syntax, formatting, provider resolution, plan output, state behavior, and apply behavior were not executed or verified by the Terraform CLI.
+Terraform formatting, initialization, validation, an example plan
+(`Plan: 4 to add`), four negative validation plans, and the native
+`terraform test` suite (5 passed at the time of that run) were actually run with Terraform v1.9.8 —
+see [../TEST_RESULTS.md](../TEST_RESULTS.md). The final package also adds a native invalid-component test; rerun `terraform test` to record the final six-run result. A standalone `terraform apply`
+outside the test framework was not run; no cloud API can be reached by this
+configuration in any case.

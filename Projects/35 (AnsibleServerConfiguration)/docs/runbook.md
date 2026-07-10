@@ -1,96 +1,127 @@
 # Lab Runbook
 
-This runbook describes a possible future exercise. It was not followed during implementation, and no command or server connection occurred.
+The optional disposable-host exercise. The local validation in
+[../TESTING.md](../TESTING.md) needs no server; everything below does — and
+none of it was executed for this repository (see
+[../TEST_RESULTS.md](../TEST_RESULTS.md)).
 
-## 1. Approve the lab boundary
+## 1. Prerequisites and lab boundary
 
-Before editing the inventory, identify a disposable Linux virtual machine that may be reconfigured. Confirm ownership, expected cost, network access, cleanup responsibility, supported package manager, Python availability, systemd availability, SSH access, and sudo policy.
-
-Do not use a production server, shared environment, personal workstation, or unapproved cloud instance.
+You need: a **disposable** Linux VM with systemd that you own and may
+reconfigure (never a production server, shared environment, or personal
+workstation), SSH access with a key pair stored **outside this repository**,
+a sudo-capable user, and Python on the target. The defaults also assume
+`/usr/sbin/nologin` exists and the package manager knows `ca-certificates`
+and `curl`.
 
 ## 2. Prepare inventory safely
 
-From `ansible/`, copy `inventory.ini.example` to `inventory.ini`. Replace:
+```bash
+cd ansible
+cp inventory.ini.example inventory.ini
+```
 
-- `server.example.invalid` with only the approved disposable host;
-- `lab_user` with its approved SSH user; and
-- the placeholder key path with a private key stored outside this repository.
+Edit `inventory.ini` (never the `.example`): replace the documentation
+address `192.0.2.10` with your lab host, set the SSH user, and reference your
+private-key path. `inventory.ini` is gitignored — keep it that way. Never put
+SSH or sudo passwords, key contents, or provider credentials in inventory or
+variables.
 
-Keep `inventory.ini` uncommitted. Do not place SSH passwords, sudo passwords, private-key contents, or provider credentials in inventory or variables.
+## 3. Check the host key first
 
-## 3. Review configuration
+Connect once manually so SSH records and you verify the host identity:
 
-Review these files before any connection:
+```bash
+ssh -i ~/.ssh/your_lab_key ubuntu@<your-lab-host>
+```
 
-- `group_vars/all.yml` for packages, account names, and paths;
-- `roles/common/tasks/main.yml` for host-level changes;
-- `roles/app/tasks/main.yml` for copied files and service actions;
-- `roles/app/templates/learning-app.service.j2` for service permissions; and
-- the approved host limit.
+`host_key_checking = True` stays on — do not disable it as a shortcut.
 
-The defaults assume Linux, systemd, `/usr/sbin/nologin`, and package names `curl` and `unzip`.
+## 4. Local preflight (also works without the lab host)
 
-## 4. Perform local preflight checks
-
-Typical commands, not executed here:
-
-```text
-ansible-inventory --graph
-ansible-playbook playbook.yml --syntax-check
-ansible-playbook playbook.yml --list-hosts
-ansible-playbook playbook.yml --list-tasks
+```bash
+cd ansible
+ansible-inventory -i inventory.ini --graph
+ansible-playbook -i inventory.ini playbook.yml --syntax-check
+ansible-playbook -i inventory.ini playbook.yml --list-hosts
+ansible-playbook -i inventory.ini playbook.yml --list-tasks
 ```
 
 Stop if an unexpected host, group, variable, or task appears.
 
-## 5. Review check mode
+## 5. Check mode (predict changes, make none)
 
-Use an explicit host limit:
-
-```text
-ansible-playbook playbook.yml --check --diff --limit app-lab-01
+```bash
+ansible-playbook -i inventory.ini playbook.yml --check --diff --limit app-lab-01
 ```
 
-Review all proposed package, user, directory, file, and service changes. Check mode is useful evidence but does not guarantee a real run will behave identically.
+Review every proposed package, user, directory, file, and service change.
+Check mode is useful evidence but does not guarantee identical real-run
+behavior (e.g. the service start may report differently once files exist).
 
-## 6. Execute only after separate approval
+## 6. Real run
 
-The normal command would be:
-
-```text
-ansible-playbook playbook.yml --limit app-lab-01
+```bash
+ansible-playbook -i inventory.ini playbook.yml --diff --limit app-lab-01
 ```
 
-The configuration requests the sudo password interactively. Never add that password to a file or command argument.
+The sudo password is requested interactively (`become_ask_pass = True`) —
+never store it in a file or command line.
 
-## 7. Verify the disposable host
+## 7. Verify the service on the host
 
-Verify the play recap and then inspect:
+```bash
+systemctl status learning-app
+journalctl -u learning-app --no-pager -n 50
+```
 
-- the `learning_app` group and non-login user;
-- directories under `/opt`, `/etc`, `/var/lib`, and `/var/log`;
-- `/etc/learning-app/application.conf` permissions;
-- `/etc/systemd/system/learning-app.service`;
-- service status and recent journal messages; and
-- absence of an unexpected listening network port.
+Expect the unit `active (running)` as `learning_app`, and heartbeat log lines
+("learning-app is running in lab."). Also worth checking:
 
-## 8. Verify idempotency
+```bash
+id learning_app                          # system user, nologin shell
+ls -l /opt/learning-app/bin              # root-owned, 0750 executable
+ls -l /etc/learning-app/application.conf # root:learning_app 0640
+ls -ld /var/lib/learning-app /var/log/learning-app  # learning_app-owned
+```
 
-Run the unchanged playbook a second time against the same approved host. The expected steady-state recap is `changed=0`. A changing source file should update only its destination and notify one service restart.
+The service account must NOT be able to overwrite
+`/opt/learning-app/bin/learning-app` or the config.
+
+## 8. Idempotency second pass
+
+```bash
+ansible-playbook -i inventory.ini playbook.yml --diff --limit app-lab-01
+```
+
+The steady-state recap should show `changed=0`. Only after seeing that on
+your host may you say idempotency was validated. Changing a source file (e.g.
+`application.conf`) should change exactly its destination and trigger exactly
+one service restart via the handler.
 
 ## 9. Cleanup and rollback
 
-This starter intentionally does not automate destructive removal. For a disposable host, prefer deleting the entire lab machine after collecting learning notes. If manual rollback is required, review and stop the service before removing its unit, files, directories, user, or group. Do not remove shared packages without checking other consumers.
+This lab intentionally does not automate destructive removal. For a
+disposable host, prefer deleting the whole VM after collecting notes. If
+manual rollback is required: stop and disable the service, then remove the
+unit file, `daemon-reload`, and remove the app directories, user, and group.
+Do not remove shared packages without checking other consumers.
 
-## Troubleshooting guide
+## Troubleshooting
 
-- **Inventory cannot resolve:** expected while using `server.example.invalid`; configure only an approved lab host.
-- **Host-key failure:** verify the host identity and known-hosts entry; do not disable checking as a shortcut.
-- **Sudo failure:** confirm the approved account policy; do not store a sudo password.
-- **Package not found:** adapt `common_packages` to the lab distribution after review.
-- **Platform assertion fails:** use a supported Linux systemd lab rather than bypassing the assertion.
-- **Service restart loop:** inspect the copied configuration, script permissions, and system journal before retrying.
+- **Inventory cannot resolve:** expected with the documentation address;
+  configure your approved lab host in `inventory.ini`.
+- **Host-key failure:** verify the host identity; never disable checking.
+- **Sudo failure:** confirm the account's sudo policy; never store passwords.
+- **Package not found:** adapt `common_packages` to the distribution.
+- **Platform assertion fails:** use a Linux + systemd lab host rather than
+  bypassing the assertion.
+- **Service restart loop:** inspect `journalctl -u learning-app`, the config
+  file contents, and the executable's permissions.
 
 ## Verification status
 
-This runbook is documentation only. Its inventory, commands, connections, changes, verification steps, idempotency check, and cleanup steps were not executed.
+Local syntax/list validation was actually run for this repository (see
+[../TEST_RESULTS.md](../TEST_RESULTS.md)). Sections 2–9 — real SSH, check
+mode, execution, verification, and the idempotency pass — were **not**
+executed; no host was contacted or changed.

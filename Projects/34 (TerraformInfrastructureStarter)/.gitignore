@@ -1,8 +1,23 @@
+# Terraform working files and state
 .terraform/
 *.tfstate
 *.tfstate.*
 *.tfplan
-*.tfvars
-!terraform.tfvars.example
 crash.log
 crash.*.log
+
+# Local override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Real variable files stay local. The tracked exceptions are the safe example
+# and the intentionally-invalid negative-test files under examples/.
+*.tfvars
+!terraform.tfvars.example
+!examples/*.tfvars
+
+# The dependency lock file is NOT committed: this starter uses only
+# Terraform's built-in provider, so the lock file pins nothing meaningful.
+.terraform.lock.hcl

@@ -1,87 +1,90 @@
 # Ansible Server Configuration
 
-## Description
+*An Ansible server-configuration lab for deploying a small Linux service —
+example inventory, role-based setup, non-root service user, least-privilege
+file ownership, a hardened systemd unit, handler-driven restarts, and a
+locally validated syntax/list workflow.*
 
-A beginner-friendly Ansible learning project demonstrating repeatable Linux server configuration with an example inventory, group variables, a playbook, roles, copied files, a systemd template, and a restart handler.
+## What this project is
 
-## Goal
+A beginner-friendly Ansible control project that configures a Linux host for
+a demo systemd service. All hosts and credentials are documentation-safe
+placeholders; the playbook's structure, syntax, and task list were validated
+with real Ansible commands (see [TEST_RESULTS.md](TEST_RESULTS.md)).
 
-The goal is to understand how Ansible declares desired server state—packages installed, accounts present, directories configured, files deployed, and services enabled—while keeping all tracked hosts and credentials non-real.
+## What it demonstrates
 
-## Technologies and concepts used
+- **Inventory structure** (`inventory.ini.example`, TEST-NET-1 documentation
+  address, copy-before-use workflow)
+- **ansible.cfg** with host-key checking kept ON and interactive sudo
+- **Playbook + roles + group variables + handlers**
+- **common role**: packages, system group, non-login system user, and a
+  **least-privilege directory layout** — root owns `/opt/learning-app`,
+  `/opt/learning-app/bin`, and `/etc/learning-app`; the service account owns
+  only `/var/lib/learning-app` and `/var/log/learning-app`
+- **app role**: config file (root-owned, group-readable `0640`), executable
+  (root-owned, group-executable `0750`), systemd unit template, and
+  enable/start — with restarts **notified only when content changes**
+- **systemd hardening baseline**: `NoNewPrivileges`, `PrivateTmp`,
+  `ProtectSystem=strict`, `ProtectHome`, explicit `ReadWritePaths`, empty
+  `CapabilityBoundingSet`, `LockPersonality` — a local demo baseline, not a
+  universal production profile
+- **Local validation** (inventory graph, syntax-check, list-hosts,
+  list-tasks) and a documented optional **check-mode / idempotency** workflow
 
-- Ansible inventory and configuration
-- YAML playbooks and facts
-- Roles, group variables, tasks, templates, files, and handlers
-- Package, group, user, file, copy, template, assert, and systemd modules
-- Privilege escalation and host-key-checking concepts
-- Idempotency and check-mode review
+## The permission model in one picture
 
-## Project structure
-
-```text
-ansible/
-  ansible.cfg
-  inventory.ini.example
-  playbook.yml
-  group_vars/all.yml
-  roles/common/tasks/main.yml
-  roles/app/tasks/main.yml
-  roles/app/handlers/main.yml
-  roles/app/files/
-  roles/app/templates/
-docs/runbook.md
-.gitignore
-README.md
-TESTING.md
+```
+/opt/learning-app        root:learning_app 0755   code (service can't replace it)
+/opt/learning-app/bin    root:learning_app 0755
+  └── learning-app       root:learning_app 0750   executable, group-exec only
+/etc/learning-app        root:learning_app 0750   config (service can't modify it)
+  └── application.conf   root:learning_app 0640   group-readable
+/var/lib/learning-app    learning_app:...  0750   runtime data (writable)
+/var/log/learning-app    learning_app:...  0750   logs (writable)
+/etc/systemd/system/learning-app.service  root:root 0644
 ```
 
-## Important files explained
+The service user can execute the app, read its config, and write its own
+data/logs — and cannot replace the binary, edit config, or touch unit files.
 
-- `inventory.ini.example` uses `server.example.invalid`, a placeholder user, and a placeholder key path.
-- `ansible.cfg` points to an ignored real inventory and keeps host-key checking enabled.
-- `playbook.yml` validates Linux/systemd facts and applies the common and app roles.
-- `group_vars/all.yml` contains non-sensitive package, account, path, and service defaults.
-- The `common` role installs packages and manages the system account and directories.
-- The `app` role copies configuration and a harmless demo process, renders a systemd unit, and starts/enables it.
-- `docs/runbook.md` describes approval, check mode, execution, verification, idempotency, and cleanup.
+## Quick validation (no server needed)
 
-## Intended real-environment workflow
+```bash
+cd ansible
+ansible-inventory -i inventory.ini.example --graph
+ansible-playbook -i inventory.ini.example playbook.yml --syntax-check
+ansible-playbook -i inventory.ini.example playbook.yml --list-hosts
+ansible-playbook -i inventory.ini.example playbook.yml --list-tasks
+```
 
-For an approved disposable Linux lab, copy `inventory.ini.example` to ignored `inventory.ini`, replace placeholders with the reviewed host/user/key path, inspect all variables and tasks, parse the inventory, perform syntax/list checks, and run check mode with an explicit host limit. A real playbook run should happen only after reviewing predicted package, account, file, and service changes.
+All commands run from the `ansible/` folder (that's where `ansible.cfg`
+lives). Full command list: [TESTING.md](TESTING.md). Real-host runbook:
+[docs/runbook.md](docs/runbook.md).
 
-The default configuration requests the sudo password interactively rather than storing it.
+## What is implemented (and validated)
 
-## Prepared but not executed
+Role-based configuration, package installation, user/group creation,
+directory management, app file deployment, config templating, systemd unit
+installation, and service enable/start. On 2026-07-10 the following passed
+with ansible-core 2.21.1: YAML parse of every file, shell syntax check of the
+demo script, `ansible-inventory --graph`, `--syntax-check`, `--list-hosts`,
+and `--list-tasks` (all 12 tasks resolve). See
+[TEST_RESULTS.md](TEST_RESULTS.md).
 
-- Inventory example, playbook, variables, two roles, app files, service template, and handler were prepared.
-- Tasks demonstrate package installation, user/group creation, directories, file copying, service start, and conditional restart.
-- Ansible was not installed or run; no YAML was parsed by Ansible, no inventory resolved, and no SSH/sudo connection occurred.
-- No host, package, user, directory, file, or service was changed.
+## What is not production-grade
 
-## Manual validation checklist
+- **No real host included** — the inventory is documentation-only, and no
+  SSH/sudo/systemd operation was performed; check mode and the real playbook
+  run are documented but **not executed**.
+- **Idempotent design, not proven idempotency** — every task uses declarative
+  modules with `state:` values, but real idempotency is only demonstrated by
+  running twice on a disposable host (workflow in the runbook).
+- No secrets, SSH keys, or cloud provisioning anywhere.
+- The systemd hardening is a demo baseline, not a CIS-style benchmark.
 
-- [ ] Confirm the inventory contains only the approved disposable host.
-- [ ] Review gathered-fact assumptions and platform assertion.
-- [ ] Review every package, path, owner, group, and mode.
-- [ ] Confirm app file changes notify one matching restart handler.
-- [ ] Use `--limit`, `--check`, and `--diff` before a real run.
-- [ ] Verify the service account cannot log in interactively.
-- [ ] Run twice in a lab and investigate any second-run change.
+## How to validate
 
-## Common mistakes avoided
-
-- No real IP address, hostname, SSH key, or password is tracked.
-- Host-key checking is not disabled for convenience.
-- The application service does not run as root.
-- Package state is `present`, not an unconditional shell installation.
-- Copy/template modules drive restart notification only when content changes.
-- Check mode is not described as a guarantee of real execution behavior.
-
-## Possible future improvements
-
-- Add distribution-specific package mappings.
-- Add Molecule-style role tests only after external tooling is approved.
-- Add explicit rollback tasks for a disposable lab.
-- Add vault/external-secret documentation without committing secret material.
-- Add CI syntax/lint checks after the project is placed in an executable environment.
+[TESTING.md](TESTING.md) for commands, [TEST_RESULTS.md](TEST_RESULTS.md) for
+what actually ran, [docs/runbook.md](docs/runbook.md) for the optional
+disposable-host exercise.

@@ -1,6 +1,14 @@
-# Documentation-only inventory. example.invalid cannot resolve to a real host.
+# Documentation-only example inventory. 192.0.2.0/24 (TEST-NET-1) is reserved
+# for documentation and can never be a real host.
+#
+# Before any real use, copy this file and edit the copy — never this example:
+#   cp inventory.ini.example inventory.ini
+# Then replace the host, user, and key path with your approved disposable lab
+# values. inventory.ini is gitignored; never commit real hosts or key paths.
 [app_servers]
-app-lab-01 ansible_host=server.example.invalid ansible_user=lab_user ansible_ssh_private_key_file=~/.ssh/replace_with_lab_key
+app-lab-01 ansible_host=192.0.2.10 ansible_user=ubuntu
+# The private key stays outside this repository, e.g.:
+# app-lab-01 ansible_host=192.0.2.10 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/your_lab_key
 
 [app_servers:vars]
 ansible_port=22

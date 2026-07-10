@@ -1,13 +1,16 @@
 ---
-# These are non-sensitive lab defaults. Do not store passwords or private keys here.
+# Non-sensitive lab defaults. Do not store passwords or private keys here.
 common_packages:
+  - ca-certificates
   - curl
-  - unzip
 
 app_user: learning_app
 app_group: learning_app
 app_user_shell: /usr/sbin/nologin
 
+# root owns app_root/app_bin_directory/app_config_directory (the service
+# account must not be able to replace its own binary or config); the service
+# account owns only app_data_directory and app_log_directory.
 app_root: /opt/learning-app
 app_bin_directory: /opt/learning-app/bin
 app_config_directory: /etc/learning-app

@@ -47,4 +47,4 @@ For any future disposable lab: inspect the cluster context and namespace, valida
 
 ## Verification status
 
-No manifest was parsed by kubectl, submitted to an API server, or observed in a cluster. All behavior described above is intended behavior based on static configuration.
+The manifests were validated with `kubectl` and deployed to a disposable `kind` cluster during testing, as recorded in `TEST_RESULTS.md`. The lab remains a local learning deployment, not a production Kubernetes environment.

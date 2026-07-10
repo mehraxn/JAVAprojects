@@ -1,6 +1,21 @@
+# Real inventory and retry files stay local — only the .example is tracked.
 ansible/inventory.ini
 ansible/*.retry
+*.retry
 ansible/.cache/
+
+# Never commit key material or vault passwords
 *.vault-password
 *.pem
 *.key
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+
+# Local tooling noise
+__pycache__/
+.pytest_cache/
+.tmp/
+*.log
+.DS_Store

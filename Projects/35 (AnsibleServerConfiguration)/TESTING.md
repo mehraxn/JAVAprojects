@@ -1,59 +1,83 @@
-# Testing Ansible Server Configuration
+# Testing — Ansible Server Configuration
 
-Ansible was not installed or executed. No inventory, syntax, check-mode, SSH, sudo, package, account, file, handler, or service operation ran.
+Exact commands to validate this project. Results actually observed are
+recorded honestly in [TEST_RESULTS.md](TEST_RESULTS.md). All Ansible commands
+run from the `ansible/` folder, because `ansible.cfg` lives there.
 
-## Static validation checklist
+## A) YAML validation (Python + PyYAML, from the project root)
 
-- [ ] Review YAML indentation and fully qualified module names.
-- [ ] Confirm play hosts match the example inventory group.
-- [ ] Confirm role names match role directories.
-- [ ] Confirm handler notifications match the handler name exactly.
-- [ ] Confirm variables referenced by tasks are declared.
-- [ ] Review module state values for idempotent intent.
+```bash
+python - <<'PY'
+from pathlib import Path
+import yaml
 
-## File existence checks
-
-- [ ] `ansible/ansible.cfg`, `inventory.ini.example`, and `playbook.yml` exist.
-- [ ] `ansible/group_vars/all.yml` exists.
-- [ ] Common and app task files exist.
-- [ ] App handler, copied files, and systemd template exist.
-- [ ] `docs/runbook.md`, `.gitignore`, `README.md`, and `TESTING.md` exist.
-
-## Configuration review checklist
-
-- [ ] Real `inventory.ini` remains ignored and absent by default.
-- [ ] Roles path resolves from `ansible.cfg`.
-- [ ] Package names suit the approved lab distribution.
-- [ ] `/usr/sbin/nologin` exists on the target distribution.
-- [ ] systemd hardening fields and writable paths suit the demo process.
-- [ ] Service and file paths agree across variables, tasks, script, and template.
-
-## Security checks
-
-- [ ] No real secret, credential, SSH key, or sudo password is present.
-- [ ] No production endpoint or real IP address is present.
-- [ ] Private-key and vault-password file patterns are ignored.
-- [ ] Host-key checking remains enabled.
-- [ ] Application files and service use least-privilege ownership/modes.
-
-## Commands normally used - NOT executed
-
-```text
-ansible-inventory --graph
-ansible-playbook playbook.yml --syntax-check
-ansible-playbook playbook.yml --list-hosts
-ansible-playbook playbook.yml --list-tasks
-ansible-playbook playbook.yml --check --diff --limit app-lab-01
-ansible-playbook playbook.yml --limit app-lab-01
+for path in sorted(Path("ansible").rglob("*.yml")):
+    with path.open("r", encoding="utf-8") as f:
+        yaml.safe_load(f)
+    print(f"OK {path}")
+PY
 ```
 
-These commands require an approved disposable host and deliberately prepared ignored inventory. None were executed.
+## B) Shell script syntax (from the project root)
 
-## Expected results in a proper environment
+```bash
+bash -n ansible/roles/app/files/learning-app.sh
+```
 
-- Inventory and syntax checks show only the intended lab host and tasks.
-- Unsupported operating systems stop at the platform assertion.
-- Packages, system account, directories, configuration, script, and unit reach their declared states.
-- The service is enabled and active.
-- Changed app files trigger one restart handler.
-- A second unchanged playbook run normally reports `changed=0`.
+## C) Local Ansible validation (no server needed)
+
+```bash
+cd ansible
+
+ansible-inventory -i inventory.ini.example --graph
+ansible-playbook -i inventory.ini.example playbook.yml --syntax-check
+ansible-playbook -i inventory.ini.example playbook.yml --list-hosts
+ansible-playbook -i inventory.ini.example playbook.yml --list-tasks
+```
+
+Expected: the graph shows `app_servers → app-lab-01`; syntax-check completes
+without errors; list-hosts shows the one example host; list-tasks shows the
+assert pre-task plus the common and app role tasks.
+
+No local Ansible? The same checks run in a container from the project root:
+
+```bash
+docker run --rm -v "$PWD:/w" -w /w/ansible python:3.12-slim bash -c \
+  "pip install -q ansible-core && ansible-playbook -i inventory.ini.example playbook.yml --syntax-check"
+```
+
+(Inside a container the mounted directory may be world-writable, so Ansible
+ignores `ansible.cfg` with a warning — that's why these commands always pass
+`-i` explicitly.)
+
+## D) Optional disposable-host workflow (check mode → real run → idempotency)
+
+Only for a disposable Linux VM with systemd that you own. Never a production
+or shared machine.
+
+```bash
+cd ansible
+cp inventory.ini.example inventory.ini
+# edit inventory.ini: real host, SSH user, key path (kept outside the repo).
+# inventory.ini is gitignored — never commit it.
+
+# 1. predict changes without making any
+ansible-playbook -i inventory.ini playbook.yml --check --diff
+
+# 2. real run (prompts for the sudo password)
+ansible-playbook -i inventory.ini playbook.yml --diff
+
+# 3. idempotency second pass — should report changed=0
+ansible-playbook -i inventory.ini playbook.yml --diff
+```
+
+Only claim idempotency is validated after the second real run actually shows
+`changed=0` on your host. On-host verification commands are in
+[docs/runbook.md](docs/runbook.md).
+
+## E) Cleanup
+
+```bash
+rm -f ansible/*.retry
+rm -f ansible/inventory.ini    # your local copy, if you no longer need it
+```

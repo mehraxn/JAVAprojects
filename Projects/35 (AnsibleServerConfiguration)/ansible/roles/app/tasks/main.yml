@@ -7,11 +7,12 @@
       - app_executable | length > 0
     fail_msg: "Service, configuration, and executable paths are required."
 
+# root owns the config; the service account can only read it via the group.
 - name: Copy the learning application configuration
   ansible.builtin.copy:
     src: application.conf
     dest: "{{ app_config_file }}"
-    owner: "{{ app_user }}"
+    owner: root
     group: "{{ app_group }}"
     mode: "0640"
   notify: Restart learning application
@@ -34,9 +35,10 @@
     mode: "0644"
   notify: Restart learning application
 
+# Daemon reload for unit changes happens in the restart handler; this task
+# only ensures the service is enabled and running.
 - name: Start and enable the learning application service
   ansible.builtin.systemd:
     name: "{{ app_service_name }}"
-    daemon_reload: true
     enabled: true
     state: started

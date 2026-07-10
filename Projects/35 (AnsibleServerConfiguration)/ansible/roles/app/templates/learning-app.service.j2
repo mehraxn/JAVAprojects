@@ -6,15 +6,22 @@ After=network.target
 Type=simple
 User={{ app_user }}
 Group={{ app_group }}
+WorkingDirectory={{ app_root }}
 Environment="APP_CONFIG_FILE={{ app_config_file }}"
 ExecStart={{ app_executable }}
 Restart=on-failure
 RestartSec=5
+
+# Local demo hardening baseline — reviewed against this simple shell service.
+# It is NOT a universal production systemd profile; real services need their
+# own review (sockets, capabilities, paths, syscall filters, ...).
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths={{ app_data_directory }} {{ app_log_directory }}
+CapabilityBoundingSet=
+LockPersonality=true
 
 [Install]
 WantedBy=multi-user.target

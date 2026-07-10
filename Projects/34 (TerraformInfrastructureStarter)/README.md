@@ -1,89 +1,102 @@
 # Terraform Infrastructure Starter
 
-## Description
+*A safe, local-only Terraform Infrastructure-as-Code starter — root + child
+module, typed variables with strict validation, safe `terraform_data`
+resources, negative validation examples, a native `terraform test` suite, and
+real fmt/init/validate/plan/test evidence.*
 
-A safe Infrastructure as Code learning project that models an imaginary application environment with Terraform's built-in `terraform_data` resource. It contains no cloud provider, credential, provisioner, or production resource.
+## What this project is
 
-## Goal
+A Terraform learning starter that models an imaginary application environment
+using only Terraform's built-in `terraform_data` resource. **No cloud
+resources are created** — there is no provider, backend, credential, or
+provisioner anywhere — yet the full Terraform workflow (fmt, init, validate,
+plan, test, and even a safe local apply) works for real. All recorded results
+were actually run: see [TEST_RESULTS.md](TEST_RESULTS.md).
 
-The goal is to learn Terraform file organization, typed variables, validation, outputs, modules, state concepts, and review workflow without creating real infrastructure or requiring a provider account.
+## What it demonstrates
 
-## Technologies and concepts used
+- **Root module + reusable child module** (`modules/learning_environment`)
+- **Typed variables with strict validation**:
+  - `project_name`: 3–40 chars, `^[a-z][a-z0-9-]*[a-z0-9]$` — lowercase
+    letters/numbers/hyphens, starts with a letter, no trailing hyphen
+  - `environment`: only `dev`, `staging`, or `prod`
+  - `components`: each name 2–30 chars with the same shape rules
+  - `additional_labels`: no empty keys/values, and **reserved keys are
+    rejected** (`managed_by`, `project`, `environment`, `purpose`,
+    `component`) — standard labels are controlled by the module;
+    `additional_labels` is only for non-reserved custom metadata
+- **Safe local-only `terraform_data` resources** with `for_each`
+- **Non-sensitive outputs** (configuration summary + sorted component names)
+- **Safe tfvars example** and four **intentionally-invalid examples** under
+  `examples/` that variable validation must reject
+- **Native `terraform test` suite** (`terraform/tests/`) — one apply-based
+  positive test asserting outputs, plus five negative tests using
+  `expect_failures`
+- **.gitignore** for state, plans, and real tfvars (the example and the
+  invalid test files stay tracked)
 
-- Terraform configuration language
-- Root and child modules
-- Typed variables and validation rules
-- Local values, `for_each`, and outputs
-- Built-in `terraform_data` resources
-- State, plan, formatting, and validation concepts
-- Source-control exclusions for local state and variable files
+## Why terraform_data?
+
+`terraform_data` is part of Terraform itself: it records values in local
+state without calling any cloud API or running any command. That lets this
+project exercise the complete plan/apply/destroy lifecycle — including state
+concepts — with zero cost, zero credentials, and zero risk.
 
 ## Project structure
 
 ```text
 terraform/
-  versions.tf
-  main.tf
-  variables.tf
-  outputs.tf
+  versions.tf  main.tf  variables.tf  outputs.tf
   terraform.tfvars.example
-  modules/learning_environment/
-    main.tf
-    variables.tf
-    outputs.tf
+  modules/learning_environment/       main/variables/outputs
+  tests/                              *.tftest.hcl (terraform test)
+examples/                             intentionally-invalid tfvars
 docs/architecture.md
-.gitignore
-README.md
-TESTING.md
+README.md  TESTING.md  TEST_RESULTS.md
 ```
 
-## Important files explained
+## Quick validation
 
-- `versions.tf` defines the supported Terraform CLI range and documents the built-in-only design.
-- `variables.tf` declares project, environment, component, and label inputs with validation.
-- `main.tf` combines standard labels and calls the child module.
-- `outputs.tf` exposes non-sensitive configuration summaries.
-- `terraform.tfvars.example` contains safe example values, not credentials.
-- `modules/learning_environment/` demonstrates a reusable interface and local-only resources.
-- `docs/architecture.md` explains module and state boundaries.
+```bash
+cd terraform
+terraform fmt -check -recursive
+terraform init
+terraform validate
+terraform plan -var-file="terraform.tfvars.example"   # Plan: 4 to add
+terraform test                                        # expected after final polish: 6 passed, 0 failed
 
-## Intended real-environment workflow
+# each of these must FAIL with a clear validation error:
+terraform plan -var-file="../examples/invalid-environment.tfvars"
+terraform plan -var-file="../examples/invalid-project-name.tfvars"
+terraform plan -var-file="../examples/invalid-component.tfvars"
+terraform plan -var-file="../examples/invalid-reserved-label.tfvars"
+```
 
-In a controlled learning environment, a developer would review all files, copy the example variables into ignored `terraform.tfvars`, format the configuration, initialize the working directory, validate it, and inspect a plan. Applying is unnecessary for understanding the structure. If separately approved, applying this specific configuration should create only local Terraform state records for built-in data resources.
+Full command list with expected results: [TESTING.md](TESTING.md). The recorded Terraform run in [TEST_RESULTS.md](TEST_RESULTS.md) was done before the final native invalid-component test was added, so rerun `terraform test` once Terraform is available to record the final six-test result.
 
-Any future cloud extension requires a separate review of provider versions, disposable accounts, costs, credentials, network exposure, remote state, locking, recovery, and cleanup.
+## What is intentionally not included
 
-## Prepared but not executed
+- **No cloud provider** (`aws`/`azurerm`/`google`/…) and no provider blocks
+- **No backend configuration** — state would be local-only
+- **No real credentials or secrets** of any kind
+- **No provisioners** (`local-exec`/`remote-exec`)
+- **No production infrastructure creation** — the `prod` environment value is
+  just a label on local data
 
-- Root-module inputs/outputs and a reusable child module were prepared.
-- Local-only `terraform_data` resources and validation rules were written.
-- State, plan, and real `.tfvars` files were excluded from source control.
-- Terraform was not installed or invoked; formatting, initialization, validation, planning, applying, and destroying were not performed.
-- No state file or infrastructure was created.
+The dependency lock file is not committed: with only the built-in provider it
+pins nothing meaningful (documented in `.gitignore`).
 
-## Manual validation checklist
+## How to validate
 
-- [ ] Confirm every resource type is `terraform_data`.
-- [ ] Confirm there is no provider, backend, provisioner, or external command.
-- [ ] Review variable types, validation expressions, and error messages.
-- [ ] Confirm module inputs match child-module declarations.
-- [ ] Confirm outputs contain no sensitive value.
-- [ ] Review a future plan line by line before considering apply.
-- [ ] Keep state and real variable files uncommitted.
-
-## Common mistakes avoided
-
-- No real cloud example can be applied accidentally.
-- Credentials are not stored in `.tf` or example variable files.
-- State is treated as potentially sensitive even in a learning project.
-- Modules are used for a clear reusable boundary rather than unnecessary nesting.
-- Applying is not presented as required for static learning.
-- No successful validation, plan, or apply is claimed.
+[TESTING.md](TESTING.md) for commands, [TEST_RESULTS.md](TEST_RESULTS.md) for
+the honestly recorded results of the 2026-07-10 run (Terraform v1.9.8),
+[docs/architecture.md](docs/architecture.md) for the module and state
+boundaries.
 
 ## Possible future improvements
 
-- Add automated formatting and static-validation checks after Terraform is approved.
-- Add more variable-validation examples.
-- Demonstrate moved/import blocks using local-only state fixtures.
-- Add a separately reviewed disposable provider module.
-- Document remote-state security and recovery before any real provider is introduced.
+- CI job running fmt/validate/test on every push
+- `moved`/`import` block demonstrations with local-only state fixtures
+- A separately reviewed disposable-provider module (cost, credentials, remote
+  state, and cleanup all need their own review first)

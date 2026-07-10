@@ -30,11 +30,14 @@
     create_home: false
     state: present
 
-- name: Create application directories
+# Least-privilege layout: root owns the code and configuration directories so
+# the service account cannot replace its own binary or config; the service
+# account owns only its runtime data and log directories.
+- name: Create root-owned application directories
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
-    owner: "{{ app_user }}"
+    owner: root
     group: "{{ app_group }}"
     mode: "{{ item.mode }}"
   loop:
@@ -44,7 +47,14 @@
       mode: "0755"
     - path: "{{ app_config_directory }}"
       mode: "0750"
+
+- name: Create service-writable data and log directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0750"
+  loop:
     - path: "{{ app_data_directory }}"
-      mode: "0750"
     - path: "{{ app_log_directory }}"
-      mode: "0750"

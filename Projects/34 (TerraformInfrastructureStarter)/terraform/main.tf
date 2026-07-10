@@ -1,4 +1,7 @@
 locals {
+  # Standard labels are merged last, so they would win any collision — and a
+  # validation rule on additional_labels rejects reserved keys outright, so
+  # users get a clear error instead of a silent override.
   labels = merge(
     var.additional_labels,
     {

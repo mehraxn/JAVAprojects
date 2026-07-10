@@ -1,0 +1,18 @@
+# Build context is the project root (docker build -f docker/Dockerfile .);
+# only app/src is needed by the Dockerfile.
+.git
+.github
+.gitignore
+.dockerignore
+out
+test-out
+*.class
+*.log
+README.md
+TESTING.md
+TEST_RESULTS.md
+docs
+k8s
+helm
+gitops
+docker

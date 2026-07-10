@@ -1,8 +1,8 @@
 replicaCount: 1
 
 image:
-  repository: my-java-app
-  tag: latest
+  repository: gitops-java-app
+  tag: "0.1.0" # versioned local tag, never latest; production should pin a digest
   pullPolicy: IfNotPresent
 
 service:
@@ -11,7 +11,7 @@ service:
 
 config:
   environment: learning
-  version: helm-placeholder
+  version: "0.1.0"
 
 resources:
   requests:

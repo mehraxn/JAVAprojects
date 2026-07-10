@@ -1,13 +1,21 @@
+# Dev overlay: 1 replica, dev config, everything in the java-app-dev
+# namespace (declared in Git via namespace.yaml). Environment separation
+# comes from the namespace, so resource names stay identical to the base.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: java-app-dev
 resources:
+  - namespace.yaml
   - ../../base
-nameSuffix: -dev
-commonLabels:
-  environment: dev
+labels:
+  - includeSelectors: true
+    pairs:
+      environment: dev
 images:
-  - name: my-java-app
-    newTag: dev-placeholder
+  # A promotion commit changes newTag here (production should promote an
+  # immutable digest via newDigest instead).
+  - name: gitops-java-app
+    newTag: 0.1.0
 patches:
   - path: deployment-patch.yaml
   - path: configmap-patch.yaml

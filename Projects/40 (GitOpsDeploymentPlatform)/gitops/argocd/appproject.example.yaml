@@ -1,0 +1,35 @@
+# Example AppProject guardrail for this lab. Example only — repoURL is a
+# placeholder and no real cluster is targeted.
+#
+# An AppProject restricts what the Applications inside it may do. This example
+# allows only the lab's repo, the in-cluster destination, the two lab
+# namespaces, and ordinary namespaced workload kinds (plus Namespace itself,
+# because the overlays declare their namespace in Git). A production project
+# should restrict repos, clusters, namespaces, and resource kinds even more
+# tightly and add RBAC roles per team.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: gitops-platform
+  namespace: argocd
+spec:
+  description: GitOps deployment platform lab (dev auto-sync, prod manual)
+  sourceRepos:
+    - https://example.invalid/gitops-deployment-platform.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: java-app-dev
+    - server: https://kubernetes.default.svc
+      namespace: java-app-prod-design-only
+  # The overlays declare Namespace objects in Git, so the project must allow
+  # this one cluster-scoped kind. Nothing else cluster-scoped is permitted.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Service
+    - group: apps
+      kind: Deployment

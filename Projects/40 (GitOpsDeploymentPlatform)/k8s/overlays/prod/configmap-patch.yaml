@@ -4,4 +4,4 @@ metadata:
   name: java-app-config
 data:
   APP_ENVIRONMENT: "prod-design-only"
-  APP_VERSION: "prod-placeholder"
+  APP_VERSION: "0.1.0"

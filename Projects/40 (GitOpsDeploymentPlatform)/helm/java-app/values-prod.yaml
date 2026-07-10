@@ -1,0 +1,6 @@
+# Prod (design-only) values — mirrors k8s/overlays/prod.
+replicaCount: 3
+
+config:
+  environment: prod-design-only
+  version: "0.1.0"

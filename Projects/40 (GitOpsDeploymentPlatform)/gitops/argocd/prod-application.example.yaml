@@ -1,18 +1,25 @@
-# Design-only production example. Sync is deliberately manual.
+# Design-only production example. Sync is deliberately manual: without an
+# `automated:` block, Argo CD only reports drift and a human approves each
+# release from the reviewed Git state. The repoURL is a placeholder and no
+# real cluster is targeted.
+# `path` assumes the repository root contains the folder
+# "40 (GitOpsDeploymentPlatform)"; adjust it to your actual repo layout.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: java-app-prod
   namespace: argocd
 spec:
-  project: default
+  # Guardrails come from gitops/argocd/appproject.example.yaml.
+  project: gitops-platform
   source:
     repoURL: https://example.invalid/gitops-deployment-platform.git
     targetRevision: main
-    path: k8s/overlays/prod
+    path: 40 (GitOpsDeploymentPlatform)/k8s/overlays/prod
   destination:
     server: https://kubernetes.default.svc
     namespace: java-app-prod-design-only
   syncPolicy:
     syncOptions:
+      # The namespace is declared in Git (k8s/overlays/prod/namespace.yaml).
       - CreateNamespace=false

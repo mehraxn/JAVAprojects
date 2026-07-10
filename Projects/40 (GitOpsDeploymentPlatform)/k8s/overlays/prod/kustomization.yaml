@@ -1,14 +1,22 @@
-# Design-only production overlay. No real cluster or production value is present.
+# Design-only production overlay: 3 replicas, prod config, everything in the
+# java-app-prod-design-only namespace (declared in Git via namespace.yaml).
+# No real cluster or production value is present; the matching Argo CD
+# Application uses manual sync as the release gate.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: java-app-prod-design-only
 resources:
+  - namespace.yaml
   - ../../base
-nameSuffix: -prod
-commonLabels:
-  environment: prod-design-only
+labels:
+  - includeSelectors: true
+    pairs:
+      environment: prod-design-only
 images:
-  - name: my-java-app
-    newTag: prod-placeholder
+  # A promotion commit changes newTag here (production should promote an
+  # immutable digest via newDigest instead).
+  - name: gitops-java-app
+    newTag: 0.1.0
 patches:
   - path: deployment-patch.yaml
   - path: configmap-patch.yaml

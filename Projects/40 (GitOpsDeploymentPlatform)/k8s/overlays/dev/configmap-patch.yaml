@@ -4,4 +4,4 @@ metadata:
   name: java-app-config
 data:
   APP_ENVIRONMENT: "dev"
-  APP_VERSION: "dev-placeholder"
+  APP_VERSION: "0.1.0"

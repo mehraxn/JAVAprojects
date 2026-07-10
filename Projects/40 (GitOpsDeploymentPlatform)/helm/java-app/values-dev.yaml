@@ -1,0 +1,6 @@
+# Dev values — mirrors k8s/overlays/dev.
+replicaCount: 1
+
+config:
+  environment: dev
+  version: "0.1.0"

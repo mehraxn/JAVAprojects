@@ -5,4 +5,4 @@ metadata:
 data:
   APP_PORT: "8080"
   APP_ENVIRONMENT: "base"
-  APP_VERSION: "base-placeholder"
+  APP_VERSION: "0.1.0"

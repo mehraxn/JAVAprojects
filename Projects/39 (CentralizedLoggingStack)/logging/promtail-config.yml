@@ -8,7 +8,7 @@ positions:
 
 clients:
   - url: http://loki:3100/loki/api/v1/push
-    tenant_id: fake
+    tenant_id: learning
 
 scrape_configs:
   - job_name: java-app-files
@@ -30,7 +30,8 @@ scrape_configs:
       - timestamp:
           source: timestamp
           format: RFC3339Nano
-      # Only bounded fields become indexed labels. event and traceId remain log fields.
+      # Only bounded fields become indexed labels. event and traceId stay in the structured body.
+      # Trace IDs are high-cardinality values, so they should be searched as parsed fields, not labels.
       - labels:
           level:
           service:

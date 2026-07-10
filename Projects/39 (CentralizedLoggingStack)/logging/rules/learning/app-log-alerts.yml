@@ -2,10 +2,10 @@ groups:
   - name: java-app-log-alerts
     rules:
       - alert: JavaAppErrorLogBurst
-        expr: sum(count_over_time({job="java-app"} |= "\"level\":\"ERROR\"" [5m])) > 5
+        expr: sum(count_over_time({job="java-app", service="java-app", environment="learning", level="ERROR"}[5m])) > 5
         for: 2m
         labels:
           severity: warning
         annotations:
           summary: "More than five Java application error logs in five minutes"
-          description: "This is an example threshold that must be reviewed against normal behavior."
+          description: "Demo rule using the bounded level label. Review thresholds before any real use."

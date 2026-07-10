@@ -1,3 +1,6 @@
 .git/
+.env
+out/
 *.class
 *.log
+TEST_RESULTS.md

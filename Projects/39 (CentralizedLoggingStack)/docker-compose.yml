@@ -7,6 +7,8 @@ services:
       LOG_FILE: /var/log/java-app/application.log
       APP_SERVICE: java-app
       APP_ENVIRONMENT: learning
+      ERROR_EVERY_N: ${ERROR_EVERY_N:-0}
+      HEARTBEAT_INTERVAL_MS: ${HEARTBEAT_INTERVAL_MS:-30000}
     volumes:
       - app-logs:/var/log/java-app
     networks:
@@ -46,6 +48,7 @@ services:
       - "${GRAFANA_HOST_PORT:-3000}:3000"
     volumes:
       - ./logging/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./logging/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     depends_on:
       - loki

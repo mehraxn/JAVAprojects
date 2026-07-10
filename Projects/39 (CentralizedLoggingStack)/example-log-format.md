@@ -41,4 +41,4 @@ Additional safe sample lines are in `examples/java-app.log.example`. They are sy
 
 ## Verification status
 
-The format and synthetic examples were reviewed as text only. JSON generation, parsing, ingestion, and search were not executed.
+The Java logger generated valid newline-delimited JSON and the synthetic examples were parsed successfully. Docker Compose ingestion, Loki search, Grafana dashboarding, and ruler evaluation still require a local stack run and should only be marked passed after real verification.

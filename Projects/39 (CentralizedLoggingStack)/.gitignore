@@ -3,3 +3,5 @@ out/
 *.class
 *.log
 !examples/*.log.example
+logs/
+.DS_Store

@@ -1,0 +1,11 @@
+# Build output
+out/
+test-out/
+*.class
+
+# Logs and local scratch
+logs/
+
+# OS noise
+.DS_Store
+Thumbs.db

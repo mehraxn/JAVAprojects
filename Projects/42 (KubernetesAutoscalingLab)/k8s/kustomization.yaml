@@ -1,0 +1,12 @@
+# Core lab resources. Apply with:   kubectl apply -k k8s/
+# Remove with:                       kubectl delete -k k8s/
+#
+# resource-limits-example.yaml and vpa.example.yaml are reference examples and
+# are deliberately NOT applied by default.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml

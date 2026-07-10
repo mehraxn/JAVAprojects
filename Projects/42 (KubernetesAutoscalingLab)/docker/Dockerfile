@@ -1,6 +1,7 @@
-# Multi-stage build for the autoscaling lab app.
-# NOTE: This image is NOT built in this repository. The commands to build and
-# push it are documented (as NOT executed) in README.md and TESTING.md.
+# Multi-stage build for the autoscaling lab app. Build from the project root:
+#   docker build -f docker/Dockerfile -t autoscaling-java-app:0.1.0 .
+# The image is local-only; it is loaded into kind with `kind load docker-image`
+# and never pushed to a registry.
 
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /workspace

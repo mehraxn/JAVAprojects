@@ -1,0 +1,14 @@
+# Keep the build context minimal: only src/ is needed by docker/Dockerfile.
+.git
+.gitignore
+.dockerignore
+out
+test-out
+*.class
+docs
+k8s
+load-test
+docker
+README.md
+TESTING.md
+TEST_RESULTS.md

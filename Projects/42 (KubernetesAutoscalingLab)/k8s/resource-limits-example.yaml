@@ -52,11 +52,13 @@ kind: Pod
 metadata:
   name: resource-anatomy-example
   labels:
-    app: autoscaling-java-app
+    # Deliberately NOT app=autoscaling-java-app, so this example pod can never
+    # receive traffic from the lab's Service if applied into the same namespace.
+    app: resource-anatomy-example
 spec:
   containers:
     - name: app
-      image: my-autoscaling-java-app:latest
+      image: autoscaling-java-app:0.1.0
       resources:
         requests:
           # REQUEST = guaranteed floor. The scheduler will only place this pod

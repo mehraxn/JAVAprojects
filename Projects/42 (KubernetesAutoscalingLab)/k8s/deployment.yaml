@@ -24,7 +24,9 @@ spec:
           type: RuntimeDefault
       containers:
         - name: app
-          image: my-autoscaling-java-app:latest
+          # Versioned local tag. Build it with docker/Dockerfile and load it
+          # into the cluster (e.g. `kind load docker-image`); never use latest.
+          image: autoscaling-java-app:0.1.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -61,3 +63,11 @@ spec:
             capabilities:
               drop:
                 - ALL
+          # The rootfs is read-only, so give the JVM a writable /tmp
+          # (it writes e.g. hsperfdata there).
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

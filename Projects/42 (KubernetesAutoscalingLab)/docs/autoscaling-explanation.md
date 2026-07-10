@@ -1,7 +1,8 @@
 # Autoscaling Explanation
 
 This document explains the concepts behind the manifests in [`../k8s/`](../k8s/).
-Nothing here was executed — there is no cluster in this repository.
+The behavior described here was verified on a local kind cluster — see
+[../TEST_RESULTS.md](../TEST_RESULTS.md) for the observed 1→5→1 scaling cycle.
 
 ## 1. CPU requests and limits
 
@@ -108,19 +109,17 @@ Full loop (see [../load-test/README.md](../load-test/README.md)):
 8. Load stops → CPU drops → after the 300s scale-down window, the HPA removes
    pods back toward `minReplicas: 1`.
 
-## 7. Commands you would normally use — NOT executed
-
-None of the following were run; there is no cluster.
+## 7. The commands that exercise all of this
 
 ```bash
-# NOT executed
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-kubectl apply -f k8s/hpa.yaml
+kubectl apply -k k8s/
 
 kubectl get hpa autoscaling-java-app --watch
 kubectl get pods -l app=autoscaling-java-app --watch
 kubectl top pods -l app=autoscaling-java-app
 kubectl describe hpa autoscaling-java-app
 ```
+
+The full workflow (kind cluster, metrics-server install, load test) is in
+[../TESTING.md](../TESTING.md); the recorded outcome of actually running it is
+in [../TEST_RESULTS.md](../TEST_RESULTS.md).

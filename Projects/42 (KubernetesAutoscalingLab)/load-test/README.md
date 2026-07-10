@@ -1,91 +1,94 @@
-# Load Testing (Conceptual)
+# Load Testing
 
-This directory explains **how** you would drive load at the app to trigger
-autoscaling. **No load test is run in this repository, and none should be run
-against any endpoint you do not own.** The commands below are documented for
-learning and are marked **NOT executed**.
+How to drive load at the app to trigger autoscaling. These commands were used
+to produce the observed 1→5→1 scaling cycle recorded in
+[../TEST_RESULTS.md](../TEST_RESULTS.md); the full plan (expected behavior,
+what evidence to record) is in [../docs/load-test-plan.md](../docs/load-test-plan.md).
+
+**Safety: only target a disposable cluster you own.** Never point a load
+generator at a public or production endpoint — that is indistinguishable from
+a denial-of-service attack.
 
 ## Why load testing matters here
 
-The Horizontal Pod Autoscaler scales on **average CPU utilization** across the
-Deployment's pods (see [../docs/autoscaling-explanation.md](../docs/autoscaling-explanation.md)).
-CPU only rises if something is actually doing work. The app exposes a
-`GET /work?ms=NNN` endpoint that deliberately burns CPU in a busy loop. A load
-generator sends many concurrent `/work` requests, average CPU climbs past the
-HPA target (60%), and the HPA adds pods. When the load stops, CPU falls and the
-HPA scales back down after its stabilization window.
+The HPA scales on **average CPU utilization** across the Deployment's pods.
+CPU only rises if something is doing work. The app's `GET /work?ms=NNN`
+endpoint burns CPU in a busy loop; a load generator sends many concurrent
+`/work` requests, average CPU climbs past the HPA target (60% of the 250m
+request), and the HPA adds pods. When the load stops, CPU falls and the HPA
+scales back down after its 300s stabilization window.
 
 ```
 load generator ──HTTP /work──> Service ──> Pods (CPU rises)
                                               │
                                      metrics-server samples CPU
                                               │
-                                             HPA compares to 60% target
+                                     HPA compares to 60% target
                                               │
-                                   scales Deployment 1 → … → up to 5 pods
+                                scales Deployment 1 ◀──▶ up to 5 pods
 ```
 
-## Two common tools
-
-### hey — simplest
-
-[`hey`](https://github.com/rakyll/hey) is a tiny HTTP load generator. Good for a
-quick "send N requests with C concurrency" burst.
+First, port-forward the Service (for hey/k6 from your machine):
 
 ```bash
-# NOT executed. Requires a running cluster, the app deployed, and a reachable URL.
-# -z  duration, -c concurrency. Target the CPU-burning endpoint.
-hey -z 3m -c 50 http://<app-url>/work?ms=200
+kubectl port-forward svc/autoscaling-java-app 8080:80
 ```
 
-### k6 — scriptable
+## hey — simplest
 
-[`k6`](https://k6.io) lets you script ramping stages, thresholds, and custom
-checks in JavaScript. A ramping profile is the realistic way to watch the HPA
-step up and then step down.
-
-`k6-script.js` (illustrative — **NOT executed**):
-
-```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
-
-export const options = {
-  stages: [
-    { duration: '1m', target: 20 },  // ramp up:   warm up, CPU begins to rise
-    { duration: '3m', target: 60 },  // steady:    hold load above the HPA target
-    { duration: '1m', target: 0 },   // ramp down: let CPU fall, watch scale-down
-  ],
-};
-
-export default function () {
-  const res = http.get('http://<app-url>/work?ms=200');
-  check(res, { 'status is 200': (r) => r.status === 200 });
-  sleep(0.5);
-}
-```
+[`hey`](https://github.com/rakyll/hey): `-z` duration, `-c` concurrency.
 
 ```bash
-# NOT executed.
+hey -z 3m -c 50 "http://localhost:8080/work?ms=200"
+```
+
+## k6 — scriptable
+
+[`k6`](https://k6.io) runs the ramping profile in
+[`k6-script.js`](k6-script.js) (1m ramp-up → 3m hold at 60 VUs → 1m
+ramp-down):
+
+```bash
 k6 run load-test/k6-script.js
+```
+
+Without a local k6 install, use the official image
+(`host.docker.internal` reaches your host's port-forward):
+
+```bash
+docker run --rm -i -e BASE_URL=http://host.docker.internal:8080 \
+  grafana/k6 run - < load-test/k6-script.js
+```
+
+Note: `host.docker.internal` works on Docker Desktop. On Linux, prefer the in-cluster load generator if the Dockerized k6 container cannot reach the host port-forward.
+
+## In-cluster generator — no tools needed, best load balancing
+
+A port-forward pins all traffic to a single pod, so once the HPA adds pods the
+new ones stay idle. Generating load **inside the cluster** against the Service
+DNS name spreads requests across all pods — this is what produced the recorded
+scaling cycle:
+
+```bash
+kubectl run load-generator --image=busybox:1.36 --restart=Never -- /bin/sh -c \
+  'for i in 1 2 3 4 5 6 7 8; do (while true; do wget -q -O /dev/null "http://autoscaling-java-app/work?ms=200"; done) & done; sleep 330'
+
+kubectl delete pod load-generator   # stop early / cleanup
 ```
 
 ## Watching the scaling while a test runs
 
-In a separate terminal you would observe the HPA and pods. **NOT executed:**
-
 ```bash
-# NOT executed — no cluster exists in this repo.
 kubectl get hpa autoscaling-java-app --watch
 kubectl get pods -l app=autoscaling-java-app --watch
 kubectl top pods -l app=autoscaling-java-app     # needs metrics-server
+kubectl describe hpa autoscaling-java-app        # events explain each rescale
 ```
 
 ## Safety rules
 
 - Only target a **disposable, in-cluster** URL that you own.
-- Use a **bounded** duration and concurrency, and a manual stop plan.
+- Use a **bounded** duration and concurrency, and know how to stop
+  (`Ctrl-C` / `kubectl delete pod load-generator`).
 - `MAX_WORK_MS` (ConfigMap) caps a single `/work` request so no pod is pinned
   indefinitely.
-- Never point a load generator at a public or production endpoint — that is
-  indistinguishable from a denial-of-service attack.

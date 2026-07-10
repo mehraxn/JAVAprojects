@@ -31,4 +31,4 @@ An inventory rejection stops processing. A payment rejection requests inventory 
 
 Docker Compose provides one private bridge network and exposes all four ports for learning. Kubernetes uses one namespace, four Deployments, four ClusterIP Services, and a non-sensitive ConfigMap for order-service URLs.
 
-No deployment or runtime validation was performed.
+Docker Compose runtime validation was performed and passed in the recorded test run. Kubernetes manifests were rendered and client dry-run validated; a live Kubernetes deployment was not performed.

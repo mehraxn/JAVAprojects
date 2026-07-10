@@ -88,6 +88,12 @@ Fast path (JDK 21 + curl, no Docker):
 ./scripts/local-integration-test.sh
 ```
 
+If ports 8080–8083 are already in use, the script supports overrides:
+
+```bash
+ORDER_PORT=18080 INVENTORY_PORT=18081 PAYMENT_PORT=18082 NOTIFICATION_PORT=18083   ./scripts/local-integration-test.sh
+```
+
 Full commands — including Docker Compose (build, health-gated startup, the
 order and rejection flows) and Kubernetes (`kubectl kustomize k8s/`, dry-run,
 optional kind workflow) — are in [TESTING.md](TESTING.md). Actual recorded

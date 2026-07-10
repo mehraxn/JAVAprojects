@@ -106,6 +106,14 @@ Against the running stack (from the host):
   container instead (curl installed into the ephemeral container for the
   test script).
 
+## Final packaging re-check
+
+Before creating the GitHub-ready ZIP, the integration script was made executable
+(`scripts/local-integration-test.sh`) and updated to support custom ports, bounded
+curl timeouts, and clearer failure messages when a service cannot start. The
+outdated architecture note about no runtime validation was corrected. No generated
+`out/` directories or `.class` files are included in the final package.
+
 ## Known limitations
 
 - All state is in-memory; every restart resets stock, orders, payments, and

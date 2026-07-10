@@ -13,12 +13,21 @@ Requires JDK 21 and curl:
 ./scripts/local-integration-test.sh
 ```
 
-It compiles all four services, starts them on 8080–8083, and checks: health
-endpoints, the valid order flow (CONFIRMED, stock 10→8, notification
+It compiles all four services, starts them on 8080–8083 by default, and checks:
+health endpoints, the valid order flow (CONFIRMED, stock 10→8, notification
 recorded), payment rejection with inventory compensation (stock restored),
 downstream idempotency (identical retried reservation has one effect),
 unknown routes (404), wrong methods (405), and bad input (400). Exit code 0
 only if everything passes.
+
+If any default port is already in use, override the ports:
+
+```bash
+ORDER_PORT=18080 INVENTORY_PORT=18081 PAYMENT_PORT=18082 NOTIFICATION_PORT=18083   ./scripts/local-integration-test.sh
+```
+
+The script uses bounded curl timeouts and fails fast if a service cannot start,
+which makes port conflicts easier to diagnose.
 
 No JDK? Run it inside a container:
 

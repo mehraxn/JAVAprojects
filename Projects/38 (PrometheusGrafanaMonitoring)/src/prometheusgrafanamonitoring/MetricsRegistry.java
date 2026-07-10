@@ -15,12 +15,22 @@ public class MetricsRegistry {
     private final Map<RequestKey, Long> requestCounts = new LinkedHashMap<>();
     private final long[] durationBucketCounts = new long[DURATION_BUCKETS.length];
     private final long startedAtNanos = System.nanoTime();
+    private final String version;
     private long durationCount;
     private double durationSum;
 
+    public MetricsRegistry(String version) {
+        this.version = version == null || version.isBlank() ? "unknown" : version.trim();
+    }
+
+    /**
+     * Records one handled request. {@code route} must be a bounded, stable
+     * route name ("/", "/health", "/metrics", "/work", or "not_found") —
+     * never a raw URL, or every unique path would create a new time series.
+     */
     public synchronized void recordRequest(
-            String method, String path, int status, double durationSeconds) {
-        RequestKey key = new RequestKey(method, path, status);
+            String method, String route, int status, double durationSeconds) {
+        RequestKey key = new RequestKey(method, route, status);
         requestCounts.put(key, requestCounts.getOrDefault(key, 0L) + 1L);
 
         durationCount++;
@@ -47,7 +57,7 @@ public class MetricsRegistry {
         for (Map.Entry<RequestKey, Long> entry : requestCounts.entrySet()) {
             RequestKey key = entry.getKey();
             output.append("http_requests_total{method=\"").append(escapeLabel(key.method))
-                    .append("\",path=\"").append(escapeLabel(key.path))
+                    .append("\",route=\"").append(escapeLabel(key.route))
                     .append("\",status=\"").append(key.status).append("\"} ")
                     .append(entry.getValue()).append('\n');
         }
@@ -87,7 +97,7 @@ public class MetricsRegistry {
         output.append("process_uptime_seconds ").append(uptime).append('\n');
         output.append("# HELP app_info Static information about the example application.\n");
         output.append("# TYPE app_info gauge\n");
-        output.append("app_info{version=\"learning\"} 1\n");
+        output.append("app_info{version=\"").append(escapeLabel(version)).append("\"} 1\n");
     }
 
     private String escapeLabel(String value) {
@@ -98,12 +108,12 @@ public class MetricsRegistry {
 
     private static final class RequestKey {
         private final String method;
-        private final String path;
+        private final String route;
         private final int status;
 
-        private RequestKey(String method, String path, int status) {
+        private RequestKey(String method, String route, int status) {
             this.method = method;
-            this.path = path;
+            this.route = route;
             this.status = status;
         }
 
@@ -115,12 +125,12 @@ public class MetricsRegistry {
             if (!(other instanceof RequestKey key)) {
                 return false;
             }
-            return status == key.status && method.equals(key.method) && path.equals(key.path);
+            return status == key.status && method.equals(key.method) && route.equals(key.route);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(method, path, status);
+            return Objects.hash(method, route, status);
         }
     }
 }

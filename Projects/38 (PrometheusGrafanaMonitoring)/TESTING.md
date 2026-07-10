@@ -1,58 +1,139 @@
-# Testing Prometheus Grafana Monitoring
+# Testing — Prometheus Grafana Monitoring
 
-No Java, Docker, Compose, Prometheus, Grafana, scrape, PromQL, alert, or dashboard process was executed while preparing this project.
+Exact commands to validate this lab. Results actually observed with these
+commands are recorded honestly in [TEST_RESULTS.md](TEST_RESULTS.md).
+Commands use POSIX shell syntax; on Windows use Git Bash (or `curl.exe` from
+PowerShell). Run everything from this project folder.
 
-## Static validation checklist
+## A) Java-only validation
 
-- [ ] Review Java metric HELP/TYPE lines and sample formatting.
-- [ ] Confirm histogram buckets are cumulative and include count/sum.
-- [ ] Confirm request labels are bounded.
-- [ ] Confirm dashboard JSON parses and panel queries use emitted metrics.
-- [ ] Confirm alert expressions have deliberate thresholds and `for` durations.
-- [ ] Confirm provisioning UIDs and paths agree.
+Requires JDK 21 (or run inside an `eclipse-temurin:21-jdk` container):
 
-## File existence checks
+```bash
+javac -Xlint:all -Werror --add-modules jdk.httpserver -d out src/prometheusgrafanamonitoring/*.java
 
-- [ ] Java source, `Dockerfile`, and `docker-compose.yml` exist.
-- [ ] `monitoring/prometheus.yml` exists.
-- [ ] `monitoring/alert-rules.yml` exists.
-- [ ] Dashboard JSON and both provisioning files exist.
-- [ ] `app-metrics-example.md`, `.env.example`, `README.md`, and `TESTING.md` exist.
+APP_PORT=8080 APP_VERSION=0.1.0 \
+  java --add-modules jdk.httpserver -cp out prometheusgrafanamonitoring.Main
+```
 
-## Configuration review checklist
+In another terminal:
 
-- [ ] Prometheus rule-file path matches the Compose mount.
-- [ ] Java target hostname/port matches the Compose app service.
-- [ ] Grafana reaches `prometheus:9090` on the internal network.
-- [ ] Dashboard provider path matches its mounted directory.
-- [ ] Persistent volumes and host-port overrides are intentional.
-- [ ] Image versions are explicit and reviewed before use.
+```bash
+curl -i http://localhost:8080/
+curl -i http://localhost:8080/health
+curl -i http://localhost:8080/metrics
+curl -i http://localhost:8080/work
+curl -i "http://localhost:8080/work?ms=100"
+curl -i "http://localhost:8080/work?fail=1"
+curl -i http://localhost:8080/unknown
+curl -i http://localhost:8080/health/test
+curl -i -X POST http://localhost:8080/health
+```
 
-## Security checks
+Expected:
 
-- [ ] No real secret, credential, API key, or token is present.
-- [ ] No production Prometheus, Grafana, or application endpoint is present.
-- [ ] `.env` is ignored and the example password is an obvious placeholder.
-- [ ] Dashboard JSON contains no credentials or production data.
+- `/` → 200; `/health` → 200; `/work` → 200 `{"worked_ms":0}`
+- `/work?ms=100` → 200 after ~100ms (`ms` capped at 5000)
+- `/work?fail=1` → **500 intentionally**
+- `/metrics` → Prometheus text: `http_requests_total{method,route,status}`,
+  `http_request_duration_seconds_*`, `jvm_memory_*`,
+  `process_uptime_seconds`, `app_info{version="0.1.0"}`
+- `/unknown` and `/health/test` → 404 (metrics record `route="not_found"`)
+- `POST /health` (and `POST /metrics`) → 405
 
-## Commands normally used - NOT executed
+## B) Docker build
 
-```text
-javac --add-modules jdk.httpserver ...
+```bash
+docker build -t prometheus-grafana-java-app:0.1.0 .
+```
+
+## C) Docker Compose validation
+
+```bash
+cp .env.example .env
+# .env.example ships a local demo password (local-demo-password); edit if needed
 docker compose config
-docker compose build
-docker compose up
+docker compose up -d --wait     # healthchecks gate app -> prometheus -> grafana
+docker compose ps               # expect all three (healthy)
+```
+
+Then verify:
+
+```bash
+curl http://localhost:8080/health
+curl http://localhost:8080/metrics
+curl http://localhost:9090/-/ready
+curl http://localhost:3000/api/health
+```
+
+## D) Prometheus validation
+
+Open http://localhost:9090/targets and confirm `java-app` is UP, or via API:
+
+```bash
+curl -G http://localhost:9090/api/v1/query \
+  --data-urlencode 'query=up{job="java-app"}'
+
+curl -G http://localhost:9090/api/v1/query \
+  --data-urlencode 'query=http_requests_total'
+
+# alert rules loaded and evaluating:
+curl http://localhost:9090/api/v1/rules
+```
+
+## E) Generate traffic
+
+```bash
+curl http://localhost:8080/work
+curl "http://localhost:8080/work?ms=100"
+curl "http://localhost:8080/work?fail=1"
+```
+
+Repeat a few times; give Prometheus a scrape interval (~15s) to pick it up.
+Sustained `fail=1` traffic for 5+ minutes drives the `JavaAppHighErrorRatio`
+alert toward firing; sustained `ms=600` traffic drives `JavaAppHighLatency`.
+
+## F) Grafana validation
+
+Open http://localhost:3000 and log in with the credentials from `.env`.
+
+- **Datasource**: Connections → Data sources → "Prometheus" is provisioned
+  (uid `prometheus`, read-only).
+- **Dashboard**: Dashboards → Learning folder → "Java Application
+  Monitoring" — after traffic, the request-rate-by-route, error-ratio, p95,
+  heap, uptime, and version panels show data.
+
+Or via API:
+
+```bash
+curl -u admin:$GRAFANA_ADMIN_PASSWORD http://localhost:3000/api/datasources
+curl -u admin:$GRAFANA_ADMIN_PASSWORD "http://localhost:3000/api/search?query="
+```
+
+## G) promtool validation
+
+With promtool installed:
+
+```bash
 promtool check config monitoring/prometheus.yml
 promtool check rules monitoring/alert-rules.yml
 ```
 
-These commands require installed tooling and an approved local environment. None were executed.
+Without it, use the Prometheus image (mount so the rule-file path in the
+config resolves):
 
-## Expected results in a proper environment
+```bash
+docker run --rm -v "$PWD/monitoring:/etc/prometheus:ro" \
+  --entrypoint promtool prom/prometheus:v2.54.1 \
+  check config /etc/prometheus/prometheus.yml
+```
 
-- Java exposes valid Prometheus text at `/metrics`.
-- Prometheus reports both configured targets as up and stores samples.
-- Request counters/rates, duration quantiles, heap ratio, and uptime queries return sensible values.
-- Target failure moves the down alert through pending to firing after its duration.
-- Grafana provisions the data source and example dashboard without embedded fake data.
-- No notification is delivered until a separate Alertmanager path is configured.
+## H) Cleanup
+
+```bash
+docker compose down
+rm -rf out
+```
+
+Add `-v` to `docker compose down` to also delete the Prometheus/Grafana data
+volumes.

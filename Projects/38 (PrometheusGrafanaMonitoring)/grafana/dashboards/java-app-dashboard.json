@@ -47,7 +47,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 6,
+        "w": 8,
         "x": 0,
         "y": 0
       },
@@ -80,25 +80,102 @@
       },
       "fieldConfig": {
         "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "process_uptime_seconds{job=\"java-app\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Process Uptime",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 7,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "name"
+      },
+      "targets": [
+        {
+          "expr": "app_info{job=\"java-app\"}",
+          "legendFormat": "version {{version}}",
+          "refId": "A"
+        }
+      ],
+      "title": "App Version",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
           "unit": "reqps"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 9,
-        "x": 6,
-        "y": 0
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 5
       },
       "id": 2,
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{job=\"java-app\"}[5m]))",
-          "legendFormat": "requests/second",
+          "expr": "sum by (route) (rate(http_requests_total{job=\"java-app\"}[5m]))",
+          "legendFormat": "{{route}}",
           "refId": "A"
         }
       ],
-      "title": "HTTP Request Rate",
+      "title": "Request Rate by Route",
       "type": "timeseries"
     },
     {
@@ -115,10 +192,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 9,
-        "x": 15,
-        "y": 0
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 5
       },
       "id": 3,
       "targets": [
@@ -128,7 +205,7 @@
           "refId": "A"
         }
       ],
-      "title": "HTTP Error Ratio",
+      "title": "HTTP Error Ratio (drive with /work?fail=1)",
       "type": "timeseries"
     },
     {
@@ -143,10 +220,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 14
       },
       "id": 4,
       "targets": [
@@ -156,7 +233,7 @@
           "refId": "A"
         }
       ],
-      "title": "HTTP Duration p95",
+      "title": "HTTP Duration p95 (drive with /work?ms=100)",
       "type": "timeseries"
     },
     {
@@ -173,10 +250,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 9,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 14
       },
       "id": 5,
       "targets": [
@@ -193,9 +270,9 @@
   "refresh": "15s",
   "schemaVersion": 39,
   "tags": [
-    "example",
     "java",
-    "prometheus"
+    "prometheus",
+    "monitoring-lab"
   ],
   "templating": {
     "list": []
@@ -205,7 +282,7 @@
     "to": "now"
   },
   "timezone": "browser",
-  "title": "Java Application Monitoring Example",
-  "uid": "java-app-monitoring-example",
+  "title": "Java Application Monitoring",
+  "uid": "java-app-monitoring",
   "version": 1
 }

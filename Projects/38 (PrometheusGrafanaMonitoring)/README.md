@@ -1,85 +1,93 @@
 # Prometheus Grafana Monitoring
 
-## Description
+*A local Prometheus + Grafana monitoring lab for a Java service — real
+Prometheus-format metrics emitted by the app, a Compose stack that scrapes
+them, provisioned datasource/dashboard, alert rules over real metrics, and a
+demo `/work` endpoint to drive traffic, latency, and errors.*
 
-An educational monitoring stack for a small Java HTTP application. The app exposes Prometheus-format metrics, Prometheus scrapes and evaluates them, and Grafana is provisioned with a Prometheus data source and an example dashboard.
+## What this project is
 
-## Goal
+A hands-on lab for the complete metrics path: instrumentation → scrape →
+time-series storage → PromQL → alert-rule evaluation → dashboards. The whole
+stack runs locally with Docker Compose and was actually run and verified —
+see [TEST_RESULTS.md](TEST_RESULTS.md).
 
-The goal is to understand the complete metrics path—from instrumentation and target discovery through scraping, time-series storage, PromQL queries, alert-rule evaluation, and dashboard visualization.
+## What it includes
 
-## Technologies and concepts used
+- **Java 21 app** (built-in `HttpServer`, no dependencies) with `/`,
+  `/health`, `/metrics`, and a **`/work` demo endpoint**:
+  `/work` → 200, `/work?ms=100` simulates latency (capped at 5000ms),
+  `/work?fail=1` → intentional 500 for alert testing
+- **Real metrics**: `http_requests_total{method,route,status}` counter,
+  `http_request_duration_seconds` histogram, JVM heap gauges,
+  `process_uptime_seconds`, `app_info{version}` — with **bounded route
+  labels** (unknown paths record `route="not_found"`, never the raw URL)
+- **Prometheus** (`monitoring/prometheus.yml`) scraping the app every 15s
+- **Alert rules** (`monitoring/alert-rules.yml`) that use only emitted
+  metrics: target down, 5xx error ratio > 5%, p95 latency > 500ms, heap > 85%
+- **Grafana provisioning**: Prometheus datasource (stable uid `prometheus`)
+  and the dashboard `grafana/dashboards/java-app-dashboard.json` (target
+  status, request rate by route, error ratio, p95 latency, heap, uptime,
+  version)
+- **Docker Compose stack** with healthchecks on all three services and
+  health-gated startup (app → Prometheus → Grafana)
 
-- Java 21 built-in `HttpServer`
-- Prometheus text exposition format
-- Counters, gauges, histograms, labels, and cardinality
-- Prometheus targets, scraping, storage, PromQL, and alert rules
-- Grafana data-source and dashboard provisioning
-- Docker Compose service networking and persistent volumes
-- JVM memory and process-uptime metrics concepts
+## Quick start
 
-## Project structure
+```bash
+cp .env.example .env      # ships a local demo Grafana password; edit if you like
+docker compose config     # sanity-check
+docker compose up -d --wait
 
-```text
-src/prometheusgrafanamonitoring/         Java app and metric registry
-Dockerfile                               Java application image
-docker-compose.yml                       App, Prometheus, and Grafana services
-monitoring/prometheus.yml                Targets and scrape settings
-monitoring/alert-rules.yml               Example alert expressions
-grafana/provisioning/                    Data-source/dashboard providers
-grafana/dashboards/java-app-dashboard.example.json
-app-metrics-example.md                   Metric contract and PromQL guide
-.env.example                             Placeholder local settings
-README.md                                Project documentation
-TESTING.md                               Validation guide
+# generate traffic
+curl "http://localhost:8080/work?ms=100"
+curl "http://localhost:8080/work?fail=1"
+
+# look around
+open http://localhost:9090/targets    # java-app should be UP
+open http://localhost:3000            # login from .env; dashboard is provisioned
+
+docker compose down
 ```
 
-## Important files explained
+The app image is the versioned local tag `prometheus-grafana-java-app:0.1.0`
+(never `latest`); Prometheus and Grafana images are pinned versions.
 
-- `Main.java` exposes `/`, `/health`, and `/metrics` and records bounded request labels.
-- `MetricsRegistry.java` emits request counters, request-duration histogram data, JVM heap gauges, uptime, and app information.
-- `prometheus.yml` scrapes Prometheus itself and `app:8080` every 15 seconds.
-- `alert-rules.yml` demonstrates target-down, HTTP error-ratio, and heap-usage alerts.
-- Grafana provisioning creates a Prometheus data source and loads the example dashboard.
-- The dashboard JSON defines target, traffic, errors, p95 duration, and heap panels without embedded data.
+## Route behavior (exact matching)
 
-## Intended real-environment workflow
+`HttpServer` contexts are prefix-matched, so handlers enforce exact paths:
+`/health/test` and `/unknown` return 404 (recorded as `route="not_found"`),
+wrong methods return 405, and `/work?fail=1` returns 500 on purpose.
 
-For an approved local lab, copy `.env.example` to ignored `.env`, replace the Grafana password placeholder, inspect `docker compose config`, build the Java image, and start the services. A developer would inspect `/metrics`, check Prometheus targets and rules, run PromQL queries, and then review each provisioned Grafana panel and empty-data state.
+## What is implemented (and verified)
 
-Alert thresholds must be tuned against real behavior and ownership. No Alertmanager is included, so rule evaluation would not deliver notifications.
+Everything in [TEST_RESULTS.md](TEST_RESULTS.md) was actually run on
+2026-07-10: compile, all endpoint behaviors, Docker build, `promtool check
+config/rules`, the full Compose stack reaching all-healthy, Prometheus
+scraping the app (`up == 1`, PromQL returning real counts), and Grafana's
+provisioned datasource + dashboard confirmed via its API. Alert rules were
+loaded and evaluating; no alert was driven all the way to firing.
 
-## Prepared but not executed
+## What is not production-grade
 
-- Java instrumentation, Dockerfile, Compose stack, Prometheus target/rules, Grafana provisioning, and example dashboard were prepared.
-- The dashboard JSON and metric/query relationships were prepared as source only.
-- Java, Docker, Compose, Prometheus, Grafana, scraping, querying, alerting, and dashboard import were not executed.
-- No sample was stored, rule fired, panel rendered, or service deployed.
+- **No Alertmanager** — rules evaluate, but nothing routes notifications.
+- **No long-term storage** — a single local Prometheus volume.
+- **No auth beyond the local Grafana password**; nothing is TLS-protected.
+- **No cloud deployment, no SLO process** — thresholds are demo values, not
+  measured SLOs.
+- The hand-rolled metrics registry is educational; production Java should use
+  a maintained instrumentation library (e.g. Micrometer or the Prometheus
+  Java client).
 
-## Manual validation checklist
+## How to validate
 
-- [ ] Confirm metric names/types follow Prometheus conventions.
-- [ ] Confirm label values remain bounded and exclude user/request identifiers.
-- [ ] Confirm Prometheus target and Compose app hostname/port agree.
-- [ ] Confirm alert queries reference emitted metrics.
-- [ ] Confirm Grafana data-source UID matches dashboard references.
-- [ ] Inspect dashboard units, legends, time ranges, and no-data behavior.
-- [ ] Review thresholds and notification ownership before enabling alerts.
-
-## Common mistakes avoided
-
-- No real Grafana password is committed.
-- Dashboard JSON contains no fabricated data or success screenshot.
-- High-cardinality identifiers are not metric labels.
-- Alert rules include duration windows instead of firing on one brief sample.
-- Example thresholds are not described as production SLOs.
-- Alert evaluation is distinguished from notification delivery.
+Exact commands: [TESTING.md](TESTING.md). Recorded results:
+[TEST_RESULTS.md](TEST_RESULTS.md). Metric semantics and PromQL guide:
+[app-metrics-example.md](app-metrics-example.md).
 
 ## Possible future improvements
 
-- Replace the educational registry with maintained Java instrumentation.
-- Add garbage-collection, thread, CPU, and dependency metrics selectively.
-- Add Alertmanager only with reviewed routing and ownership.
-- Add recording rules for frequently used queries.
-- Add configuration validation and dashboard-schema checks to CI.
-- Add measured SLO-based alerts after collecting representative data.
+- Alertmanager with reviewed routing/ownership.
+- Recording rules for frequently used queries; GC/thread/CPU metrics.
+- Configuration validation and dashboard-schema checks in CI.
+- Measured SLO-based alerts after collecting representative data.

@@ -23,6 +23,19 @@ groups:
           summary: "Java application HTTP error ratio is above 5%"
           description: "The example threshold has been exceeded for five minutes."
 
+      - alert: JavaAppHighLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="java-app"}[5m]))
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Java application p95 latency is above 500ms"
+          description: "Drive this locally with /work?ms=600 traffic; tune the threshold for real workloads."
+
       - alert: JavaAppHighHeapUsage
         expr: |
           sum(jvm_memory_used_bytes{job="java-app",area="heap"})

@@ -3,19 +3,29 @@ package kubernetesdeploymentjavaapp;
 public class AppConfig {
     private final int port;
     private final String environment;
+    private final String version;
     private final String message;
+    private final boolean secretConfigured;
 
-    private AppConfig(int port, String environment, String message) {
+    private AppConfig(int port, String environment, String version, String message,
+            boolean secretConfigured) {
         this.port = port;
         this.environment = environment;
+        this.version = version;
         this.message = message;
+        this.secretConfigured = secretConfigured;
     }
 
     public static AppConfig fromEnvironment() {
+        // The optional Secret value is read only to detect its presence.
+        // It is deliberately never stored or exposed by the application.
+        String demoToken = System.getenv("APP_DEMO_TOKEN");
         return new AppConfig(
                 readPort(System.getenv("APP_PORT")),
                 readText("APP_ENVIRONMENT", "learning", 40),
-                readText("APP_MESSAGE", "Hello from Kubernetes", 200));
+                readText("APP_VERSION", "0.1.0", 40),
+                readText("APP_MESSAGE", "Hello from Kubernetes", 200),
+                demoToken != null && !demoToken.isBlank());
     }
 
     private static int readPort(String value) {
@@ -53,7 +63,16 @@ public class AppConfig {
         return environment;
     }
 
+    public String getVersion() {
+        return version;
+    }
+
     public String getMessage() {
         return message;
+    }
+
+    /** Whether the optional APP_DEMO_TOKEN secret is set — never its value. */
+    public boolean isSecretConfigured() {
+        return secretConfigured;
     }
 }

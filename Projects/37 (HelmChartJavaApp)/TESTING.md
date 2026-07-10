@@ -1,58 +1,105 @@
-# Testing Helm Chart Java App
+# Testing — Helm Chart Java App
 
-No Helm, kubectl, Kubernetes, cluster, template-rendering, release, or application command was executed while preparing this project.
+Exact commands to validate this chart. Results actually observed with these
+commands are recorded honestly in [TEST_RESULTS.md](TEST_RESULTS.md).
+Commands use POSIX shell syntax; on Windows use Git Bash or PowerShell
+equivalents. Run everything from this project folder.
 
-## Static validation checklist
+## A) Helm lint
 
-- [ ] Review Go-template delimiters, indentation, and whitespace control.
-- [ ] Confirm helper definitions and includes use matching names.
-- [ ] Confirm all `.Values` references exist.
-- [ ] Confirm Deployment and Service selectors share one helper.
-- [ ] Confirm optional template conditions are mutually understandable.
-- [ ] Review checksum, probes, resources, volumes, and security fields.
-
-## File existence checks
-
-- [ ] `Chart.yaml`, `values.yaml`, and `.helmignore` exist.
-- [ ] Deployment, Service, ConfigMap, Secret example, and Ingress templates exist.
-- [ ] `_helpers.tpl` exists.
-- [ ] `docs/VALUES.md`, `README.md`, and `TESTING.md` exist.
-
-## Configuration review checklist
-
-- [ ] Chart and application versions are explicit.
-- [ ] Default image is the documented placeholder.
-- [ ] `containerPort` drives both the Pod port and `APP_PORT`.
-- [ ] Secret/Ingress defaults render no optional object.
-- [ ] Existing-Secret precedence is documented.
-- [ ] Ingress backend references the rendered Service and named port.
-
-## Security checks
-
-- [ ] No real secret, credential, certificate, or repository token is present.
-- [ ] No production endpoint, cluster, namespace, registry, or hostname is present.
-- [ ] Non-root, capability, privilege, and read-only-root settings are retained.
-- [ ] Documentation warns that Helm release data can expose supplied secrets.
-
-## Commands normally used - NOT executed
-
-```text
+```bash
 helm lint helm/java-app
-helm template learning-release helm/java-app
-helm template learning-release helm/java-app --set ingress.enabled=true
-helm install learning-release helm/java-app --namespace learning --create-namespace
-helm upgrade learning-release helm/java-app --namespace learning
-helm rollback learning-release 1 --namespace learning
-helm uninstall learning-release --namespace learning
 ```
 
-All commands are examples only and require installed tooling plus an approved disposable cluster for release operations.
+Expected: `0 chart(s) failed` (an INFO about a missing icon is cosmetic).
 
-## Expected results in a proper environment
+## B) Helm template — defaults
 
-- Helm lint accepts the chart.
-- Default rendering produces Deployment, Service, and ConfigMap only.
-- Ingress renders only when enabled.
-- Chart-created Secret rendering fails when its required value is empty.
-- External-Secret selection creates a reference without rendering a Secret.
-- A ConfigMap value change changes the Deployment checksum and triggers a rollout on upgrade.
+```bash
+helm template java-app helm/java-app
+```
+
+Expected: ServiceAccount, ConfigMap, Service, and Deployment render (no
+Secret, no Ingress). The Deployment carries a `checksum/config` annotation,
+`serviceAccountName`, `automountServiceAccountToken: false`, and
+`image: "helm-java-app:0.1.0"`.
+
+## C) Helm template — example values
+
+```bash
+helm template java-app helm/java-app -f examples/values-dev.yaml
+helm template java-app helm/java-app -f examples/values-prod.yaml
+helm template java-app helm/java-app -f examples/values-ingress.yaml
+helm template java-app helm/java-app -f examples/values-external-secret.yaml
+```
+
+Expected:
+
+- dev → 1 replica, `APP_ENVIRONMENT: "dev"`, lighter resources
+- prod → 3 replicas, `APP_ENVIRONMENT: "prod"`, stronger resources
+- ingress → an Ingress with `ingressClassName: nginx`, the annotation, host
+  `java-app.local`, `pathType: Prefix`
+- external-secret → **no** Secret rendered; the container gets
+  `APP_DEMO_TOKEN` via `secretKeyRef` to `java-app-existing-secret`; **no**
+  `checksum/secret` annotation (Helm cannot hash an external Secret)
+
+Chart-created Secret variant (renders the Secret + `checksum/secret`):
+
+```bash
+helm template java-app helm/java-app \
+  --set secret.create=true --set secret.demoToken=demo-only
+```
+
+## D) Schema validation — negative test
+
+```bash
+cat > /tmp/invalid-values.yaml <<'EOF'
+replicaCount: "two"
+containerPort: "abc"
+service:
+  type: WrongType
+EOF
+
+helm template java-app helm/java-app -f /tmp/invalid-values.yaml
+```
+
+Expected: Helm **fails** with schema errors for all three values
+(`got string, want integer` ×2, and the service.type enum violation).
+
+## E) Helm package
+
+```bash
+helm package helm/java-app --destination /tmp
+```
+
+Expected: `java-app-0.1.0.tgz` is produced (packaged artifacts are
+gitignored — don't commit them).
+
+## F) kubectl validation (optional, needs any reachable cluster context)
+
+```bash
+helm template java-app helm/java-app | kubectl apply --dry-run=client -f -
+```
+
+Expected: all four resources report `created (dry run)`; nothing is created.
+
+## G) Install / upgrade / rollback (optional, disposable cluster only)
+
+```bash
+helm install java-app helm/java-app
+helm upgrade java-app helm/java-app -f examples/values-prod.yaml
+helm rollback java-app 1
+helm uninstall java-app
+```
+
+Only run against a disposable local cluster (kind/minikube). Record the
+outcome in TEST_RESULTS.md only if you actually run it. Note the default
+image is a local placeholder — pods will only pull it if you build/load an
+image with that tag yourself.
+
+## H) Cleanup
+
+```bash
+rm -f /tmp/invalid-values.yaml
+rm -f /tmp/java-app-*.tgz
+```

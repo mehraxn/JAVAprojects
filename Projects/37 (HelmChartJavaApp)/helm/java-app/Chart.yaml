@@ -3,4 +3,4 @@ name: java-app
 description: Educational Helm chart for a small Java HTTP application
 type: application
 version: 0.1.0
-appVersion: "1.0.0"
+appVersion: "0.1.0"

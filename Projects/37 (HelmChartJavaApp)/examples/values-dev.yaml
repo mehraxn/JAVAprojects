@@ -1,0 +1,17 @@
+# Dev overrides: one replica, dev config, lighter resources.
+replicaCount: 1
+
+image:
+  tag: "0.1.0"
+
+config:
+  environment: dev
+  message: "Hello from the dev values file"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi

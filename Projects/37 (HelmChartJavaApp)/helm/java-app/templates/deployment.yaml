@@ -16,7 +16,16 @@ spec:
       annotations:
         # A ConfigMap value change updates this checksum and triggers a rollout.
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if and .Values.secret.create (not .Values.secret.existingSecret) }}
+        # Rolls pods when the chart-created Secret changes. An externally
+        # managed existingSecret cannot be hashed here — Helm only sees its
+        # name, not its content — so external rotation needs its own rollout
+        # mechanism (e.g. Reloader or a manual rollout restart).
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
     spec:
+      serviceAccountName: {{ include "java-app.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:

@@ -1,3 +1,12 @@
-app/out/
+# Build output
+out/
+test-out/
 *.class
+
+# Logs and local scratch
 *.log
+tmp/
+
+# OS noise
+.DS_Store
+Thumbs.db

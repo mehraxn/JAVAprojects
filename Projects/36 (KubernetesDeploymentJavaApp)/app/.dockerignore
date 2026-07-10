@@ -1,3 +1,8 @@
-out/
+# The Docker build context is the app/ folder (docker build -f app/Dockerfile app).
+# Only src/ is needed by the Dockerfile.
+.dockerignore
+Dockerfile
+out
+test-out
 *.class
 *.log

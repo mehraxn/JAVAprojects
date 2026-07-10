@@ -1,0 +1,14 @@
+# Safe default resources only. Apply with:   kubectl apply -k k8s/
+# Remove with:                                kubectl delete -k k8s/
+#
+# Deliberately NOT included:
+#   - ingress.yaml                (optional; needs an Ingress controller —
+#                                  apply manually with kubectl apply -f)
+#   - ../examples/secret.example.yaml  (example Secret; the Deployment treats
+#                                       it as optional and starts without it)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml

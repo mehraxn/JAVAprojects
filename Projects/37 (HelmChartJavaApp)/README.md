@@ -1,91 +1,96 @@
 # Helm Chart Java App
 
-## Description
+*A reusable, schema-validated Helm chart for deploying a Java HTTP app — safe
+defaults, parameterized Deployment/Service/ConfigMap/Secret/Ingress, service
+account support, rollout checksums, example values files, and honest
+lint/template validation results.*
 
-An educational Helm chart that parameterizes the Kubernetes deployment model of a small Java HTTP application. Safe defaults, reusable helpers, and optional resources demonstrate how charts reduce copied YAML while retaining reviewable output.
+## What this project is
 
-## Goal
+An educational-but-complete Helm chart showing how `Chart.yaml`,
+`values.yaml`, `values.schema.json`, helpers, and templates combine into
+rendered Kubernetes objects — and how to validate a chart before any cluster
+sees it.
 
-The goal is to understand how `Chart.yaml`, `values.yaml`, helpers, and templates combine into rendered Kubernetes objects, and why rendered output must be inspected before any installation or upgrade.
+## What it demonstrates
 
-## Technologies and concepts used
-
-- Helm chart API version 2
-- Go-template expressions and functions
-- Reusable naming/label helpers
-- Parameterized Deployment, Service, and ConfigMap
-- Optional Secret and Ingress rendering
-- ConfigMap checksum-driven rollout concept
-- Kubernetes probes, resources, and security contexts
-- Release, upgrade, rollback, and uninstall concepts
+- **Chart structure**: `Chart.yaml`, `values.yaml`, `.helmignore`,
+  `_helpers.tpl`, `NOTES.txt`
+- **Schema validation** (`values.schema.json`): wrong types/enums fail
+  `helm lint`/`template` — e.g. `replicaCount: "two"` is rejected
+- **Parameterized resources**: Deployment, Service, ConfigMap, optional
+  Secret, optional multi-host Ingress (class/annotations/TLS), ServiceAccount
+- **Rollout checksums**: `checksum/config` always, `checksum/secret` when the
+  chart creates the Secret (external secrets can't be hashed — documented)
+- **Security defaults**: non-root, read-only rootfs, dropped capabilities,
+  seccomp, no API token mounted (`serviceAccount.automount: false`)
+- **Probes + resources**, and an install/upgrade/rollback workflow
+- **Example values files** for dev, prod, ingress, and external-secret use
 
 ## Project structure
 
 ```text
 helm/java-app/
-  Chart.yaml
-  values.yaml
-  .helmignore
+  Chart.yaml  values.yaml  values.schema.json  .helmignore
   templates/
-    _helpers.tpl
-    deployment.yaml
-    service.yaml
-    configmap.yaml
-    secret.example.yaml
-    ingress.yaml
-docs/VALUES.md
-README.md
-TESTING.md
+    _helpers.tpl  NOTES.txt
+    deployment.yaml  service.yaml  configmap.yaml
+    secret.yaml  ingress.yaml  serviceaccount.yaml
+examples/
+  values-dev.yaml  values-prod.yaml
+  values-ingress.yaml  values-external-secret.yaml
+docs/values.md      full values reference
+README.md  TESTING.md  TEST_RESULTS.md
 ```
 
-## Important files explained
+## Quick validation
 
-- `Chart.yaml` defines chart identity, type, chart version, and app version.
-- `values.yaml` holds safe defaults for image, replicas, ports, configuration, probes, resources, security, Secret behavior, and Ingress behavior.
-- `_helpers.tpl` centralizes generated names, selector labels, standard labels, and Secret-name selection.
-- `deployment.yaml` consumes values and adds a ConfigMap checksum annotation for rollout changes.
-- `service.yaml` uses the same selector helper as the Deployment.
-- `configmap.yaml` renders non-sensitive application configuration.
-- `secret.example.yaml` renders only when explicitly enabled and requires a non-empty learning value.
-- `ingress.yaml` is disabled by default.
+```bash
+helm lint helm/java-app
+helm template java-app helm/java-app
+helm template java-app helm/java-app -f examples/values-dev.yaml
+helm template java-app helm/java-app -f examples/values-prod.yaml
+helm template java-app helm/java-app -f examples/values-ingress.yaml
+helm template java-app helm/java-app -f examples/values-external-secret.yaml
+```
 
-## Intended real-environment workflow
+All of these (plus the negative schema test, `helm package`, and a kubectl
+client dry-run) were actually run and passed on 2026-07-10 — see
+[TEST_RESULTS.md](TEST_RESULTS.md). Full command list with expected results:
+[TESTING.md](TESTING.md). Values reference: [docs/values.md](docs/values.md).
 
-In an approved environment, a developer would lint the chart, render defaults, render each intended override combination, inspect all generated YAML, validate it against Kubernetes schemas, confirm the active cluster context/namespace, and only then install into a disposable namespace. Upgrades should be diffed and rollback/uninstall behavior understood before use.
+## Install / upgrade / rollback (optional, real cluster)
 
-Real secrets must not be placed in `values.yaml`, `--set` arguments, shell history, or committed override files. The preferred learning path is an approved separately managed Secret referenced by name.
+```bash
+helm install java-app helm/java-app
+helm upgrade java-app helm/java-app -f examples/values-prod.yaml
+helm rollback java-app 1
+helm uninstall java-app
+```
 
-## Prepared but not executed
+Only for a disposable local cluster; no cluster install was performed for
+this repo's recorded results.
 
-- Chart metadata, values, helpers, five resource templates, provisioning defaults, and documentation were prepared.
-- Helm, kubectl, and Kubernetes were not installed or executed.
-- The chart was not linted, rendered, packaged, installed, upgraded, rolled back, or uninstalled.
-- No cluster object or Helm release data was created, and no successful deployment is claimed.
+## What is implemented vs example-only
 
-## Manual validation checklist
+**Implemented and validated:** the chart templates, schema validation, helper
+logic, example values, and safe defaults — all rendered and checked with real
+Helm/kubectl commands.
 
-- [ ] Confirm all template value paths exist in `values.yaml`.
-- [ ] Confirm Deployment and Service share selector labels.
-- [ ] Confirm rendered names remain valid Kubernetes names.
-- [ ] Render default, Ingress-enabled, chart-Secret, and external-Secret combinations.
-- [ ] Confirm empty chart-created secret values fail rendering.
-- [ ] Confirm ConfigMap changes alter the checksum annotation.
-- [ ] Review complete rendered YAML before any cluster operation.
+**Example-only / not production-grade:**
 
-## Common mistakes avoided
-
-- Secrets and Ingress are disabled by default.
-- Placeholder image and host values are explicit.
-- Repeated names/labels are centralized in helpers.
-- App and container ports derive from one value.
-- Chart-created and external Secret choices are separated.
-- A chart passing source review is not described as rendered, valid, or deployed.
+- The default image `helm-java-app:0.1.0` is a versioned local placeholder —
+  **no real app image is built or pushed** by this project. Production should
+  use a real registry reference and promote by immutable image digest.
+- No real cluster install unless you run the optional workflow yourself.
+- The chart Secret is a learning demo; production secrets belong in a secret
+  manager (or at minimum a separately managed Secret referenced by
+  `secret.existingSecret`).
+- Resource sizes and probe timings are learning defaults, not tuned values.
 
 ## Possible future improvements
 
-- Add `values.schema.json` for stronger input validation.
-- Add automated chart lint/render tests after Helm is approved.
-- Add configurable service accounts and NetworkPolicy.
-- Add immutable image-digest support.
-- Add release-diff and rollback exercises in a disposable cluster.
-- Document an approved external secret workflow.
+- Automated chart tests (`helm unittest` / chart-testing) in CI
+- NetworkPolicy and PodDisruptionBudget options
+- Autoscaling (HPA) support
+- Immutable image-digest values plumbing

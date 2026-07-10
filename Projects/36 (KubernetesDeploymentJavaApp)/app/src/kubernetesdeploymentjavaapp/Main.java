@@ -12,13 +12,22 @@ public class Main {
         AppConfig config = AppConfig.fromEnvironment();
         HttpServer server = HttpServer.create(new InetSocketAddress(config.getPort()), 0);
 
+        // HttpServer contexts are prefix-matched ("/health" would also catch
+        // "/health/test"), so every handler checks the exact path.
         server.createContext("/health", exchange ->
-                sendJson(exchange, 200, "{\"status\":\"UP\"}"));
+                respondExact(exchange, "/health", "{\"status\":\"UP\"}"));
         server.createContext("/ready", exchange ->
-                sendJson(exchange, 200, "{\"status\":\"READY\"}"));
-        server.createContext("/config", exchange -> sendJson(exchange, 200,
+                respondExact(exchange, "/ready", "{\"status\":\"READY\"}"));
+        // /config reports whether the optional Secret is configured but NEVER
+        // exposes the secret value itself.
+        server.createContext("/config", exchange -> respondExact(exchange, "/config",
                 "{\"environment\":\"" + escape(config.getEnvironment())
-                        + "\",\"message\":\"" + escape(config.getMessage()) + "\"}"));
+                        + "\",\"version\":\"" + escape(config.getVersion())
+                        + "\",\"message\":\"" + escape(config.getMessage())
+                        + "\",\"secretConfigured\":" + config.isSecretConfigured() + "}"));
+        // Catch-all for every unmatched path (including "/"): JSON 404.
+        server.createContext("/", exchange ->
+                send(exchange, 404, "{\"error\":\"endpoint not found\"}"));
 
         server.setExecutor(Executors.newFixedThreadPool(4));
         Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop(1)));
@@ -26,12 +35,21 @@ public class Main {
         System.out.println("Java app listening on port " + config.getPort());
     }
 
-    private static void sendJson(HttpExchange exchange, int status, String json) throws IOException {
-        if (!"GET".equals(exchange.getRequestMethod())) {
-            status = 405;
-            json = "{\"error\":\"Method not allowed\"}";
-            exchange.getResponseHeaders().set("Allow", "GET");
+    private static void respondExact(HttpExchange exchange, String expectedPath, String json)
+            throws IOException {
+        if (!expectedPath.equals(exchange.getRequestURI().getPath())) {
+            send(exchange, 404, "{\"error\":\"endpoint not found\"}");
+            return;
         }
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            exchange.getResponseHeaders().set("Allow", "GET");
+            send(exchange, 405, "{\"error\":\"method not allowed\"}");
+            return;
+        }
+        send(exchange, 200, json);
+    }
+
+    private static void send(HttpExchange exchange, int status, String json) throws IOException {
         byte[] body = json.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
         exchange.sendResponseHeaders(status, body.length);

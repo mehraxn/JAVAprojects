@@ -1,90 +1,102 @@
 # Kubernetes Deployment Java App
 
-## Description
+*A Kubernetes deployment lab for a Java HTTP app — Dockerized non-root
+container, Deployment/Service/ConfigMap, optional Secret handling that never
+exposes values, probes, resource limits, read-only root filesystem, and a
+Kustomize workflow — deployed and verified on a real local kind cluster.*
 
-A small dependency-free Java HTTP application accompanied by plain Kubernetes manifests for learning Deployments, Services, ConfigMaps, Secrets, probes, security contexts, resource settings, and optional Ingress routing.
+## What this project is
 
-## Goal
+A beginner-friendly but complete Kubernetes deployment lab: a dependency-free
+Java 21 HTTP app packaged into a hardened container and deployed with plain,
+readable manifests. Everything claimed here was actually run — see
+[TEST_RESULTS.md](TEST_RESULTS.md).
 
-The goal is to connect application behavior to Kubernetes configuration: the Java process exposes health/config endpoints, the Deployment manages Pods, the Service provides stable routing, and configuration remains outside the image.
+## What it demonstrates
 
-## Technologies and concepts used
+- **Dockerized Java app** — multi-stage build, JDK never ships, runs as uid 10001
+- **Deployment** (2 replicas) + **ClusterIP Service** + **ConfigMap-driven config**
+- **Optional Secret** — the Deployment references `APP_DEMO_TOKEN` with
+  `optional: true`, so pods start with or without it; the app reports **only**
+  `"secretConfigured": true/false` and never prints the value
+- **Readiness/liveness probes** on `/ready` and `/health`
+- **Resource requests/limits** and a hardened security context (non-root,
+  read-only root filesystem with a writable `/tmp` emptyDir, dropped
+  capabilities, seccomp)
+- **Kustomize workflow**: `kubectl apply -k k8s/`
 
-- Java 21 built-in `HttpServer`
-- Multi-stage Docker image definition
-- Kubernetes Deployment and rolling-update concepts
-- ClusterIP Service and label selectors
-- ConfigMap and optional Secret references
-- Readiness and liveness probes
-- Resource requests/limits and non-root security contexts
-- Optional networking.k8s.io/v1 Ingress
+## App endpoints (exact-matched)
+
+| Endpoint | Response |
+| --- | --- |
+| `GET /health` | 200 `{"status":"UP"}` |
+| `GET /ready` | 200 `{"status":"READY"}` |
+| `GET /config` | 200 environment/version/message + `secretConfigured` flag |
+| anything else (`/unknown`, `/health/test`, …) | 404 JSON |
+| non-GET on known routes | 405 |
 
 ## Project structure
 
 ```text
-app/
-  Dockerfile
-  src/kubernetesdeploymentjavaapp/
-k8s/
-  deployment.yaml
-  service.yaml
-  configmap.yaml
-  secret.example.yaml
-  ingress.yaml
-docs/kubernetes-explanation.md
-.gitignore
-README.md
-TESTING.md
+app/src/kubernetesdeploymentjavaapp/   Java app (Main + AppConfig)
+app/Dockerfile                         multi-stage non-root image
+k8s/kustomization.yaml                 safe defaults: kubectl apply -k k8s/
+k8s/deployment.yaml                    probes, resources, security, optional secret
+k8s/service.yaml                       ClusterIP (port 80 → 8080)
+k8s/configmap.yaml                     APP_PORT / APP_ENVIRONMENT / APP_VERSION / APP_MESSAGE
+k8s/ingress.yaml                       optional — NOT applied by default
+examples/secret.example.yaml           example Secret — NOT applied by default
+docs/kubernetes-explanation.md         concept walkthrough
+README.md  TESTING.md  TEST_RESULTS.md
 ```
 
-## Important files explained
+The example Secret lives under `examples/` (not `k8s/`) precisely so that
+`kubectl apply -k k8s/` can never apply it by accident.
 
-- `AppConfig.java` validates port, environment, and message variables.
-- `Main.java` exposes `/health`, `/ready`, and `/config` through standard Java.
-- `app/Dockerfile` builds the source and runs with numeric non-root identity `10001`.
-- `deployment.yaml` defines replicas, selectors, probes, resources, configuration, security controls, and writable temporary storage.
-- `service.yaml` maps stable Service port 80 to named container port 8080.
-- `configmap.yaml` supplies non-sensitive environment variables.
-- `secret.example.yaml` shows shape only and contains no real value.
-- `ingress.yaml` uses the documentation-only host `java-app.example.invalid`.
+## Quick start (kind)
 
-## Intended real-environment workflow
+```bash
+docker build -f app/Dockerfile -t kubernetes-java-app:0.1.0 app
 
-In an approved disposable cluster, a developer would first compile/test the Java app, build and scan `my-java-app:latest`, make that image available to the cluster, review the active context and namespace, validate every manifest, and inspect a diff. ConfigMap, Deployment, and Service should be introduced before optional Ingress. The example Secret must not be applied unchanged.
+kind create cluster --name k8s-java-app
+kind load docker-image kubernetes-java-app:0.1.0 --name k8s-java-app
+kubectl apply -k k8s/
+kubectl get pods
+kubectl port-forward svc/java-app 8080:80
+curl http://localhost:8080/health
+curl http://localhost:8080/config     # "secretConfigured": false
 
-Service traffic would reach Ready Pods on container port 8080. Ingress would require a separately installed compatible controller and suitable lab DNS.
+# optional: add the example secret, then restart pods to pick it up
+kubectl apply -f examples/secret.example.yaml
+kubectl rollout restart deployment/java-app
+curl http://localhost:8080/config     # "secretConfigured": true
 
-## Prepared but not executed
+# cleanup
+kubectl delete -k k8s/
+kind delete cluster --name k8s-java-app
+```
 
-- Java source, Dockerfile, Deployment, Service, ConfigMap, example Secret, Ingress, probes, resources, and security fields were prepared.
-- Java, Docker, kubectl, and Kubernetes were not executed.
-- No image was built/pushed and no manifest was validated by kubectl or submitted to an API server.
-- No Pod, Service, ConfigMap, Secret, Ingress, rollout, or probe result exists.
+The image is a versioned local tag (`kubernetes-java-app:0.1.0`, never
+`latest`) loaded straight into kind — no registry involved.
 
-## Manual validation checklist
+## What is implemented (and verified)
 
-- [ ] Confirm Deployment selector and Pod labels match exactly.
-- [ ] Confirm Service selector and named target port match the Pod.
-- [ ] Confirm `/health` and `/ready` exist in Java source.
-- [ ] Confirm ConfigMap/Secret names match references.
-- [ ] Confirm the Secret reference remains optional unless a real strategy is approved.
-- [ ] Review security context, resources, and `/tmp` emptyDir mount.
-- [ ] Verify context/namespace and image availability before any future apply.
+All of it was run on 2026-07-10 ([TEST_RESULTS.md](TEST_RESULTS.md)): compile,
+every endpoint behavior (including 404/405 and the secret-presence flag),
+Docker build, kustomize render + client dry-run, and the full kind workflow —
+2/2 pods Running under the hardened context, endpoints answered through the
+Service, and `secretConfigured` flipped to `true` after applying the example
+Secret. The cluster was deleted afterward.
 
-## Common mistakes avoided
+## What is not production-grade
 
-- No real secret, registry, cluster, or public host is embedded.
-- Application configuration is not baked into the image.
-- Service selectors and Deployment labels use the same stable key/value.
-- Readiness and liveness have separate meanings and endpoints.
-- A read-only root filesystem still provides bounded writable JVM temporary space.
-- Ingress is not described as functional without a controller.
+- No real database or state; the app is a demo.
+- Ingress is an optional example (needs a controller); no TLS.
+- No real secret manager — the example Secret is a lab-only stand-in, and
+  production should use External Secrets/sealed-secrets/a vault.
+- No cloud deployment; the image exists only locally.
 
-## Possible future improvements
+## How to validate
 
-- Add automated Java and manifest-schema tests.
-- Pin the image by immutable tag or digest.
-- Add namespace, service-account, and NetworkPolicy examples.
-- Add TLS only with an approved certificate and DNS workflow.
-- Add rollout/rollback exercises in a disposable cluster.
-- Replace the example Secret with an approved external secret mechanism.
+Exact commands with expected output: [TESTING.md](TESTING.md). Honest recorded
+results: [TEST_RESULTS.md](TEST_RESULTS.md).

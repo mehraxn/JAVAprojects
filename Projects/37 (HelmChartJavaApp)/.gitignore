@@ -1,0 +1,10 @@
+# Packaged chart artifacts
+*.tgz
+helm/java-app/charts/
+
+# Local scratch
+.tmp/
+
+# OS noise
+.DS_Store
+Thumbs.db

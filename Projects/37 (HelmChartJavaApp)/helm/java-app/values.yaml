@@ -1,15 +1,28 @@
 # Default values are for a disposable learning environment, not production.
+# Validated by values.schema.json — invalid types/enums fail helm lint/template.
 replicaCount: 2
 
 nameOverride: ""
 fullnameOverride: ""
 
 image:
-  repository: my-java-app
-  tag: latest
+  # Versioned local tag, never latest. Production should use a real registry
+  # reference and promote by immutable image digest.
+  repository: helm-java-app
+  tag: "0.1.0"
   pullPolicy: IfNotPresent
 
 containerPort: 8080
+
+serviceAccount:
+  # Create a dedicated ServiceAccount for the workload. If false and name is
+  # empty, the namespace's "default" ServiceAccount is used.
+  create: true
+  # Overrides the generated ServiceAccount name when set.
+  name: ""
+  # The app never talks to the Kubernetes API, so no token is mounted.
+  automount: false
+  annotations: {}
 
 config:
   environment: learning
@@ -28,10 +41,16 @@ service:
 
 ingress:
   enabled: false
-  className: nginx
-  host: java-app.example.invalid
-  path: /
-  pathType: Prefix
+  # Ingress class name, e.g. "nginx". Empty uses the cluster default.
+  className: ""
+  annotations: {}
+  hosts:
+    - host: java-app.local
+      paths:
+        - path: /
+          pathType: Prefix
+  # TLS is off by default; see examples/values-ingress.yaml for the shape.
+  tls: []
 
 probes:
   readiness:

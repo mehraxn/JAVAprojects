@@ -23,8 +23,9 @@ spec:
           type: RuntimeDefault
       containers:
         - name: java-app
-          # Placeholder image for a future local learning build.
-          image: my-java-app:latest
+          # Versioned local tag (never latest). Build it with app/Dockerfile
+          # and load it into the cluster (e.g. `kind load docker-image`).
+          image: kubernetes-java-app:0.1.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

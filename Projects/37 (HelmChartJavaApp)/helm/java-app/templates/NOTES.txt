@@ -1,0 +1,30 @@
+Thank you for installing {{ .Chart.Name }} (chart version {{ .Chart.Version }}).
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Service:   {{ include "java-app.fullname" . }} (port {{ .Values.service.port }})
+
+Try it out with a port-forward:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "java-app.fullname" . }} 8080:{{ .Values.service.port }}
+  curl http://localhost:8080/health
+
+{{- if .Values.ingress.enabled }}
+
+Ingress is ENABLED for:
+{{- range .Values.ingress.hosts }}
+  http://{{ .host }}
+{{- end }}
+(An Ingress controller must be installed for these hosts to work.)
+{{- else }}
+
+Ingress is disabled (set ingress.enabled=true to add one).
+{{- end }}
+
+{{- if .Values.secret.existingSecret }}
+
+NOTE: this release references the existing Secret
+"{{ .Values.secret.existingSecret }}". It must already exist in the
+"{{ .Release.Namespace }}" namespace with an APP_DEMO_TOKEN key, or pods
+will fail to start.
+{{- end }}

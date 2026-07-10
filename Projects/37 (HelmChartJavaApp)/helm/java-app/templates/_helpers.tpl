@@ -25,3 +25,11 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- define "java-app.secretName" -}}
 {{- default (include "java-app.fullname" .) .Values.secret.existingSecret -}}
 {{- end -}}
+
+{{- define "java-app.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "java-app.fullname" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}

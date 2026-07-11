@@ -27,6 +27,83 @@ public final class JsonUtil {
         return "{\"" + escape(key) + "\":\"" + escape(value) + "\"}";
     }
 
+    /**
+     * Minimal extractor for one string field from a small JSON object like
+     * {"text":"..."}. Returns null when the body is not a JSON object, the
+     * field is missing, or the value is not a valid JSON string.
+     *
+     * Deliberately tiny for this dependency-free demo — a real project should
+     * use a JSON library instead of hand-parsing.
+     */
+    public static String extractStringField(String json, String field) {
+        if (json == null || field == null) {
+            return null;
+        }
+        String trimmed = json.trim();
+        if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
+            return null;
+        }
+        int keyIndex = trimmed.indexOf("\"" + field + "\"");
+        if (keyIndex < 0) {
+            return null;
+        }
+        int colon = trimmed.indexOf(':', keyIndex + field.length() + 2);
+        if (colon < 0) {
+            return null;
+        }
+        int index = colon + 1;
+        while (index < trimmed.length() && Character.isWhitespace(trimmed.charAt(index))) {
+            index++;
+        }
+        if (index >= trimmed.length() || trimmed.charAt(index) != '"') {
+            return null;
+        }
+        StringBuilder value = new StringBuilder();
+        index++;
+        while (index < trimmed.length()) {
+            char current = trimmed.charAt(index);
+            if (current == '"') {
+                return value.toString();
+            }
+            if (current == '\\') {
+                index++;
+                if (index >= trimmed.length()) {
+                    return null;
+                }
+                char escaped = trimmed.charAt(index);
+                switch (escaped) {
+                    case '"' -> value.append('"');
+                    case '\\' -> value.append('\\');
+                    case '/' -> value.append('/');
+                    case 'n' -> value.append('\n');
+                    case 'r' -> value.append('\r');
+                    case 't' -> value.append('\t');
+                    case 'b' -> value.append('\b');
+                    case 'f' -> value.append('\f');
+                    case 'u' -> {
+                        if (index + 4 >= trimmed.length()) {
+                            return null;
+                        }
+                        try {
+                            value.append((char) Integer.parseInt(
+                                    trimmed.substring(index + 1, index + 5), 16));
+                        } catch (NumberFormatException invalid) {
+                            return null;
+                        }
+                        index += 4;
+                    }
+                    default -> {
+                        return null;
+                    }
+                }
+            } else {
+                value.append(current);
+            }
+            index++;
+        }
+        return null;
+    }
+
     private static String escape(String value) {
         return value.replace("\\", "\\\\")
                 .replace("\"", "\\\"")

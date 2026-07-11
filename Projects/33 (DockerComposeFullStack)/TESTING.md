@@ -1,58 +1,110 @@
-# Testing Docker Compose Full Stack
+# Testing — Docker Compose Full Stack
 
-No Docker, Compose, Java, Maven, Nginx, PostgreSQL, browser, HTTP, or JDBC command was executed while preparing this project.
+Exact commands to validate this stack. Results actually observed are recorded
+honestly in [TEST_RESULTS.md](TEST_RESULTS.md). Commands use POSIX shell
+syntax; on Windows use Git Bash or `curl.exe` from PowerShell. Run everything
+from this project folder.
 
-## Static validation checklist
+## A) Backend build (Maven)
 
-- [ ] Review Java package paths, validation, SQL resource handling, and JSON escaping.
-- [ ] Confirm frontend API paths match backend contexts.
-- [ ] Confirm Nginx proxy behavior preserves `/api` paths.
-- [ ] Confirm Deployment ordering relies on health conditions where documented.
-- [ ] Review schema constraints and note-length limits.
+The Docker build runs Maven for you, so no local JDK/Maven is required:
 
-## File existence checks
-
-- [ ] Backend Java source, `pom.xml`, and `Dockerfile` exist.
-- [ ] `frontend/index.html` and `frontend/nginx.conf` exist.
-- [ ] `database/init/001-schema.sql` exists.
-- [ ] `docker-compose.yml` and `.env.example` exist.
-- [ ] `docs/architecture.md`, `README.md`, and `TESTING.md` exist.
-
-## Configuration review checklist
-
-- [ ] All services share the intended bridge network.
-- [ ] Frontend, backend, and database ports match their consumers.
-- [ ] Database credentials and names agree across services.
-- [ ] Named volume and initialization mounts target correct paths.
-- [ ] Health checks use commands/endpoints available inside each image.
-- [ ] PostgreSQL has no accidental host-port publication.
-
-## Security checks
-
-- [ ] No real secret or credential is present.
-- [ ] No production host, database, or endpoint is present.
-- [ ] `.env` is ignored.
-- [ ] Database errors returned to clients do not reveal SQL or credentials.
-- [ ] Backend runs as a non-root user.
-
-## Commands normally used - NOT executed
-
-```text
-docker compose config
+```bash
 docker compose build
-docker compose up
-docker compose ps
-docker compose logs
-docker compose down
 ```
 
-These commands require installed tooling, reviewed local values, and an approved disposable environment.
+With a local Maven + JDK 21 you can also build directly:
 
-## Expected results in a proper environment
+```bash
+cd backend
+mvn -q -DskipTests package    # no unit tests exist yet; the jar lands in target/
+```
 
-- PostgreSQL becomes healthy before the backend reports healthy.
-- Nginx serves the frontend after the backend is available.
-- `/health` reports database-aware backend status.
-- Notes can be created and listed through the frontend/API path.
-- Recreated containers retain notes while the named volume remains.
-- Invalid notes receive controlled client errors, and unavailable PostgreSQL receives a controlled service-unavailable response.
+Running the backend outside Compose requires a reachable PostgreSQL and the
+`DB_URL`/`DB_USER`/`DB_PASSWORD` environment variables — inside Compose all
+of that is wired automatically, so the compose workflow below is the primary
+validation path.
+
+## B) Start the stack
+
+```bash
+cp .env.example .env        # local demo values (password is demo-only)
+docker compose config       # must exit 0
+docker compose up -d --wait # health-gated: postgres -> backend -> frontend
+docker compose ps           # expect all three services (healthy)
+```
+
+Useful logs if anything is off:
+
+```bash
+docker compose logs database
+docker compose logs backend
+docker compose logs frontend
+```
+
+## C) Verify the frontend
+
+```bash
+curl -i http://localhost:8080/
+```
+
+Expect 200 and the "Compose Notes" HTML page (or open it in a browser).
+
+## D) Verify the API through the reverse proxy
+
+```bash
+curl -i http://localhost:8080/api/health   # 200 {"status":"UP"}
+curl -i http://localhost:8080/api/notes    # 200 [] on first run
+```
+
+The backend is also reachable directly on its debug port
+(`http://localhost:8081/health`) — same responses without Nginx in front.
+
+## E) Create and list notes
+
+```bash
+curl -i -X POST http://localhost:8080/api/notes \
+  -H "Content-Type: application/json" \
+  -d '{"text":"first note created through compose"}'
+
+curl -i http://localhost:8080/api/notes
+```
+
+Expect 201 with the created note (id, text, createdAt), then a 200 array
+containing it.
+
+## F) Verify route and error correctness
+
+```bash
+curl -i http://localhost:8080/api/notes/extra          # 404 JSON
+curl -i http://localhost:8080/api/unknown              # 404 JSON
+curl -i http://localhost:8081/health/test              # 404 JSON (direct backend)
+curl -i -X POST http://localhost:8081/health           # 405, Allow: GET
+curl -i -X DELETE http://localhost:8080/api/notes      # 405, Allow: GET, POST
+curl -i -X POST http://localhost:8080/api/notes \
+  -H "Content-Type: application/json" -d 'not json'    # 400 JSON
+```
+
+Every backend/API error is JSON (`{"error":"..."}`) — no HTML error pages, no
+stack traces. Non-API frontend paths may return the frontend page because
+Nginx intentionally falls back to `index.html`.
+
+## G) Verify persistence
+
+```bash
+docker compose restart backend frontend
+curl -i http://localhost:8080/api/notes    # note still there
+
+docker compose down                        # containers removed, volume kept
+docker compose up -d --wait
+curl -i http://localhost:8080/api/notes    # note STILL there (named volume)
+```
+
+## H) Cleanup
+
+```bash
+docker compose down        # keeps the database volume
+```
+
+**Warning:** `docker compose down -v` also deletes the `postgres-data`
+volume — all notes are gone. Use it only when you want a clean slate.

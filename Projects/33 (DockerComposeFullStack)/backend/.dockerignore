@@ -2,3 +2,8 @@ target/
 .idea/
 *.iml
 *.log
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md

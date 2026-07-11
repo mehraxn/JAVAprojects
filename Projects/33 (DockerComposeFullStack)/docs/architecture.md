@@ -4,7 +4,7 @@
 
 ```text
 Browser
-  | http://localhost:8081
+  | http://localhost:8080
   v
 frontend (Nginx :80)
   | /api/* -> http://backend:8080
@@ -24,7 +24,7 @@ The browser cannot resolve Compose service names. It reaches Nginx through the f
 
 ### Frontend
 
-Nginx serves `index.html`. Its reverse-proxy rule sends `/api/` requests to the backend, keeping browser requests same-origin and avoiding unnecessary cross-origin configuration.
+Nginx serves `index.html`. Its reverse-proxy rule sends `/api/` requests to the backend, keeping browser requests same-origin and avoiding unnecessary cross-origin configuration. Non-API paths use the frontend fallback to `index.html`; backend/API paths return JSON errors when they are unknown or invalid.
 
 ### Backend
 
@@ -47,8 +47,8 @@ Health-based dependencies make the demonstration easier to follow, but they do n
 
 | Direction | Mapping or destination |
 |---|---|
-| Host to frontend | `${FRONTEND_HOST_PORT:-8081}` to container port 80 |
-| Host to backend | `${BACKEND_HOST_PORT:-8080}` to container port 8080 |
+| Host to frontend | `${FRONTEND_HOST_PORT:-8080}` to container port 80 (primary entry) |
+| Host to backend | `${BACKEND_HOST_PORT:-8081}` to container port 8080 (debug only) |
 | Frontend to backend | `backend:8080` on `app-network` |
 | Backend to database | `database:5432` on `app-network` |
 
@@ -64,4 +64,8 @@ This project does not include pgAdmin, TLS, login handling, production secrets, 
 
 ## Verification status
 
-This architecture was prepared and reviewed as configuration and source files only. No image, container, network, volume, endpoint, JDBC connection, or health check was executed.
+This architecture was actually run and verified on 2026-07-10: the stack
+built and reached all-healthy, the full note workflow worked through the
+reverse proxy against real PostgreSQL, and persistence survived both a
+restart and a complete down/up cycle. See
+[../TEST_RESULTS.md](../TEST_RESULTS.md).

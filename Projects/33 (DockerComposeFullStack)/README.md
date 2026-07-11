@@ -1,82 +1,104 @@
 # Docker Compose Full Stack
 
-## Description
+*A Docker Compose full-stack lab — browser → Nginx frontend/reverse proxy →
+Java backend API → PostgreSQL, with health-checked startup, named-volume
+persistence, environment-based configuration, and honest validation results.*
 
-An educational full-stack project connecting a static Nginx frontend, a small Java HTTP/JDBC backend, and PostgreSQL with Docker Compose. The application stores short notes to make service-to-service communication visible.
+## What this project is
 
-## Goal
+A three-service Compose stack for a tiny notes application. Nginx serves a
+static page and reverse-proxies `/api/*` to a dependency-light Java 21
+backend (built with Maven, JDBC to PostgreSQL). Everything claimed here was
+actually run — see [TEST_RESULTS.md](TEST_RESULTS.md).
 
-The goal is to understand how a browser-facing frontend, backend API, and persistent database are built and configured as separate services that communicate over a private Compose network.
+## Architecture
 
-## Technologies and concepts used
+```
+browser ──▶ frontend (nginx:1.27, port 8080)
+              ├── /            static index.html
+              ├── /api/health  ──▶ backend /health
+              └── /api/*       ──▶ backend (Java 21, HttpServer + JDBC)
+                                      └──▶ database (postgres:16-alpine)
+                                             └── named volume postgres-data
+```
 
-- Java 21 built-in `HttpServer`
-- Standard JDBC APIs and PostgreSQL driver packaging
-- Nginx static-file serving and reverse proxying
-- PostgreSQL schema initialization
-- Docker multi-stage builds
-- Docker Compose services, DNS, networks, volumes, dependencies, and health checks
-- Environment-variable configuration and placeholder secret handling
+- **Startup is health-gated**: postgres must pass `pg_isready` before the
+  backend starts; the backend must pass its own `/health` probe (a tiny Java
+  HTTP check, no curl needed in the JRE image) before Nginx starts.
+- **PostgreSQL is not exposed to the host** — only frontend (8080) and,
+  for debugging, the backend (8081) are published.
+- **Named volume** `postgres-data` keeps notes across `docker compose down`.
+
+## API
+
+| Route (public, via Nginx) | Backend route | Behavior |
+| --- | --- | --- |
+| `GET /api/health` | `GET /health` | 200 `{"status":"UP"}` or 503 if DB down |
+| `GET /api/notes` | same | 200 JSON array of notes |
+| `POST /api/notes` | same | body `{"text":"..."}` → 201 with created note |
+| unknown API routes | — | JSON `{"error":"Not found"}` 404 |
+
+Backend API routes are **exact-matched** (`/api/notes/extra` and `/health/test` are 404),
+wrong methods get 405 with an `Allow` header, invalid JSON gets 400, and a
+database outage returns a clean 503 JSON error — never an HTML error page or
+a stack trace. Non-API frontend routes are handled by the Nginx single-page
+app fallback (`try_files ... /index.html`), so the JSON 404 guarantee applies
+to backend/API routes.
+
+## Quick start
+
+```bash
+cp .env.example .env     # local demo values; edit if you like
+docker compose config    # sanity check
+docker compose up -d --wait
+
+open http://localhost:8080          # the notes UI
+curl http://localhost:8080/api/health
+curl -X POST http://localhost:8080/api/notes \
+  -H "Content-Type: application/json" -d '{"text":"first note"}'
+curl http://localhost:8080/api/notes
+
+docker compose down      # notes survive (named volume)
+docker compose down -v   # ONLY if you want to delete the data too
+```
 
 ## Project structure
 
 ```text
-backend/                         Java source, Maven file, and Dockerfile
-database/init/001-schema.sql     Initial notes table
-frontend/index.html              Static browser interface
-frontend/nginx.conf              Static serving and /api reverse proxy
-docker-compose.yml               Full-stack service topology
-.env.example                     Placeholder local configuration
-docs/architecture.md             Request and startup flow
-README.md                        Project documentation
-TESTING.md                       Validation guide
+docker-compose.yml            three services, healthchecks, named volume
+.env.example                  local demo config (copy to gitignored .env)
+frontend/index.html           notes UI (fetch-based)
+frontend/nginx.conf           static files + /api/* reverse proxy
+backend/                      Maven project (Java 21, PostgreSQL JDBC)
+  src/main/java/dockercomposefullstack/
+  Dockerfile                  multi-stage: Maven build → JRE runtime, non-root
+database/init/001-schema.sql  schema, applied on first startup only
+docs/architecture.md
+README.md  TESTING.md  TEST_RESULTS.md
 ```
 
-## Important files explained
+## What is implemented (and verified)
 
-- `backend/src/` contains configuration, model, repository, JSON, health-check, API-server, and entry-point classes.
-- `backend/pom.xml` declares the PostgreSQL JDBC runtime dependency.
-- `backend/Dockerfile` builds the backend and creates a non-root runtime image.
-- `frontend/nginx.conf` proxies browser `/api` requests to `backend:8080` on the Compose network.
-- `database/init/001-schema.sql` creates the notes table only when PostgreSQL initializes an empty data directory.
-- `docker-compose.yml` defines frontend, backend, database, health checks, the bridge network, and persistent volume.
+Everything in [TEST_RESULTS.md](TEST_RESULTS.md) was actually run on
+2026-07-10: the Maven build (inside the Docker build), compose config/build,
+health-gated startup to all-healthy, frontend page load, health/notes API
+through the reverse proxy, exact-route 404s and 405s, note creation and
+listing against real PostgreSQL, and **persistence across both
+`compose restart` and a full `down`/`up` cycle**.
 
-## Intended real-environment workflow
+## What is not production-grade
 
-For an approved local exercise, copy `.env.example` to ignored `.env`, replace the password placeholder, review `docker compose config`, build the backend image, and start the stack. A browser would open the frontend host port. Nginx would forward API calls to the backend service, and the backend would connect to PostgreSQL through the `database` service name.
+- **No TLS** and **no authentication** — anyone who can reach the port can
+  write notes.
+- **No migrations tool** — the schema loads only when the data volume is
+  first created.
+- **Local demo credentials** via `.env` (never committed); a real deployment
+  needs a secret manager.
+- The hand-rolled JSON field extractor in the backend is deliberately minimal
+  for a dependency-free demo; real projects should use a JSON library.
+- No Kubernetes or cloud deployment.
 
-The database is intentionally not published to the host. Frontend and backend host ports are configurable for local use.
+## How to validate
 
-## Prepared but not executed
-
-- Java API, JDBC repository, static frontend, Nginx proxy, schema, Compose networking, volumes, and health checks were prepared.
-- Docker, Compose, Java, Maven, Nginx, PostgreSQL, HTTP requests, and JDBC operations were not executed.
-- No image was built, service started, note saved, or health state observed.
-- No working-stack claim is made.
-
-## Manual validation checklist
-
-- [ ] Confirm `.env` is ignored and placeholders are replaced locally.
-- [ ] Review resolved ports, mounts, service names, and environment variables.
-- [ ] Confirm Nginx proxies `/api` to `backend:8080`.
-- [ ] Confirm JDBC uses `database:5432`, not container-local `localhost`.
-- [ ] Confirm database initialization and named-volume behavior.
-- [ ] Exercise health, list-notes, and create-note endpoints.
-- [ ] Recreate containers without deleting the volume and verify persistence.
-
-## Common mistakes avoided
-
-- No real password is committed.
-- PostgreSQL is not unnecessarily exposed to the host.
-- Browser requests do not attempt to resolve Compose hostnames.
-- Startup health is distinguished from simple container creation order.
-- Database initialization is not described as a migration system.
-- The root filesystem and service-user boundaries are documented honestly.
-
-## Possible future improvements
-
-- Add backend unit and integration tests.
-- Add bounded database retries and connection pooling.
-- Replace initialization SQL with versioned migrations.
-- Add update/delete operations and stronger HTTP request limits.
-- Add TLS, authentication, and an approved secret mechanism only with a clear learning scope.
+Exact commands with expected results: [TESTING.md](TESTING.md). Honest
+recorded results: [TEST_RESULTS.md](TEST_RESULTS.md).

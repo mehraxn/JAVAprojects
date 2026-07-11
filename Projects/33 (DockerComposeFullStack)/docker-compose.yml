@@ -25,6 +25,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: compose-fullstack-backend:0.1.0
     environment:
       APP_PORT: "8080"
       # "database" resolves through Compose's internal DNS.
@@ -35,7 +36,9 @@ services:
       database:
         condition: service_healthy
     ports:
-      - "${BACKEND_HOST_PORT:-8080}:8080"
+      # Direct backend access is optional (handy for debugging); the primary
+      # entry point is the frontend, which proxies /api/* to this service.
+      - "${BACKEND_HOST_PORT:-8081}:8080"
     networks:
       - app-network
     healthcheck:
@@ -55,7 +58,8 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "${FRONTEND_HOST_PORT:-8081}:80"
+      # The primary entry point: browser -> Nginx -> backend -> PostgreSQL.
+      - "${FRONTEND_HOST_PORT:-8080}:80"
     networks:
       - app-network
     healthcheck:

@@ -18,8 +18,12 @@ public class ApiServer {
         }
         this.repository = repository;
         this.server = HttpServer.create(new InetSocketAddress(port), 0);
+        // HttpServer contexts are prefix-matched ("/health" would also catch
+        // "/health/test"), so every handler checks the exact path, and the
+        // "/" context turns every unmatched path into a JSON 404.
         server.createContext("/health", this::handleHealth);
         server.createContext("/api/notes", this::handleNotes);
+        server.createContext("/", exchange -> notFound(exchange));
         server.setExecutor(Executors.newFixedThreadPool(4));
     }
 
@@ -32,7 +36,11 @@ public class ApiServer {
     }
 
     private void handleHealth(HttpExchange exchange) throws IOException {
-        if (!"GET".equals(exchange.getRequestMethod())) {
+        if (!exactPath(exchange, "/health")) {
+            notFound(exchange);
+            return;
+        }
+        if (!method(exchange, "GET")) {
             methodNotAllowed(exchange, "GET");
             return;
         }
@@ -43,6 +51,10 @@ public class ApiServer {
     }
 
     private void handleNotes(HttpExchange exchange) throws IOException {
+        if (!exactPath(exchange, "/api/notes")) {
+            notFound(exchange);
+            return;
+        }
         try {
             switch (exchange.getRequestMethod()) {
                 case "GET" -> sendJson(exchange, 200, JsonUtil.notes(repository.findAll()));
@@ -52,19 +64,38 @@ public class ApiServer {
         } catch (IllegalArgumentException exception) {
             sendJson(exchange, 400, JsonUtil.message("error", exception.getMessage()));
         } catch (SQLException exception) {
-            sendJson(exchange, 503, JsonUtil.message("error", "Database operation failed."));
+            // Never leak driver details or stack traces to clients.
+            sendJson(exchange, 503, JsonUtil.message("error", "Database unavailable."));
         }
     }
 
     private void createNote(HttpExchange exchange) throws IOException, SQLException {
-        String text = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String text = JsonUtil.extractStringField(body, "text");
+        if (text == null) {
+            sendJson(exchange, 400, JsonUtil.message("error",
+                    "Request body must be JSON like {\"text\":\"your note\"}."));
+            return;
+        }
         Note note = repository.add(text);
         sendJson(exchange, 201, JsonUtil.note(note));
     }
 
+    private static boolean exactPath(HttpExchange exchange, String expected) {
+        return expected.equals(exchange.getRequestURI().getPath());
+    }
+
+    private static boolean method(HttpExchange exchange, String expected) {
+        return expected.equals(exchange.getRequestMethod());
+    }
+
+    private void notFound(HttpExchange exchange) throws IOException {
+        sendJson(exchange, 404, JsonUtil.message("error", "Not found"));
+    }
+
     private void methodNotAllowed(HttpExchange exchange, String allowedMethods) throws IOException {
         exchange.getResponseHeaders().set("Allow", allowedMethods);
-        sendJson(exchange, 405, JsonUtil.message("error", "Method not allowed."));
+        sendJson(exchange, 405, JsonUtil.message("error", "Method not allowed"));
     }
 
     private void sendJson(HttpExchange exchange, int status, String json) throws IOException {

@@ -207,7 +207,7 @@ public final class BlogHttpServer {
 
     private String decode(String value) throws BadRequestException {
         try {
-            return URLDecoder.decode(value, StandardCharsets.UTF_8.name());
+            return URLDecoder.decode(value, StandardCharsets.UTF_8);
         } catch (IllegalArgumentException exception) {
             throw new BadRequestException("Invalid URL-encoded data.", exception);
         }

@@ -1,0 +1,10 @@
+out/
+test-out/
+*.class
+*.log
+tmp/
+*.tmp
+.DS_Store
+.idea/
+.vscode/
+*.iml

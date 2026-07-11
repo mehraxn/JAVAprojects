@@ -1,5 +1,16 @@
+# Local secrets - never commit (.env.example stays tracked)
 .env
+
+# Build output
 target/
 out/
 *.class
 *.log
+
+# OS files
+.DS_Store
+
+# IDE files
+.idea/
+.vscode/
+*.iml

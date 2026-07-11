@@ -4,3 +4,9 @@ target
 out
 *.class
 *.log
+.mvn
+mvnw
+mvnw.cmd
+*.md
+.idea
+.vscode

@@ -1,85 +1,80 @@
-# Dockerized Java PostgreSQL
+# Dockerized Java + PostgreSQL
 
 ## Description
 
-An educational Java project prepared to run an application and PostgreSQL as separate containers. It demonstrates how application code, JDBC-style persistence, environment variables, image construction, and Docker Compose fit together without presenting the setup as production-ready.
+A Dockerized Java CLI application that connects to PostgreSQL using JDBC. The app is a **one-shot container job**: it starts, connects to the database, ensures a starter task exists, lists all tasks, and exits with code 0. It is not a long-running API server.
 
-## Goal
+## What it demonstrates
 
-The goal is to understand the boundary between a Java application and its database: Java owns the model, service, repository, and connection logic; Compose supplies networking, configuration, and PostgreSQL persistence.
+- Maven packaging of a plain-JDBC Java 21 application
+- Docker multi-stage build (Maven build stage, slim JRE runtime stage)
+- Docker Compose service networking (the app reaches the database via the `database` service name, never `localhost`)
+- PostgreSQL 16 container with a `pg_isready` healthcheck
+- The app waiting for a healthy database via `depends_on: condition: service_healthy`
+- Environment-based database configuration (`DB_URL`, `DB_USER`, `DB_PASSWORD`)
+- Database initialization with `configs/init.sql` mounted into `/docker-entrypoint-initdb.d`
+- Named-volume persistence (`postgres_data`) that survives `docker compose down`
+- Safe `.env` handling: `.env` is gitignored, `.env.example` holds placeholders only, and the app refuses to run with the placeholder password
+- Non-root runtime container (`USER 10001`)
+- Failure behavior CI can trust: configuration or database errors exit non-zero
 
-## Technologies and concepts used
+## What is implemented
 
-- Java and standard `java.sql` APIs
-- Model, repository, service, and application-entry-point separation
-- PostgreSQL connection configuration through environment variables
-- Docker multi-stage image concepts
-- Docker Compose services, networks, dependencies, and volumes
-- Placeholder configuration and secret-handling awareness
+- Java CLI app (`Main`) with clear console output and correct exit codes
+- JDBC connection handling (`DatabaseConfig`, `DatabaseConnection`)
+- Task insert/list workflow (`Task`, `TaskService`, `TaskRepository`, `JdbcTaskRepository`)
+- 32 JUnit 5 unit tests that run without a database (in-memory repository fake)
+- `Dockerfile` (multi-stage), `docker-compose.yml`, `configs/init.sql`
+- Maven Wrapper (`mvnw` / `mvnw.cmd`)
+- Recorded validation evidence in `TEST_RESULTS.md`
 
 ## Project structure
 
 ```text
-src/                         Java application source
-pom.xml                      Maven build and PostgreSQL driver declaration
-Dockerfile                   Java application image definition
-docker-compose.yml           Application and PostgreSQL services
-configs/init.sql             Initial tasks table
-.env.example                 Placeholder local configuration
-README.md                    Project documentation
-TESTING.md                   Static and deferred validation guide
+src/main/java/dockerizedjavapostgres/   Application source
+src/test/java/dockerizedjavapostgres/   JUnit 5 unit tests (no database needed)
+Dockerfile                              Multi-stage build, non-root runtime
+docker-compose.yml                      app + database services, healthcheck, named volume
+configs/init.sql                        Schema initialization (tasks table)
+.env.example                            Placeholder credentials to copy to .env
+mvnw, mvnw.cmd, .mvn/wrapper/           Maven Wrapper
+README.md, TESTING.md, TEST_RESULTS.md  Documentation and validation evidence
 ```
 
-## Important files explained
+## How it works
 
-- `src/` contains the application entry point and the model, repository, service, and database-configuration classes.
-- `pom.xml` sets Java 21 compilation and declares the PostgreSQL JDBC driver as a runtime dependency.
-- `Dockerfile` describes how the Java application would be built and placed in a runtime image.
-- `docker-compose.yml` connects the application to PostgreSQL by Compose service name and defines database persistence.
-- `configs/init.sql` creates the learning tasks table when PostgreSQL initializes an empty data directory.
-- `.env.example` documents required variables without containing a real password.
-- `TESTING.md` separates checks that can be performed statically from commands requiring an installed runtime.
+1. `docker compose up --build` starts PostgreSQL with the schema from `configs/init.sql` and builds the app image with Maven inside Docker (no local Maven needed).
+2. Compose waits until the database healthcheck passes, then starts the app container.
+3. The app reads `DB_URL`, `DB_USER`, `DB_PASSWORD` from its environment, connects over JDBC, inserts a starter task if the table is empty, prints all tasks, and exits 0.
+4. The task data lives in the `postgres_data` named volume, so it survives `docker compose down` and reappears on the next run. Only `docker compose down -v` deletes it.
 
-## Intended real-environment workflow
+The database service intentionally publishes no host port; only containers on the Compose network can reach it. Configuration and database failures exit non-zero — the exact behaviors are validated in `TEST_RESULTS.md`.
 
-In an approved local lab, a developer would copy `.env.example` to an ignored `.env`, replace every placeholder, review the resolved Compose configuration, build the application image, start both services, inspect startup logs, and exercise the Java application. PostgreSQL would be reached through its Compose service name rather than `localhost` from inside the application container.
+## Quick start
 
-The Java code uses standard JDBC interfaces, but a compatible PostgreSQL JDBC driver must be available through the documented build/runtime setup. No driver was installed during preparation.
+```bash
+cp .env.example .env        # then set a real local password in .env
+docker compose up --build
+```
 
-## Prepared but not executed
+Windows PowerShell: `Copy-Item .env.example .env`. The app refuses to start while the placeholder password is unchanged.
 
-- Java source and JDBC-style classes were prepared.
-- Docker and Compose configuration were prepared.
-- PostgreSQL environment variables and persistent storage were described.
-- No Java compilation, image build, container startup, JDBC connection, SQL statement, or database initialization was executed.
-- No successful connection or deployed service is claimed.
+To run the unit tests without Docker (JDK 21 required, Maven Wrapper included):
 
-## Manual validation checklist
+```bash
+./mvnw test        # Windows: mvnw.cmd test
+```
 
-- [ ] Confirm `.env` is ignored and contains only disposable local values.
-- [ ] Confirm the password placeholder has been replaced before resolving Compose configuration.
-- [ ] Review application and database environment-variable names for exact agreement.
-- [ ] Confirm the JDBC URL uses the PostgreSQL Compose service name.
-- [ ] Confirm the PostgreSQL volume is mounted to the expected data directory.
-- [ ] Confirm the JDBC driver is deliberately provided before attempting a connection.
-- [ ] Review container logs without exposing credentials.
-- [ ] Verify application behavior and persistence only in an approved disposable environment.
+## What is not production-grade
 
-## Common mistakes avoided
+- No API server — this is a CLI demo job.
+- No authentication, no TLS.
+- No migration tool (Flyway/Liquibase); the schema comes from a single init script that only runs on first volume creation.
+- No connection pool; each operation opens a short-lived connection.
+- No cloud database, no secret manager — local demo credentials in `.env` only.
+- GitHub-ready does not mean production-ready.
 
-- No real database password is committed.
-- Compose requires an explicit password variable instead of silently accepting a default password.
-- The application does not assume that container-local `localhost` means PostgreSQL.
-- Database files are not stored only in the disposable container layer.
-- JDBC requirements are documented instead of claiming the standard JDK includes a PostgreSQL driver.
-- Container startup order is not described as proof that the database is immediately ready.
-- No successful Docker or database execution is claimed.
+## How to validate
 
-## Possible future improvements
-
-- Add automated repository and service tests.
-- Add bounded database connection retries and clearer startup diagnostics.
-- Introduce a reviewed migration mechanism.
-- Add connection pooling only when the learning scope justifies it.
-- Add container health checks and least-privilege database roles.
-- Replace local placeholders with an approved secret-delivery mechanism.
+- `TESTING.md` — exact commands for Maven tests, the Compose stack, the persistence check, and the failure exit-code checks.
+- `TEST_RESULTS.md` — the honest record of what was actually executed and the results.

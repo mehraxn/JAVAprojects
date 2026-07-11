@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class Order {
+public final class Order {
     public enum Status {
         CREATED,
         PAID,
@@ -35,8 +35,8 @@ public class Order {
             }
             checkedItems.put(productId, item.getValue());
         }
-        if (total == null || total.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Order total must be greater than zero.");
+        if (total == null || total.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Order total cannot be negative.");
         }
         if (createdAt == null) {
             throw new IllegalArgumentException("Order creation time cannot be null.");
@@ -93,7 +93,7 @@ public class Order {
         return new Order(id, cartId, items, total, createdAt, status);
     }
 
-    private String requireText(String value, String fieldName) {
+    private static String requireText(String value, String fieldName) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(fieldName + " cannot be empty.");
         }

@@ -1,0 +1,15 @@
+# Generated build output (created by scripts/test.* and TESTING.md commands)
+out/
+test-out/
+*.class
+*.log
+tmp/
+*.tmp
+
+# OS files
+.DS_Store
+
+# IDE files
+.idea/
+.vscode/
+*.iml

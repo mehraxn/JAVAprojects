@@ -1,76 +1,105 @@
-# Authentication System Testing
+# Testing the Authentication System
 
-These are educational service tests. Never use real passwords while testing this project.
+This guide lists the exact commands used to validate the project. The results of actually running them are recorded in `TEST_RESULTS.md`. Everything is dependency-free: only a JDK (21 used for validation) is required — no Maven, Gradle, or JUnit. All passwords below are throwaway local demo values — never use real passwords while testing this project.
 
-## Normal test cases
+Quick version: run `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell) — they perform steps A–E below.
 
-| Test | Action | Expected result |
-|---|---|---|
-| Register USER | Register valid username/password | User gets ID `U-1` and USER role |
-| Register ADMIN | Register another valid account | User gets ADMIN role |
-| Login | Submit correct credentials | Non-null session with future expiration |
-| Authenticate | Authenticate a current token | Defensive user copy returned |
-| Logout | Logout a current token | Returns `true`; authentication then returns `null` |
-| USER action | Use a valid USER token | User-protected action succeeds |
-| ADMIN action | Use a valid ADMIN token | Admin-protected action succeeds |
-| Admin as user | Use ADMIN token for USER action | Succeeds |
+## A) Clean
 
-## Password, edge-case, and invalid input test cases
+Linux/macOS/Git Bash:
 
-| Test | Input or action | Expected result |
-|---|---|---|
-| Duplicate username | Register `Alice` then `alice` | Second registration rejected |
-| Invalid username | Too short, spaces, or unsupported symbols | Rejected |
-| Short password | Fewer than 10 characters | Rejected |
-| Excessive password | More than 128 characters | Rejected |
-| Missing character class | No uppercase, lowercase, digit, or special character | Rejected |
-| Null role | Register without role | Rejected |
-| Different salts | Register two users with identical passwords | Stored salts and hashes differ |
-| Wrong password | Login with incorrect password | Returns `null` |
-| Unknown username | Login unknown account | Returns `null` |
-| Password cleanup | Inspect caller array after register/login | Every character is `\0` |
-| No sensitive output | Run demonstration | No password, salt, hash, or token is printed |
+```bash
+rm -rf out test-out
+```
 
-## Session and authorization tests
+Windows PowerShell:
 
-| Test | Action | Expected result |
-|---|---|---|
-| Unknown token | Authenticate unused token | Returns `null` |
-| Blank token | Authenticate/logout blank token | Rejected |
-| Expired session | Use short configured duration and wait past expiry | Authentication returns `null` and removes session |
-| Repeated logout | Logout same token twice | `true`, then `false` |
-| USER admin attempt | Call admin action with USER token | `SecurityException` |
-| Logged-out action | Call protected action after logout | `SecurityException` |
-| Null required role | Call `canAccess` with null role | Rejected |
-| Invalid session duration | Zero, negative, or null duration | Rejected |
-| Random tokens | Log in repeatedly | Tokens are nonempty and distinct |
+```powershell
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+```
 
-## Hashing tests
+## B) Strict compile — application
 
-| Test | Action | Expected result |
-|---|---|---|
-| Correct verification | Hash then verify same password | `true` |
-| Incorrect verification | Verify different password | `false` |
-| Invalid salt | Use malformed Base64 salt | Rejected |
-| Invalid expected hash | Use malformed Base64 hash | Rejected |
-| Missing algorithm | Run on provider without PBKDF2-HMAC-SHA256 | `GeneralSecurityException`; no weak fallback |
+```text
+javac -Xlint:all -Werror -d out src/authenticationsystem/*.java
+```
 
-## Manual testing checklist
+Every warning is an error; the build must be completely clean.
 
-- [ ] Compile all source files.
-- [ ] Run `Main` and verify role and logout output.
-- [ ] Register USER and ADMIN accounts.
-- [ ] Test every password-strength rule separately.
-- [ ] Test case-insensitive duplicate usernames.
-- [ ] Test correct, incorrect, unknown, expired, and revoked authentication.
-- [ ] Verify USER cannot perform the ADMIN action.
-- [ ] Verify input password arrays are cleared on success and failure.
-- [ ] Confirm no sensitive values appear in logs or output.
+## C) Strict compile — tests
 
-## Phase 2 validation review additions
+```text
+javac -Xlint:all -Werror -cp out -d test-out tests/authenticationsystem/*.java
+```
 
-| Test | Action | Expected result |
-|---|---|---|
-| Oversized login password | Submit more than 128 characters | Rejected and supplied password array is cleared |
-| Unauthorized USER | Call admin action with a valid USER session | `SecurityException`; session remains valid for USER actions |
-| Unknown or expired role check | Call `canAccess` | Returns `false`, never grants access |
+## D) Run automated tests
+
+Linux/macOS/Git Bash (classpath separator `:`):
+
+```bash
+java -cp "out:test-out" authenticationsystem.TestRunner
+```
+
+Windows PowerShell (classpath separator `;`):
+
+```powershell
+java -cp "out;test-out" authenticationsystem.TestRunner
+```
+
+Expected: `PASS` per test, a summary like `Tests passed: 46, failed: 0 (139 checks total)`, `RESULT: PASS`, and exit code 0. Any failure prints `FAIL` with the reason and exits 1. The suite takes a few seconds on purpose — PBKDF2 runs 120,000 iterations per hash. Session-expiry tests use the injected `MutableClock`; there is no `Thread.sleep` anywhere.
+
+## E) Run the CLI demos
+
+```text
+java -cp out authenticationsystem.Main help
+java -cp out authenticationsystem.Main demo
+java -cp out authenticationsystem.Main register-demo
+java -cp out authenticationsystem.Main login-demo
+java -cp out authenticationsystem.Main authorization-demo
+java -cp out authenticationsystem.Main expiry-demo
+```
+
+Expected:
+
+- `demo` — registers a USER, seeds a demo ADMIN, logs both in, shows the USER blocked from the ADMIN action, performs the ADMIN action, logs out, and shows the dead token. Only masked tokens are printed. Exit code 0.
+- `register-demo` — valid registration, case-insensitive duplicate rejection, weak-password rejection. Exit code 0.
+- `login-demo` — correct password issues a session; wrong password and unknown username both print `null`. Exit code 0.
+- `authorization-demo` — the full role matrix including an invalid token. Exit code 0.
+- `expiry-demo` — a 30-minute session checked at 10:00/10:29/10:31 via the injected Clock; instant, no waiting. Exit code 0.
+
+Error behavior (exit non-zero, message on stderr, no stack trace):
+
+```text
+java -cp out authenticationsystem.Main frobnicate     # unknown command
+java -cp out authenticationsystem.Main                # no command
+```
+
+## F) Scripts
+
+Linux/macOS/Git Bash:
+
+```bash
+./scripts/test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\test.ps1
+```
+
+Both scripts: clean → strict compile app → strict compile tests → TestRunner → demo → authorization-demo → expiry-demo, stopping at the first failure. `test.sh` picks the right classpath separator automatically, so it also works from Git Bash on Windows.
+
+## G) Cleanup
+
+Linux/macOS/Git Bash:
+
+```bash
+rm -rf out test-out
+```
+
+Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+```

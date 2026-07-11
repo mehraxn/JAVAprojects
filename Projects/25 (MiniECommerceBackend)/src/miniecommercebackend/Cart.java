@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class Cart {
+public final class Cart {
     private final String id;
     private final Map<String, Integer> quantitiesByProduct =
             new LinkedHashMap<String, Integer>();
@@ -37,6 +37,17 @@ public class Cart {
         return quantitiesByProduct.remove(requireProductId(productId)) != null;
     }
 
+    public void updateQuantity(String productId, int quantity) {
+        String id = requireProductId(productId);
+        if (!quantitiesByProduct.containsKey(id)) {
+            throw new IllegalArgumentException("Product is not in cart: " + id);
+        }
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Cart quantity must be positive.");
+        }
+        quantitiesByProduct.put(id, quantity);
+    }
+
     public Map<String, Integer> getItems() {
         return Collections.unmodifiableMap(
                 new LinkedHashMap<String, Integer>(quantitiesByProduct));
@@ -50,7 +61,7 @@ public class Cart {
         return copy;
     }
 
-    private String requireProductId(String productId) {
+    private static String requireProductId(String productId) {
         if (productId == null || productId.trim().isEmpty()) {
             throw new IllegalArgumentException("Product ID cannot be empty.");
         }

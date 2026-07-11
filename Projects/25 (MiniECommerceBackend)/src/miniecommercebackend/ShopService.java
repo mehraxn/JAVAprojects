@@ -23,6 +23,11 @@ public class ShopService {
         if (products.containsKey(product.getId())) {
             throw new IllegalArgumentException("Product ID already exists: " + product.getId());
         }
+        for (Product existing : products.values()) {
+            if (existing.getName().equalsIgnoreCase(product.getName())) {
+                throw new IllegalArgumentException("Product name already exists: " + product.getName());
+            }
+        }
         products.put(product.getId(), product.copy());
     }
 
@@ -109,7 +114,7 @@ public class ShopService {
         Order order = new Order("ORDER-" + nextOrderId, cart.getId(), items,
                 total, LocalDateTime.now(), Order.Status.CREATED);
         for (Map.Entry<String, Integer> item : items.entrySet()) {
-            products.get(item.getKey()).adjustStock(-item.getValue());
+            products.get(item.getKey()).decreaseStock(item.getValue());
         }
         orders.put(order.getId(), order);
         carts.remove(cart.getId());
@@ -134,7 +139,7 @@ public class ShopService {
                 }
             }
             for (Map.Entry<String, Integer> item : order.getItems().entrySet()) {
-                products.get(item.getKey()).adjustStock(item.getValue());
+                products.get(item.getKey()).increaseStock(item.getValue());
             }
         }
         order.setStatus(status);

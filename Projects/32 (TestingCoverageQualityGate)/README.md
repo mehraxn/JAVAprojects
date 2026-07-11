@@ -2,80 +2,90 @@
 
 ## Description
 
-A focused Java project demonstrating testable business logic, JUnit tests, JaCoCo coverage measurement, and a Maven verification gate without claiming that coverage alone proves software quality.
+A Java testing and coverage quality-gate lab: small, deterministic business logic covered by JUnit 5 tests, with Maven Surefire test execution, JaCoCo coverage reporting, and an enforced coverage threshold that fails the build when it is not met.
 
-## Goal
+## What it demonstrates
 
-The goal is to show how automated tests, a measurable line-coverage threshold, and human review criteria can work together as a quality gate for a small Java codebase.
+- JUnit 5 unit testing, including parameterized tests
+- The Maven test lifecycle (`test` and `verify`)
+- Maven Surefire test execution
+- JaCoCo coverage report generation
+- JaCoCo coverage enforcement (`jacoco:check` bound to `verify`)
+- A positive quality gate: the default 80% line-coverage threshold passes
+- A negative quality-gate validation: a temporarily stricter threshold fails the build on purpose
+- A GitHub Actions workflow template for the same gate in CI
 
-## Technologies and concepts used
+## What is implemented
 
-- Java 21 and `BigDecimal` money calculations
-- Small classes with validation and deterministic behavior
-- JUnit 5 unit tests
-- Maven build lifecycle
-- JaCoCo report generation and line-coverage enforcement
-- GitHub Actions workflow template
-- Manual checks for naming, duplication, and secrets
+- Java 21 business logic (`PriceCalculator`, `DiscountPolicy`) using `BigDecimal` money arithmetic
+- 29 JUnit 5 tests covering normal calculations, invalid input, boundaries, zero values, null handling, and rounding
+- Maven build with a configurable coverage threshold: `<coverage.minimum>0.80</coverage.minimum>`
+- Maven Wrapper (`mvnw` / `mvnw.cmd`), so no local Maven installation is required
+- CI workflow template at `.github/workflows/quality.yml`
 
 ## Project structure
 
 ```text
 src/main/java/testingcoveragequalitygate/   Application source
-src/test/java/testingcoveragequalitygate/   JUnit tests
-pom.xml                                     Maven, JUnit, and JaCoCo configuration
+src/test/java/testingcoveragequalitygate/   JUnit 5 tests
+pom.xml                                     Maven, JUnit, Surefire, and JaCoCo configuration
+mvnw, mvnw.cmd, .mvn/wrapper/               Maven Wrapper
 configs/quality-gate.properties             Human-readable policy mirror
-.github/workflows/quality.yml               Verification workflow template
-docs/QUALITY_GATE.md                        Gate interpretation
-README.md                                   Project documentation
-TESTING.md                                  Validation guide
+.github/workflows/quality.yml               CI workflow template
+docs/QUALITY_GATE.md                        Gate design and interpretation
+TESTING.md                                  How to validate the project yourself
+TEST_RESULTS.md                             Actual recorded validation results
 ```
 
 ## Important files explained
 
-- `PriceCalculator.java` calculates subtotals and discounted totals with explicit rounding.
-- `DiscountPolicy.java` validates and applies percentage discounts.
-- Test classes cover normal behavior, boundaries, invalid inputs, and rounding.
-- `pom.xml` binds JUnit execution, JaCoCo reporting, and an 80% line-coverage check to Maven verification.
-- `quality.yml` demonstrates automated `mvn verify` and report artifact handling.
-- `docs/QUALITY_GATE.md` explains why coverage evidence still requires code review.
+- `PriceCalculator.java` calculates subtotals and discounted totals with explicit HALF_UP rounding to two decimal places.
+- `DiscountPolicy.java` validates and applies percentage discounts between 0 and 100.
+- The test classes cover normal behavior, boundaries, invalid inputs, zero values, and rounding, several of them as parameterized tests.
+- `pom.xml` binds JUnit execution, JaCoCo reporting, and the line-coverage check to `mvn verify`. The threshold is a property (`coverage.minimum`, default `0.80`) so it can be overridden per run.
+- `Main` is excluded from the coverage check because it is only a console demo entry point.
 
-## Intended real-environment workflow
+## Quick start
 
-A developer would review dependencies, run unit tests, inspect failures, run Maven verification, and open the generated JaCoCo HTML report. The build should fail when tests fail or covered lines fall below the configured threshold. Reviewers would separately assess duplicated logic, hardcoded secrets, names, edge cases, and assertion quality.
+```bash
+./mvnw test      # compile and run the JUnit tests
+./mvnw verify    # tests + JaCoCo report + 80% line-coverage gate
+```
 
-The workflow is stored inside the project boundary. It must be reviewed and moved to the repository-level `.github/workflows` directory before GitHub can discover it.
+On Windows use `mvnw.cmd`. If you prefer a locally installed Maven, `mvn test` and `mvn verify` work the same way.
 
-## Prepared but not executed
+After `verify`, the coverage report is at `target/site/jacoco/index.html` (generated locally, not committed).
 
-- Maven, JUnit, JaCoCo, test cases, the 80% line threshold, and workflow steps were configured.
-- Java, Maven, tests, coverage instrumentation, report generation, gate enforcement, and CI were not executed.
-- The 80% value is a policy target, not a measured result.
-- No badge, passing build, or achieved coverage percentage is claimed.
+## Negative quality-gate validation
 
-## Manual validation checklist
+A quality gate is only trustworthy if it can also fail. To prove the gate actually blocks low coverage:
 
-- [ ] Review every calculation and validation branch against a test.
-- [ ] Confirm monetary assertions use the intended scale and rounding.
-- [ ] Confirm `Main` is the only deliberate coverage exclusion.
-- [ ] Inspect the JaCoCo report instead of relying only on the percentage.
-- [ ] Confirm the gate fails below the configured threshold.
-- [ ] Review names, duplicated logic, secrets, and assertion meaning manually.
-- [ ] Enable CI only after moving and reviewing the workflow.
+```bash
+./mvnw verify -Dcoverage.minimum=0.99
+```
 
-## Common mistakes avoided
+This is expected to FAIL, because actual line coverage of the checked classes is below 99%. For this negative test, a build failure is the successful outcome. The default threshold in `pom.xml` remains 80%. See `TESTING.md` for details.
 
-- Coverage is not described as proof of correctness.
-- The threshold is not presented as already achieved.
-- Demo entry-point code is separated from tested business logic.
-- Tests include invalid and boundary cases, not only happy paths.
-- No fake report or success badge is included.
-- Workflow placement limitations are explicit.
+## CI workflow template
+
+This workflow is included as a template. To activate it in a portfolio repository, copy or move it to the repository-level `.github/workflows` directory and adjust `working-directory` paths to match the real repo layout. In this repository the project lives at `Projects/32 (TestingCoverageQualityGate)`, and the template already uses that path. GitHub Actions has not been executed for this project; see `TEST_RESULTS.md`.
+
+## What is not production-grade
+
+- Small demo codebase with two business classes.
+- The CI workflow must be moved to the repository-level `.github/workflows` directory before it can run in a portfolio monorepo.
+- No mutation testing.
+- No integration tests.
+- No external services, databases, or network calls.
+- An 80% line threshold is a learning-project policy, not a universal quality standard; see `docs/QUALITY_GATE.md`.
+
+## How to validate
+
+- `TESTING.md` — exact commands to run the tests, the gate, and the negative gate check yourself.
+- `TEST_RESULTS.md` — the honest record of what was actually executed and the real coverage numbers.
 
 ## Possible future improvements
 
-- Add branch-coverage criteria after establishing stable line coverage.
-- Add parameterized tests for broader boundary combinations.
-- Add mutation testing only when the additional complexity is justified.
-- Establish a reviewed policy for exclusions and threshold changes.
-- Enable pull-request checks after the workflow is validated.
+- Add a branch-coverage limit next to the line-coverage limit.
+- Add mutation testing (for example PIT) once the extra complexity is justified.
+- Enable pull-request checks after moving the workflow to the repository level.

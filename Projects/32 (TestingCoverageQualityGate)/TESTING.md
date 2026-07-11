@@ -1,53 +1,99 @@
-# Testing Testing Coverage Quality Gate
+# Testing the Testing Coverage Quality Gate project
 
-No Java, Maven, JUnit, JaCoCo, report, quality gate, or CI workflow was executed while preparing this project.
+This guide lists the exact commands used to validate the project. The results of actually running them are recorded in `TEST_RESULTS.md`.
 
-## Static validation checklist
+## A) Prerequisites
 
-- [ ] Review subtotal, discount, and rounding behavior.
-- [ ] Confirm null, negative, zero, and boundary values are addressed.
-- [ ] Confirm test names describe behavior and assertions verify results.
-- [ ] Confirm the configured coverage counter, ratio, and minimum are intentional.
-- [ ] Confirm exclusions are narrow and documented.
+A JDK 21 is required. The Maven Wrapper downloads Maven 3.9.9 automatically, so a local Maven installation is optional.
 
-## File existence checks
+Check your tools:
 
-- [ ] Main source files exist under `src/main/java`.
-- [ ] JUnit files exist under `src/test/java`.
-- [ ] `pom.xml` exists.
-- [ ] `configs/quality-gate.properties` exists.
-- [ ] `.github/workflows/quality.yml` exists.
-- [ ] `docs/QUALITY_GATE.md`, `README.md`, and `TESTING.md` exist.
+```bash
+java -version
+./mvnw -version
+```
 
-## Configuration review checklist
+Or with a locally installed Maven:
 
-- [ ] Java release, JUnit version, and plugin versions are explicit.
-- [ ] Surefire is configured to discover JUnit 5 tests.
-- [ ] JaCoCo prepares its agent before tests and checks coverage during verification.
-- [ ] The report path and CI artifact path agree.
-- [ ] The workflow cache points to this project's `pom.xml`.
-- [ ] The nested workflow limitation is documented.
+```bash
+mvn -version
+```
 
-## Security checks
+On Windows, use `mvnw.cmd` instead of `./mvnw` in all commands below. On Linux/macOS, if the wrapper is not executable after checkout, run `chmod +x mvnw` once.
 
-- [ ] No real secret or credential is present.
-- [ ] No production endpoint is present.
-- [ ] No test embeds a token, password, or private key.
-- [ ] CI permissions remain minimal.
+## B) Run tests
 
-## Commands normally used - NOT executed
+```bash
+./mvnw test
+```
 
-```text
+Fallback with local Maven:
+
+```bash
 mvn test
+```
+
+This compiles the sources and runs all JUnit 5 tests through Maven Surefire. Expected: `BUILD SUCCESS` with 29 tests passing.
+
+## C) Run the full quality gate
+
+```bash
+./mvnw verify
+```
+
+Fallback:
+
+```bash
 mvn verify
 ```
 
-In CI, the prepared workflow would normally run `mvn --batch-mode --no-transfer-progress verify`. None of these commands were executed.
+This runs the tests, generates the JaCoCo coverage report, and enforces the line-coverage gate (default minimum: 80%, configured as `<coverage.minimum>0.80</coverage.minimum>` in `pom.xml`). Expected: `BUILD SUCCESS` with "All coverage checks have been met."
 
-## Expected results in a proper environment
+## D) View the JaCoCo report
 
-- Source and tests compile with the declared dependencies.
-- JUnit reports all prepared normal, boundary, validation, and rounding tests.
-- JaCoCo writes an HTML report under `target/site/jacoco`.
-- `mvn verify` fails when tests fail or line coverage is below 80%.
-- A passing automated gate is followed by successful manual quality review.
+After `verify`, open:
+
+```text
+target/site/jacoco/index.html
+```
+
+Machine-readable numbers are in `target/site/jacoco/jacoco.csv`. These files are generated locally and must not be committed (`target/` is in `.gitignore`).
+
+## E) Run the negative coverage-gate test
+
+```bash
+./mvnw verify -Dcoverage.minimum=0.99
+```
+
+Fallback:
+
+```bash
+mvn verify -Dcoverage.minimum=0.99
+```
+
+Expected: this command should FAIL, because actual line coverage of the checked classes is below 99% (the trivial accessor `DiscountPolicy.getPercentage()` is deliberately left uncovered — see `docs/QUALITY_GATE.md`). Maven prints:
+
+```text
+Rule violated for bundle testing-coverage-quality-gate: lines covered ratio is 0.95, but expected minimum is 0.99
+BUILD FAILURE
+```
+
+For this negative test, failure is the expected successful outcome: it proves the gate really blocks builds below the threshold. If you ever raise actual coverage above 99%, use `-Dcoverage.minimum=1.00` instead. The default threshold in `pom.xml` stays at 80%.
+
+## F) CI workflow template
+
+The workflow file `.github/workflows/quality.yml` is included under the project for reference. GitHub only discovers workflows in the repository-level `.github/workflows` directory, so to activate it, copy it there and adjust the `working-directory` and `cache-dependency-path` values to the real repo layout. It has not been executed in GitHub for this project.
+
+## G) Cleanup
+
+Remove generated build files before committing:
+
+```bash
+rm -rf target
+```
+
+On Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force target
+```

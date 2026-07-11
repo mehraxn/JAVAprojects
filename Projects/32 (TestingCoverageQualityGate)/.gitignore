@@ -1,3 +1,15 @@
+# Build output and coverage reports (generated locally, never committed)
 target/
 *.class
 *.log
+
+# OS files
+.DS_Store
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Note: the Maven Wrapper files are intentionally tracked:
+#   mvnw, mvnw.cmd, .mvn/wrapper/maven-wrapper.properties

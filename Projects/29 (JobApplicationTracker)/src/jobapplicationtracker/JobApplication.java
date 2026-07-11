@@ -2,7 +2,12 @@ package jobapplicationtracker;
 
 import java.time.LocalDate;
 
-public class JobApplication {
+/**
+ * Validated job application record. The class is final so the constructor may
+ * safely reuse the setter validation logic without a 'this' escape warning
+ * under {@code javac -Xlint:all -Werror}.
+ */
+public final class JobApplication {
     public enum Status {
         APPLIED,
         SCREENING,

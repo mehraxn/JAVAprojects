@@ -1,99 +1,93 @@
 # Job Application Tracker
 
-A standard-Java application for recording job applications, searching and filtering them, reviewing status totals, and preserving records in a CSV file.
+A command-line Java job application tracker with CSV persistence. Records job applications, searches and filters them, updates statuses, shows status totals, and preserves everything in a UTF-8 CSV file — with no external dependencies at all.
+
+## What it demonstrates
+
+- Java OOP: encapsulated domain model with validation (`JobApplication`)
+- Service/repository separation (`TrackerService` / `ApplicationRepository` / `CsvApplicationRepository`)
+- CSV file persistence with hand-written, quote-aware parsing and escaping
+- Search, filter, update, and summary workflows
+- Defensive copies so callers can never corrupt stored state
+- Dependency-free automated tests (43 tests, 104 checks) with a custom runner
+- Strict compilation: everything builds under `javac -Xlint:all -Werror`
+- A simple command-based CLI with correct exit codes and friendly error messages
 
 ## Features
 
-- Add applications with company, role, application date, status, and notes.
-- Assign stable positive IDs automatically.
-- Update an application's status.
-- List all applications in insertion order.
-- Search company and role text using case-insensitive partial matching.
-- Filter by application status.
-- Show total applications and counts for every status.
-- Save and load UTF-8 CSV files.
-- Handle missing, empty, whitespace-only, and header-only files safely.
-- Reject malformed CSV, duplicate IDs, invalid dates/statuses, and empty required fields.
+- Add applications (company, role, status, optional notes; dated today, sequential IDs)
+- List applications in insertion order
+- Update an application's status by ID
+- Case-insensitive search across company and role
+- Filter by status and summary counts per status
+- Save/load CSV — missing files load as an empty tracker, malformed files are rejected before touching in-memory data
+- Safe in-memory demo workflow
 
-## Main classes and repository structure
+## Project structure
 
-- `JobApplication` — validated application model and status enum.
-- `ApplicationRepository` — file-persistence contract.
-- `CsvApplicationRepository` — CSV parser and writer with quoted-field support.
-- `TrackerService` — in-memory collection, searches, status updates, summaries, and persistence coordination.
-- `Main` — console demonstration with optional CSV save/load.
+```text
+src/jobapplicationtracker/     Application source (model, service, repository, CLI)
+tests/jobapplicationtracker/   Dependency-free tests and TestRunner
+scripts/test.sh, test.ps1      One-command validation (clean, compile, test, smoke test)
+README.md, TESTING.md          Documentation
+TEST_RESULTS.md                Actual recorded validation results
+```
 
-`TrackerService` owns the active in-memory collection and delegates file operations to `ApplicationRepository`. Loading validates the entire file before replacing the current collection.
+## How to run
 
-## How the program works
+Compile (strict flags — the build treats every warning as an error):
 
-The service generates positive IDs, stores active application records, performs searches and status summaries, and delegates explicit save/load operations to the CSV repository. A failed load is validated before it can replace current in-memory records.
+```text
+javac -Xlint:all -Werror -d out src/jobapplicationtracker/*.java
+```
+
+Run the demo (in-memory only, writes nothing to disk):
+
+```text
+java -cp out jobapplicationtracker.Main demo
+```
+
+Use the CLI (the CSV file is created on the first `add`):
+
+```text
+java -cp out jobapplicationtracker.Main help
+java -cp out jobapplicationtracker.Main add applications.csv "Google" "Backend Engineer" APPLIED "Applied online"
+java -cp out jobapplicationtracker.Main list applications.csv
+java -cp out jobapplicationtracker.Main update-status applications.csv 1 INTERVIEW
+java -cp out jobapplicationtracker.Main search applications.csv backend
+java -cp out jobapplicationtracker.Main summary applications.csv
+```
+
+Statuses: `APPLIED`, `SCREENING`, `INTERVIEW`, `OFFER`, `REJECTED`, `WITHDRAWN` (case-insensitive on input). Invalid commands and inputs exit non-zero with a clear message and no stack trace. Local CSV files like `applications.csv` are gitignored.
 
 ## CSV format
-
-The required header is:
-
-```csv
-id,company,role,applicationDate,status,notes
-```
-
-Dates use `yyyy-MM-dd`. Status values are `APPLIED`, `SCREENING`, `INTERVIEW`, `OFFER`, `REJECTED`, or `WITHDRAWN`. Commas and quotation marks are supported inside quoted fields. Multiline fields are intentionally not supported.
-
-## Example usage
-
-Compile and run the in-memory demonstration:
-
-```text
-javac -d out src/jobapplicationtracker/*.java
-java -cp out jobapplicationtracker.Main
-```
-
-Pass a file path to demonstrate saving and loading:
-
-```text
-java -cp out jobapplicationtracker.Main applications.csv
-```
-
-Example CSV:
 
 ```csv
 id,company,role,applicationDate,status,notes
 1,Northwind,Java Developer,2026-06-24,INTERVIEW,Technical interview scheduled
-2,Contoso,Backend Engineer,2026-06-30,SCREENING,"Recruiter call, Tuesday"
+2,"Acme, Inc.",Backend Engineer,2026-06-30,SCREENING,"Recruiter call, Tuesday"
 ```
 
-## Java concepts practiced
+Dates use `yyyy-MM-dd`. Commas and quotation marks round-trip through quoted fields; multiline values are intentionally not supported. Loading validates the whole file (header, field count, IDs, dates, statuses, quoting, duplicates) before replacing any in-memory records.
 
-- Classes, interfaces, enums, encapsulation, and service/repository separation
-- `List`, `Map`, `Set`, and insertion-ordered collections
-- `LocalDate` parsing and validation
-- File I/O with `Path`, `Files`, and UTF-8
-- Manual CSV parsing and escaping
-- Defensive collection views and exception handling
+## How to test
 
-## Backend concepts practiced
+- `TESTING.md` — exact commands for strict compile, the test runner, the CLI workflow, and the scripts.
+- `TEST_RESULTS.md` — the honest record of the validation actually performed.
+- Quick version: `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell).
 
-- Service and repository separation
-- File-backed persistence with transactional-style load validation
-- Search, filtering, status summaries, and generated identifiers
-- Defensive copies around mutable application status and notes
+## What is not production-grade
 
-## Storage approach
-
-Applications live in an insertion-ordered in-memory map during execution. `CsvApplicationRepository` optionally saves and loads UTF-8 CSV using the documented fixed header. Missing and empty files represent an empty tracker.
-
-## Limitations
-
-- No automatic save, concurrent writer protection, or atomic replacement
-- Multiline CSV values are not supported
+- Local CLI only — no GUI, no web UI
+- CSV file storage only — no database
+- No user accounts, no multi-user support, no concurrent-writer protection
+- No encryption for stored files, no cloud sync
+- No atomic file replacement or backups
 - Status transitions are not constrained to a workflow
-- No reminders, attachments, contacts, or external integrations
 
 ## Possible future improvements
 
-- Editing company, role, date, and notes
+- Editing company, role, date, and notes from the CLI
 - Date-range searches and response-rate statistics
 - Follow-up reminders
-- Interactive console menus
 - Atomic file replacement and backup copies
-- Automated unit tests

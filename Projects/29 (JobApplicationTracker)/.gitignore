@@ -1,0 +1,17 @@
+# Generated build output (created by scripts/test.* and TESTING.md commands)
+out/
+test-out/
+*.class
+*.log
+tmp/
+
+# Local CSV data files created while using the CLI - never committed
+*.csv
+
+# OS files
+.DS_Store
+
+# IDE files
+.idea/
+.vscode/
+*.iml

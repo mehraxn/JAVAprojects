@@ -1,71 +1,110 @@
-# Job Application Tracker Testing
+# Testing the Job Application Tracker
 
-Use a temporary CSV path for file tests so existing application records are not overwritten.
+This guide lists the exact commands used to validate the project. The results of actually running them are recorded in `TEST_RESULTS.md`. Everything is dependency-free: only a JDK (21 used for validation) is required — no Maven, Gradle, or JUnit.
 
-## Normal test cases
+Quick version: run `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell) — they perform steps A–E below.
 
-| Test | Action | Expected result |
-|---|---|---|
-| Add application | Add valid company, role, date, status, and notes | Positive ID assigned and application listed |
-| Sequential IDs | Add three applications | IDs are `1`, `2`, and `3` |
-| Update status | Change an existing application to `INTERVIEW` | Returns `true`; status is updated |
-| Company search | Search part of a company name with different casing | Matching applications returned |
-| Role search | Search part of a role | Matching applications returned |
-| Status filter | Filter for `APPLIED` | Only applied records returned |
-| Summary | Add two applied and one interview record | Total is `3`; status counts are `2` and `1` |
-| CSV round trip | Save and load records | Fields, IDs, statuses, and count are preserved |
-| Load then add | Load highest ID `8`, then add a record | New record receives ID `9` |
+## A) Clean
 
-## Edge-case test cases
+Linux/macOS/Git Bash:
 
-| Test | Action | Expected result |
-|---|---|---|
-| Empty tracker | List, filter, and summarize | Empty lists, total `0`, and zero for every status |
-| No search match | Search unknown company/role text | Empty list |
-| Missing update | Update an unknown positive ID | Returns `false` |
-| Missing file | Load a path that does not exist | Empty tracker; no exception |
-| Empty file | Load a zero-byte or whitespace-only file | Empty tracker; no exception |
-| Header only | Load only the expected header | Empty tracker |
-| Blank rows | Put blank lines between valid rows | Blank lines are ignored |
-| Quoted fields | Save company, role, or notes containing comma/quotes | Values round-trip correctly |
-| Load failure safety | Load malformed data into a populated tracker | Exception occurs before current records are replaced |
+```bash
+rm -rf out test-out
+```
 
-## Invalid input test cases
+Windows PowerShell:
 
-| Test | Input | Expected result |
-|---|---|---|
-| Empty company | `null`, empty, or whitespace company | `IllegalArgumentException` |
-| Empty role | `null`, empty, or whitespace role | `IllegalArgumentException` |
-| Null date | Missing application date | `IllegalArgumentException` |
-| Null status | Missing status | `IllegalArgumentException` |
-| Empty search | Blank or null search text | `IllegalArgumentException` |
-| Invalid update ID | ID `0` or negative | `IllegalArgumentException` |
-| Wrong header | Unexpected CSV columns | `IOException` with expected header |
-| Duplicate ID | Two CSV rows with the same ID | `IOException` identifies duplicate |
-| Invalid ID | Zero, negative, or nonnumeric CSV ID | `IOException` identifies invalid row |
-| Invalid date | Date such as `2026-02-30` | `IOException` identifies invalid date |
-| Invalid status | Unknown enum value | `IOException` identifies invalid application |
-| Wrong field count | Row has fewer or more than six fields | `IOException` identifies the line |
-| Broken quotes | Unclosed or misplaced quote | `IOException` identifies malformed CSV |
-| Multiline text | Company, role, or notes contains a line break | Validation exception |
+```powershell
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+```
 
-## Manual testing checklist
+## B) Strict compile — application
 
-- [ ] Compile all files in `src/jobapplicationtracker`.
-- [ ] Run `Main` without arguments and verify list, search, and summary output.
-- [ ] Run with a temporary CSV path and verify the save/load count.
-- [ ] Inspect the header, ISO dates, status names, and quoted fields.
-- [ ] Test every status filter and zero-count summary entry.
-- [ ] Test missing, empty, header-only, and malformed files.
-- [ ] Confirm a failed load preserves existing in-memory records.
-- [ ] Confirm adding after a load uses an ID above the largest loaded ID.
+```text
+javac -Xlint:all -Werror -d out src/jobapplicationtracker/*.java
+```
 
-## Phase 2 validation review additions
+Every warning is an error; the build must be completely clean.
 
-| Test | Action | Expected result |
-|---|---|---|
-| Future application date | Add or load a date after today | Rejected as invalid application data |
-| Directory CSV path | Load or save using an existing directory | `IOException` identifies a non-regular file |
-| Mutate returned application | Change status/notes on an object returned by add/list/search/filter | Stored application remains unchanged |
-| Maximum loaded ID | Load `Long.MAX_VALUE`, then add another application | Load succeeds, but add reports ID exhaustion without overflow |
-| Null status on unknown ID | Update an absent application using null status | Null status is rejected before the not-found result |
+## C) Strict compile — tests
+
+```text
+javac -Xlint:all -Werror -cp out -d test-out tests/jobapplicationtracker/*.java
+```
+
+## D) Run automated tests
+
+Linux/macOS/Git Bash (classpath separator `:`):
+
+```bash
+java -cp "out:test-out" jobapplicationtracker.TestRunner
+```
+
+Windows PowerShell (classpath separator `;`):
+
+```powershell
+java -cp "out;test-out" jobapplicationtracker.TestRunner
+```
+
+Expected: `PASS` per test, a summary like `Tests passed: 43, failed: 0 (104 checks total)`, `RESULT: PASS`, and exit code 0. Any failure prints `FAIL` with the reason and exits 1. CSV tests use `Files.createTempFile` and delete their temp files — no CSV files are left in the repository.
+
+## E) Run the CLI demo
+
+```text
+java -cp out jobapplicationtracker.Main demo
+```
+
+Expected: a sample in-memory workflow (add, update, search, summary), `Demo completed successfully.`, exit code 0. Nothing is written to disk.
+
+## F) Manual CLI workflow
+
+Uses a local `applications.csv` (gitignored; created on first `add`):
+
+```text
+java -cp out jobapplicationtracker.Main add applications.csv "Google" "Backend Engineer" APPLIED "Applied online"
+java -cp out jobapplicationtracker.Main list applications.csv
+java -cp out jobapplicationtracker.Main update-status applications.csv 1 INTERVIEW
+java -cp out jobapplicationtracker.Main search applications.csv backend
+java -cp out jobapplicationtracker.Main summary applications.csv
+```
+
+Error behavior worth testing (each exits non-zero with a clear message, no stack trace):
+
+```text
+java -cp out jobapplicationtracker.Main                                  # no command
+java -cp out jobapplicationtracker.Main frobnicate                       # unknown command
+java -cp out jobapplicationtracker.Main update-status applications.csv 99 OFFER    # unknown ID
+java -cp out jobapplicationtracker.Main add applications.csv "X" "Y" NOTASTATUS    # bad status
+```
+
+## G) Scripts
+
+Linux/macOS/Git Bash:
+
+```bash
+./scripts/test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\test.ps1
+```
+
+Both scripts: clean → strict compile app → strict compile tests → run TestRunner → run CLI demo, and stop at the first failure. `test.sh` picks the right classpath separator automatically, so it also works from Git Bash on Windows.
+
+## H) Cleanup
+
+Linux/macOS/Git Bash:
+
+```bash
+rm -rf out test-out
+rm -f applications.csv
+```
+
+Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+Remove-Item applications.csv -ErrorAction SilentlyContinue
+```

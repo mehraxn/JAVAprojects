@@ -1,93 +1,85 @@
 # CSV Analytics Engine
 
-A standard-Java console project that reads tabular CSV data and performs small, reusable analyses. It supports quoted commas and quotation marks without relying on an external CSV library.
+A command-line Java CSV analytics engine. It reads tabular CSV data with a hand-written, quote-aware parser, validates it into `DataSet`/`DataRow` models, and runs filtering, grouping, and numeric statistics — with no external dependencies at all.
 
-## Features
+## What it demonstrates
 
-- Load UTF-8 CSV data and expose column names and row count.
-- Parse header and data rows into `DataSet` and `DataRow` objects.
-- Preserve empty cells as missing values.
-- Filter rows by an exact column value.
-- Group rows and count groups by a selected column.
-- Calculate minimum, maximum, average, sum, and valid-value count for numeric columns.
-- Report missing and nonnumeric values separately while calculating statistics from valid values.
-- Reject duplicate/empty headers, inconsistent row widths, unknown columns, and malformed quoted fields.
-- Write a data set back to CSV with safe quoting.
+- Custom CSV parsing (quoted commas, escaped quotes, malformed-input rejection)
+- CSV writing/export with safe quoting and a verified read/write round trip
+- Validated tabular data models with defensive copies — external mutation cannot corrupt stored data
+- Filtering by exact value, grouping with counts, and `BigDecimal` numeric statistics
+- Honest handling of missing and invalid numeric cells (counted separately, never silently dropped)
+- A command-based CLI with correct exit codes and friendly error messages
+- Dependency-free automated tests (64 tests, 149 checks) with a custom runner
+- Strict compilation: everything builds under `javac -Xlint:all -Werror`
 
-## Java concepts practiced
+## Commands
 
-- Object-oriented modeling and separation of responsibilities
-- `List`, `Map`, and `Set` collections
-- File I/O with `Path`, `Files`, and UTF-8
-- `BigDecimal` arithmetic and rounding
-- CSV state-based parsing
-- Validation, defensive copies, and exception handling
+| Command | What it does |
+|---|---|
+| `help` | Print usage and available commands |
+| `demo` | Self-contained sample workflow using temporary files (cleans up after itself) |
+| `summary <file.csv>` | Row count, column count, column names |
+| `stats <file.csv> <column>` | Count, missing, invalid, min, max, sum, average |
+| `group <file.csv> <column>` | Count rows per column value (empty values group as `(missing)`) |
+| `filter <file.csv> <column> <value>` | Print rows matching an exact value |
+| `export-filtered <in.csv> <out.csv> <column> <value>` | Write matching rows to a new CSV |
 
-## Backend concepts practiced
+Column names are matched case-insensitively; filter values are matched exactly. Errors (missing file, malformed CSV, unknown command/column, missing arguments) print a clear message and exit non-zero — no stack traces.
 
-- File ingestion and tabular data validation
-- Separating parsing, data models, analytics, and output responsibilities
-- Graceful handling of missing and invalid numeric cells
-- Grouping, filtering, and summary result objects
+## Quick start
+
+```text
+javac -Xlint:all -Werror -d out src/csvanalyticsengine/*.java
+
+java -cp out csvanalyticsengine.Main help
+java -cp out csvanalyticsengine.Main demo
+java -cp out csvanalyticsengine.Main summary examples/sales.csv
+java -cp out csvanalyticsengine.Main stats examples/sales.csv amount
+java -cp out csvanalyticsengine.Main group examples/sales.csv category
+java -cp out csvanalyticsengine.Main filter examples/sales.csv category Food
+java -cp out csvanalyticsengine.Main export-filtered examples/sales.csv filtered.csv category Food
+```
+
+`examples/sales.csv` ships with deliberate edge cases: a quoted comma, escaped quotes, a missing amount, an invalid amount, and a negative amount. Generated CSVs like `filtered.csv` are gitignored; only `examples/*.csv` is tracked.
+
+## Project structure
+
+```text
+src/csvanalyticsengine/     Application source (parser, writer, models, analytics, CLI)
+tests/csvanalyticsengine/   Dependency-free tests and TestRunner
+examples/sales.csv          Sample data with edge cases
+scripts/test.sh, test.ps1   One-command validation (clean, compile, test, smoke test)
+README.md, TESTING.md       Documentation
+TEST_RESULTS.md             Actual recorded validation results
+```
 
 ## Main classes
 
-- `DataRow` — one ordered mapping of columns to values.
-- `DataSet` — validated columns and rows.
-- `CsvReader` — CSV file parser.
-- `CsvWriter` — CSV file writer.
-- `AnalyticsService` — filtering, grouping, counting, and numeric calculations.
-- `NumericStatistics` — result object for numeric analysis.
-- `Main` — command-line demonstration.
+- `CsvReader` — state-based CSV parser; rejects duplicate/empty headers, inconsistent row widths, and malformed quoting with line numbers.
+- `CsvWriter` — CSV output with quoting/escaping; line breaks in values are a documented, rejected limitation.
+- `DataSet` / `DataRow` — validated columns and rows; all getters return defensive copies or unmodifiable views.
+- `AnalyticsService` — filtering, grouping, counting, and statistics.
+- `NumericStatistics` — immutable result object (count, missing, invalid, min, max, sum, average) with internal consistency checks.
+- `Main` — argument parsing and output only; the CLI logic lives in a testable `run(args, out, err)` method.
 
-## How it works
+## How to test
 
-The first nonblank line is treated as the header. Later blank lines are ignored, while every nonblank row must have the same number of fields as the header. Column lookup is case-insensitive. Numeric analysis uses `BigDecimal`: blank cells increment the missing count, nonnumeric cells increment the invalid count, and only valid numbers affect the minimum, maximum, sum, and average. If a column has no valid numbers, minimum, maximum, and average are reported as `n/a`.
+- `TESTING.md` — exact commands for strict compile, the test runner, the CLI workflow, and error-behavior checks.
+- `TEST_RESULTS.md` — the honest record of the validation actually performed.
+- Quick version: `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell).
 
-The parser supports commas and doubled quotation marks inside quoted fields. Multiline fields are intentionally outside this beginner-level implementation.
+## What is not production-grade
 
-## Example usage
-
-Compile from the project folder:
-
-```text
-javac -d out src/csvanalyticsengine/*.java
-```
-
-Run with a CSV path, an optional numeric column, and an optional grouping column:
-
-```text
-java -cp out csvanalyticsengine.Main sales.csv amount category
-```
-
-Example input:
-
-```csv
-item,category,amount
-Notebook,Office,4.50
-Coffee,Food,3.20
-Unknown,Food,not-available
-Tea,Food,
-```
-
-This reports four rows, statistics based on the two valid amounts, one invalid amount, one missing amount, and group sizes for `category`.
-
-## Storage approach
-
-`CsvReader` loads a complete UTF-8 CSV file into an in-memory `DataSet`. `CsvWriter` can write a data set back to a file. Rows are defensively copied so later caller changes cannot corrupt stored table structure.
-
-## Limitations
-
-- Entire files are loaded into memory
-- Only comma delimiters and single-line fields are supported
-- Numeric inference is requested by column rather than detected automatically
-- Statistics are limited to basic decimal summaries
+- Local CSV files only — no database, no cloud storage
+- Whole-file loading — not designed for huge files (no streaming)
+- No GUI, no charts or visualization
+- No authentication or multi-user support
+- Multiline CSV values are not supported
 
 ## Possible future improvements
 
-- Delimiter selection and multiline quoted fields
-- Date and boolean column summaries
-- Median and percentile calculations
-- Streaming support for files too large to hold in memory
-- Interactive column selection and report export
-- Automated unit tests
+- Streaming reader for large files
+- More aggregations (median, percentiles, group-by sums)
+- Column type inference
+- Date-typed columns and date-range filters

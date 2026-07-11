@@ -1,89 +1,89 @@
 # Notification Service
 
-A standard-Java notification queue demonstrating interfaces, pluggable delivery senders, retries, status tracking, and history without sending any real email, SMS, or app notification.
+A local Java notification service simulation. It demonstrates a pluggable-channel service design — FIFO queue, retries, status tracking, and history — with **mock delivery only**: no real email, SMS, or push provider is ever contacted, and no external dependency is used.
 
-## Features
+## What it demonstrates
 
-- Create and queue notification messages.
-- Support EMAIL, SMS, and APP notification types.
-- Register one sender implementation per type.
-- Process queued notifications in FIFO order.
-- Track `QUEUED`, `SENDING`, `SENT`, and `FAILED` status.
-- Record delivery-attempt count, last failure, creation time, and sent time.
-- Retry failed notifications up to a caller-defined maximum attempt count.
-- Inspect the queue without consuming it.
-- Show complete notification history in creation order.
-- Simulate predictable failures for retry demonstrations.
+- Java interfaces and pluggable delivery channels (`NotificationChannel`)
+- Mock delivery providers with deterministic, configurable failures
+- FIFO queue processing and clean lifecycle transitions (`QUEUED → SENDING → SENT/FAILED`)
+- Retry behavior with a caller-defined attempt limit and honest exhaustion handling
+- Per-channel recipient validation (email shape, phone-like SMS values, app user IDs)
+- Defensive snapshots — the queue and history can never be mutated from outside
+- Dependency-free automated tests (47 tests, 136 checks) with a custom runner
+- Strict compilation: everything builds under `javac -Xlint:all -Werror`
+- A command-based demo CLI with correct exit codes and a testable `Main.run`
 
-## Main classes and interface
+## Commands
 
-- `Notification` — message, recipient, type, lifecycle status, timestamps, and attempt data.
-- `NotificationChannel` — sender interface with `getType()` and `deliver()` operations.
-- `MockNotificationSender` — configurable local sender for EMAIL, SMS, or APP.
-- `NotificationService` — sender registry, FIFO queue, dispatch, retry, lookup, and history.
-- `Main` — demonstration with one simulated SMS failure and successful retry.
+| Command | What it does |
+|---|---|
+| `help` | Print usage and available commands |
+| `demo` | Full workflow: EMAIL success, SMS failure + retry success, APP success, history summary |
+| `send <EMAIL\|SMS\|APP> <recipient> <message>` | Send one notification through a mock sender |
+| `retry-demo` | Failure followed by retry success, then retry exhaustion at the attempt limit |
+| `validation-demo` | Accepted and rejected recipient examples per channel |
+| `missing-sender-demo` | Clean `FAILED` record when a channel has no registered sender |
 
-## How the program works
+`send` exits 0 only when the notification reaches `SENT`; invalid channels, recipients, or messages print a clear error and exit non-zero — no stack traces.
 
-Enqueueing creates a validated notification and appends it to the FIFO queue and history. Processing removes the queue head, records an attempt, and calls the sender registered for its type. Success marks it sent; an exception records failure details. Explicit retry requeues only eligible failed messages.
-
-## Queue design
-
-`NotificationService` stores pending objects in an `ArrayDeque` and all created notifications in an insertion-ordered history map. Enqueueing creates status `QUEUED`. Processing removes the head, changes it to `SENDING`, increments its attempt count, and delegates to the sender registered for its type.
-
-- Successful delivery changes status to `SENT` and records `sentAt`.
-- Missing senders or sender exceptions change status to `FAILED` and store a safe error message.
-- A failed notification is not automatically retried.
-- `retry(id, maximumAttempts)` changes an eligible failed item back to `QUEUED` and appends it to the queue.
-- Sent or currently queued items cannot be retried.
-- Queue and history methods return unmodifiable lists of copies.
-
-All service operations are synchronized so queue/history transitions remain consistent.
-
-## Mock senders
-
-`MockNotificationSender` never contacts a mail server, SMS provider, device, network API, or external queue. It only prints a labeled local message. Its optional `failuresRemaining` value deliberately throws exceptions for the first deliveries, making retry behavior easy to demonstrate.
-
-## Example usage
+## Quick start
 
 ```text
-javac -d out src/notificationservice/*.java
-java -cp out notificationservice.Main
+javac -Xlint:all -Werror -d out src/notificationservice/*.java
+
+java -cp out notificationservice.Main help
+java -cp out notificationservice.Main demo
+java -cp out notificationservice.Main send EMAIL learner@example.com "Welcome"
+java -cp out notificationservice.Main retry-demo
+java -cp out notificationservice.Main validation-demo
+java -cp out notificationservice.Main missing-sender-demo
 ```
 
-## Java concepts practiced
+## Project structure
 
-- Interfaces and interchangeable implementations
-- Queues, maps, lists, and enums
-- Controlled state transitions
-- Exception handling and retry limits
-- Defensive copies and unmodifiable collections
-- Synchronization and integer-overflow checks
+```text
+src/notificationservice/     Application source (model, channel, mock sender, service, CLI)
+tests/notificationservice/   Dependency-free tests and TestRunner
+scripts/test.sh, test.ps1    One-command validation (clean, compile, test, demos)
+README.md, TESTING.md        Documentation
+TEST_RESULTS.md              Actual recorded validation results
+```
 
-## Backend concepts practiced
+## Main classes
 
-- Queue-based asynchronous-style workflow modeled synchronously
-- Interface-driven delivery adapters
-- Retry limits, delivery attempts, failure history, and state transitions
-- Non-destructive queue inspection and immutable history views
+- `Notification` — validated record: recipient, message, channel, lifecycle status, timestamps, attempt count, last error. Status transitions are enforced (`markSent` only from `SENDING`, `requeue` only from `FAILED`, ...).
+- `NotificationChannel` — sender interface with `getType()` and `deliver()`.
+- `MockNotificationSender` — local mock sender; `new MockNotificationSender(SMS, 1)` fails the first attempt and succeeds afterwards, which makes retry tests deterministic. Prints "deliveries" to a configurable stream.
+- `NotificationService` — sender registry (one per channel), FIFO queue, dispatch, retry with attempt limit, ID lookup, and history. All views are defensive copies in unmodifiable lists.
+- `Main` — argument parsing and output only; the CLI lives in a testable `run(args, out, err)` method, and only `main` calls `System.exit`.
 
-## Storage approach
+## Recipient validation rules
 
-The pending queue and complete history are held in memory. Mock senders print locally; they do not use a network service or external queue. All state disappears when the process exits.
+- **EMAIL** — must look like `name@domain.tld` (no spaces, exactly one `@`, a dot in the domain). `learner@example.com` is accepted; `bad-email` and `user@nodomain` are rejected.
+- **SMS** — 3 to 30 characters of digits, `+`, parentheses, spaces, dots, or dashes. `+393331112222` and `3331112222` are accepted; `abc123` and `12` are rejected.
+- **APP** — any non-blank identifier up to 100 characters, e.g. `user-123`.
 
-## Limitations
+These are deliberately simple, beginner-appropriate rules — real-world address validation is far more involved.
 
-- Processing is synchronous and single-process
-- No scheduling, retry delay, persistence, priority, or dead-letter queue
-- Mock senders do not represent provider-specific delivery guarantees
-- Recipient validation is intentionally basic
+## How to test
+
+- `TESTING.md` — exact commands for strict compile, the test runner, and the CLI demos.
+- `TEST_RESULTS.md` — the honest record of the validation actually performed.
+- Quick version: `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell).
+
+## What is not production-grade
+
+- Local mock service only — no real email/SMS/push integration
+- No database and no persistent queue (everything is in memory)
+- No async worker or thread pool; processing is explicit and single-threaded
+- No scheduled delivery
+- No authentication or user accounts
+- No production delivery guarantees
 
 ## Possible future improvements
 
-- Scheduled delivery and retry backoff
-- Priority queues
-- Per-channel retry policies
-- Cancellation of queued messages
-- File persistence
-- Structured internal error codes
-- Automated tests with injectable time and mock senders
+- A worker thread that drains the queue in the background
+- Persistent queue storage
+- Delivery receipts and per-channel statistics
+- Rate limiting per channel

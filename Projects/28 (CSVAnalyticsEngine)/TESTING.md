@@ -1,68 +1,120 @@
-# CSV Analytics Engine Testing
+# Testing the CSV Analytics Engine
 
-Use temporary input files for these manual tests. The examples assume the program has been compiled into an `out` directory.
+This guide lists the exact commands used to validate the project. The results of actually running them are recorded in `TEST_RESULTS.md`. Everything is dependency-free: only a JDK (21 used for validation) is required — no Maven, Gradle, or JUnit.
 
-## Normal test cases
+Quick version: run `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell) — they perform steps A–F below.
 
-| Test | Input or action | Expected result |
-|---|---|---|
-| Read table | Header plus three complete rows | Correct columns and row count `3` |
-| Numeric statistics | Values `10`, `20`, and `30` | Min `10`, max `30`, average `20`, valid count `3` |
-| Decimal statistics | Values `1.5` and `2.5` | Min `1.5`, max `2.5`, average `2` |
-| Group rows | Categories `A`, `B`, `A` | Group A contains 2 rows; B contains 1 |
-| Filter rows | Filter category for `A` | Only exact value `A` rows are returned |
-| Case-insensitive column | Request `AMOUNT` for header `amount` | Column resolves and statistics are calculated |
-| CSV round trip | Read, write, and read a quoted data set | Columns and values remain unchanged |
+## A) Clean
 
-## Edge-case test cases
+Linux/macOS/Git Bash:
 
-| Test | Input or action | Expected result |
-|---|---|---|
-| Empty file | Zero-byte or whitespace-only file | Empty data set with zero rows and columns |
-| Header only | Valid header without data rows | Columns shown and row count `0` |
-| Blank rows | Blank lines between records | Blank lines are ignored |
-| Missing numeric cell | One blank amount | Missing count increases; other numbers are analyzed |
-| Invalid numeric cell | Amount `unknown` | Invalid count increases; analysis continues |
-| No valid numbers | Numeric analysis of blanks/text only | Min, max, and average are `n/a` |
-| Missing group value | Group a row with a blank category | Row appears in `(missing)` group |
-| Negative values | Values `-5` and `10` | Min `-5`, max `10`, average `2.5` |
-| Quoted comma | Value `"Berlin, Germany"` | Parsed as one field |
-| Escaped quote | Value `"He said ""yes"""` | Parsed with one quotation mark pair in the value |
+```bash
+rm -rf out test-out filtered.csv
+```
 
-## Invalid input test cases
+Windows PowerShell:
 
-| Test | Input | Expected result |
-|---|---|---|
-| Missing file | Path does not exist | `IOException` with a clear file message |
-| Empty header name | Header `name,,amount` | `IOException` reports invalid structure |
-| Duplicate header | Header `name,Name` | `IOException` rejects case-insensitive duplicate |
-| Short row | Header has 3 fields; row has 2 | `IOException` reports actual and expected counts |
-| Long row | Header has 2 fields; row has 3 | `IOException` reports actual and expected counts |
-| Broken quotes | Unclosed or misplaced quotation mark | `IOException` identifies the malformed line |
-| Unknown column | Analyze a column absent from the header | `IllegalArgumentException` |
-| Null data set | Pass `null` to an analytics method | `IllegalArgumentException` |
-| Multiline value | Quoted value spans physical lines | Rejected as unsupported/malformed input |
+```powershell
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+Remove-Item filtered.csv -ErrorAction SilentlyContinue
+```
 
-## Manual testing checklist
+## B) Strict compile — application
 
-- [ ] Compile all files in `src/csvanalyticsengine`.
-- [ ] Run `Main` without arguments and verify the usage message.
-- [ ] Run with a valid file and confirm columns and row count.
-- [ ] Request numeric statistics and verify valid, missing, and invalid counts.
-- [ ] Request grouping and verify every row belongs to one group.
-- [ ] Test commas and escaped quotation marks inside quoted cells.
-- [ ] Test empty, header-only, inconsistent, and malformed files.
-- [ ] Confirm unknown columns fail clearly.
-- [ ] Write and reread a temporary data set to verify CSV escaping.
+```text
+javac -Xlint:all -Werror -d out src/csvanalyticsengine/*.java
+```
 
-## Phase 2 validation review additions
+Every warning is an error; the build must be completely clean.
 
-| Test | Action | Expected result |
-|---|---|---|
-| Directory CSV path | Read or write an existing directory | `IOException` identifies a non-regular file |
-| Mutate original row | Add row, then add another field to the original object | Stored data-set row remains unchanged |
-| Mutate returned row | Change a row returned by `getRows()` | Stored data set remains unchanged |
-| Negative statistics count | Construct statistics with any negative count | Rejected |
-| Inconsistent empty statistics | Valid count zero with min/max/average values | Rejected |
-| Inconsistent populated statistics | Positive valid count with missing min/max/average | Rejected |
-| Impossible average | Average below minimum or above maximum | Rejected |
+## C) Strict compile — tests
+
+```text
+javac -Xlint:all -Werror -cp out -d test-out tests/csvanalyticsengine/*.java
+```
+
+## D) Run automated tests
+
+Linux/macOS/Git Bash (classpath separator `:`):
+
+```bash
+java -cp "out:test-out" csvanalyticsengine.TestRunner
+```
+
+Windows PowerShell (classpath separator `;`):
+
+```powershell
+java -cp "out;test-out" csvanalyticsengine.TestRunner
+```
+
+Expected: `PASS` per test, a summary like `Tests passed: 64, failed: 0 (149 checks total)`, `RESULT: PASS`, and exit code 0. Any failure prints `FAIL` with the reason and exits 1. All file-based tests use `Files.createTempFile` and delete their temp files — no CSV files are left behind.
+
+## E) CLI demo
+
+```text
+java -cp out csvanalyticsengine.Main demo
+```
+
+Expected: loads a temporary sample CSV, prints summary, statistics, group counts, filtered rows, and an export round trip, then `Demo completed successfully (temporary files deleted).` with exit code 0.
+
+## F) Manual CLI workflow
+
+```text
+java -cp out csvanalyticsengine.Main help
+java -cp out csvanalyticsengine.Main summary examples/sales.csv
+java -cp out csvanalyticsengine.Main stats examples/sales.csv amount
+java -cp out csvanalyticsengine.Main group examples/sales.csv category
+java -cp out csvanalyticsengine.Main filter examples/sales.csv category Food
+java -cp out csvanalyticsengine.Main export-filtered examples/sales.csv filtered.csv category Food
+```
+
+Expected for `stats` on the sample data: 4 valid values, 1 missing, 1 invalid, min `-5.75`, max `35.00`, sum `45.95`, average `11.4875`. The exported `filtered.csv` can itself be read back with `summary` (round trip) and is gitignored.
+
+## G) Error behavior
+
+Each of these prints a clear message to stderr and exits non-zero (check `echo $?` on Linux/macOS or `$LASTEXITCODE` in PowerShell):
+
+```text
+java -cp out csvanalyticsengine.Main summary missing.csv          # missing file
+java -cp out csvanalyticsengine.Main stats examples/sales.csv nosuchcolumn   # unknown column
+java -cp out csvanalyticsengine.Main frobnicate                   # unknown command
+java -cp out csvanalyticsengine.Main stats                        # missing arguments
+```
+
+Malformed CSV test — create a broken file and load it:
+
+```bash
+printf 'id,name\n1,"Unclosed\n' > malformed.csv
+java -cp out csvanalyticsengine.Main summary malformed.csv        # exits non-zero
+```
+
+## H) Scripts
+
+Linux/macOS/Git Bash:
+
+```bash
+./scripts/test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\test.ps1
+```
+
+Both scripts: clean → strict compile app → strict compile tests → TestRunner → demo → summary/stats/group against `examples/sales.csv`, stopping at the first failure. `test.sh` picks the right classpath separator automatically, so it also works from Git Bash on Windows.
+
+## I) Cleanup
+
+Linux/macOS/Git Bash:
+
+```bash
+rm -rf out test-out filtered.csv malformed.csv
+```
+
+Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+Remove-Item filtered.csv,malformed.csv -ErrorAction SilentlyContinue
+```

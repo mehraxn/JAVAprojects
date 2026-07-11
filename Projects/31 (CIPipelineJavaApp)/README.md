@@ -2,20 +2,25 @@
 
 ## Description
 
-A small dependency-free Java application prepared with a GitHub Actions workflow that makes compilation, testing, packaging, and artifact handling visible as separate continuous-integration steps.
+A Java CI pipeline starter that demonstrates the compile, test, package, and artifact stages of continuous integration without hiding them behind a build framework. A small greeting service provides validated business logic, and a dependency-free test runner supplies a clear pass/fail process exit status that CI can act on.
 
-## Goal
+## What it demonstrates
 
-The goal is to learn what a CI pipeline actually performs rather than hiding every operation behind a large build framework. A greeting service provides simple validated business logic, and a dependency-free test runner supplies a clear pass/fail process exit status.
+- `javac` compilation with separate output directories for application and test classes
+- A dependency-free test runner that exits 0 on success and 1 on the first failed check
+- Test separation: test classes are never packaged into the final JAR
+- Executable JAR packaging with `jar --create --main-class`
+- A JAR smoke test as a pipeline stage
+- A GitHub Actions workflow template with an artifact-upload step
+- A local validation workflow you can run with nothing but a JDK
 
-## Technologies and concepts used
+## What is implemented
 
-- Java 21 source and package structure
-- Input validation and focused service logic
-- Separate application and test output directories
-- `javac`, `java`, and `jar` command concepts
-- GitHub Actions checkout and Java setup actions
-- Build artifacts and failure-driven pipeline control
+- Java 21 application source (`GreetingService`, `Main`)
+- Java test source (`GreetingServiceTest`, plain `main`-method runner, 7 checks)
+- Local build commands documented in `TESTING.md`
+- CI workflow YAML template at `.github/workflows/ci.yml`
+- Recorded validation evidence in `TEST_RESULTS.md`
 
 ## Project structure
 
@@ -27,52 +32,51 @@ docs/PIPELINE.md                 Pipeline design explanation
 .gitignore                       Generated-output exclusions
 README.md                        Project documentation
 TESTING.md                       Validation guide
+TEST_RESULTS.md                  Actual recorded validation results
 ```
 
 ## Important files explained
 
-- `GreetingService.java` contains the testable greeting and validation logic.
-- `Main.java` provides a minimal console demonstration.
-- `GreetingServiceTest.java` performs normal and invalid-input checks without an external test library.
-- `.github/workflows/ci.yml` defines checkout, Java setup, application compilation, test compilation, test execution, JAR packaging, and artifact upload.
-- `docs/PIPELINE.md` explains trigger and repository-placement decisions.
+- `GreetingService.java` contains the testable greeting logic: it trims input, rejects null/blank names, and enforces an 80-character limit.
+- `Main.java` is a minimal console entry point (greets `CI learner` by default, or the first argument).
+- `GreetingServiceTest.java` checks normal, trimmed, boundary (80 vs 81 characters), null, empty, and blank inputs. It prints `All tests passed (7 checks).` and exits 0 on success, or prints the failed check and exits 1.
+- `.github/workflows/ci.yml` defines checkout, JDK setup, application compilation, test compilation, test execution, JAR packaging, a JAR smoke test, and artifact upload.
+- `docs/PIPELINE.md` explains the stage ordering and repository-placement decisions.
 
-## Intended real-environment workflow
+## Quick start
 
-A developer would first compile application classes, compile tests against those classes, run the test runner, and package only application classes into an executable JAR. In CI, the same stages would run on a clean hosted runner, and any failed compilation or test would stop later stages.
+From the project root (JDK 21 required, no build tool needed):
 
-GitHub discovers workflows only in the repository-level `.github/workflows` directory. The workflow remains inside project 31 to respect project isolation, so it must be reviewed and moved to repository scope before GitHub Actions can discover it.
+```bash
+javac -d out src/cipipelinejavaapp/*.java
+javac -cp out -d test-out test/cipipelinejavaapp/*.java
+java -cp "out:test-out" cipipelinejavaapp.GreetingServiceTest   # Windows: "out;test-out"
+```
 
-## Prepared but not executed
+See `TESTING.md` for the full pipeline including packaging and the smoke test.
 
-- Java source, test source, workflow stages, packaging commands, and artifact configuration were prepared.
-- The workflow uses a manual trigger and contains no fake status badge.
-- Java compilation, tests, JAR creation, artifact upload, and GitHub Actions execution were not performed.
-- No passing pipeline or working artifact is claimed.
+## CI workflow template
 
-## Manual validation checklist
+The workflow file is included as a template. GitHub discovers workflows only in the repository-level `.github/workflows` directory, so to activate it in a portfolio repository, copy or move it there and adjust the `working-directory` and artifact paths to the real repo layout. In this repository the project lives at `Projects/31 (CIPipelineJavaApp)`, and the template already uses that path.
 
-- [ ] Confirm source and package paths agree.
-- [ ] Confirm tests compile into `test-out`, separate from application classes.
-- [ ] Confirm the test class exits non-zero on an assertion failure.
-- [ ] Confirm packaging includes application classes but excludes tests.
-- [ ] Review action versions and Java distribution/version.
-- [ ] Move the workflow only after repository-level approval.
-- [ ] Trigger manually before adding push or pull-request events.
+GitHub Actions has not been executed for this project, so no pipeline run or artifact upload is claimed; see `TEST_RESULTS.md` for what was actually validated locally.
 
-## Common mistakes avoided
+## What is not production-grade
 
-- Test classes are not packaged into the application JAR.
-- CI stages are explicit and ordered.
-- The workflow does not claim it ran successfully.
-- No fake badge or generated artifact is committed.
-- The nested-workflow discovery limitation is documented.
-- Linux and Windows classpath separators are not treated as interchangeable.
+- No Maven/Gradle build system — the point is to see the raw pipeline stages.
+- No external dependencies and no test framework.
+- No production deployment.
+- The GitHub Actions workflow does not run unless activated at the repository level.
+- Artifact upload is unproven until the workflow actually runs in GitHub.
+
+## How to validate
+
+- `TESTING.md` — exact commands for each pipeline stage, for both Windows and Linux/macOS.
+- `TEST_RESULTS.md` — the honest record of what was actually executed and the results.
 
 ## Possible future improvements
 
 - Add more service behavior and test cases.
-- Add pull-request triggers after the workflow is enabled and verified.
 - Publish checksums with retained artifacts.
-- Add a test framework only when its value outweighs the added build complexity.
-- Record pipeline permissions and artifact-retention policy explicitly.
+- Add a test framework or build tool only when its value outweighs the added complexity.
+- Enable pull-request checks after the workflow is moved to repository scope.

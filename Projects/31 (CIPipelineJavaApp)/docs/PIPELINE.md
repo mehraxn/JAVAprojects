@@ -1,12 +1,14 @@
 # Pipeline Design
 
-The workflow models five requested stages:
+The workflow models the classic CI stages explicitly:
 
 1. **Checkout** - obtains the repository source.
 2. **Set up Java** - selects Temurin JDK 21.
-3. **Compile** - compiles application and test source separately.
-4. **Test** - runs the dependency-free `GreetingServiceTest` class.
-5. **Package** - creates an executable JAR and uploads it as an artifact.
+3. **Compile** - compiles application and test source separately (`out` vs `test-out`).
+4. **Test** - runs the dependency-free `GreetingServiceTest` class; a non-zero exit stops the pipeline.
+5. **Package** - creates an executable JAR from application classes only.
+6. **Smoke test** - runs the packaged JAR once to prove it starts.
+7. **Upload** - stores the JAR as a build artifact.
 
 ## Repository placement
 
@@ -14,8 +16,8 @@ GitHub Actions only discovers workflow files under the repository-level `.github
 
 ## Trigger policy
 
-The starter uses `workflow_dispatch` only, so it cannot run automatically on pushes or pull requests. Automatic triggers should be added only after the workflow has been reviewed and intentionally enabled.
+The template declares `push`, `pull_request`, and `workflow_dispatch` triggers. Because the file sits inside the project folder, none of them fire until the file is moved to repository scope — the triggers document how the pipeline is meant to run once activated.
 
 ## Honest status
 
-The workflow is prepared but has not been executed. No successful pipeline, test, build, or artifact is claimed.
+The pipeline stages were executed locally on 2026-07-11 with a JDK 21: compile, tests (7 checks), JAR packaging, and the JAR smoke test all passed; see `TEST_RESULTS.md`. GitHub Actions itself has not been run, so no CI pipeline run or artifact upload is claimed.

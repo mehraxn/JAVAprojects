@@ -1,6 +1,19 @@
+# CI workflow TEMPLATE for the CI Pipeline Java App project.
+#
+# GitHub only discovers workflows in the repository-level .github/workflows
+# directory. This file lives inside the project folder, so it will NOT run
+# until it is copied to <repo-root>/.github/workflows/.
+#
+# The working-directory values below match this portfolio's actual layout,
+# where the project lives at: Projects/31 (CIPipelineJavaApp)
+# If your repository keeps project folders at the root instead, change every
+# occurrence to: 31 (CIPipelineJavaApp)
+
 name: Java CI Pipeline Starter
 
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -9,33 +22,35 @@ permissions:
 jobs:
   build-test-package:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "Projects/31 (CIPipelineJavaApp)"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
 
       - name: Compile application
-        working-directory: "Projects/31 (CIPipelineJavaApp)"
         run: javac -d out src/cipipelinejavaapp/*.java
 
       - name: Compile tests
-        working-directory: "Projects/31 (CIPipelineJavaApp)"
         run: javac -cp out -d test-out test/cipipelinejavaapp/*.java
 
       - name: Run tests
-        working-directory: "Projects/31 (CIPipelineJavaApp)"
         run: java -cp "out:test-out" cipipelinejavaapp.GreetingServiceTest
 
-      - name: Package application
-        working-directory: "Projects/31 (CIPipelineJavaApp)"
+      - name: Package executable JAR
         run: |
           mkdir -p dist
           jar --create --file dist/ci-pipeline-java-app.jar --main-class cipipelinejavaapp.Main -C out cipipelinejavaapp
+
+      - name: Smoke test JAR
+        run: java -jar dist/ci-pipeline-java-app.jar "GitHub Actions"
 
       - name: Upload packaged application
         uses: actions/upload-artifact@v4
@@ -43,6 +58,3 @@ jobs:
           name: ci-pipeline-java-app
           path: "Projects/31 (CIPipelineJavaApp)/dist/ci-pipeline-java-app.jar"
           if-no-files-found: error
-
-# This nested workflow is a portfolio template. GitHub discovers workflows only
-# from the repository-level .github/workflows directory.

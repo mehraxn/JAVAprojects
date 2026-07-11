@@ -1,5 +1,15 @@
+# Generated build output (created locally by TESTING.md commands, never committed)
 out/
 test-out/
 dist/
 *.class
+*.jar
 *.log
+
+# OS files
+.DS_Store
+
+# IDE files
+.idea/
+.vscode/
+*.iml

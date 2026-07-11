@@ -1,54 +1,96 @@
-# Testing CI Pipeline Java App
+# Testing the CI Pipeline Java App
 
-No Java command, build command, test process, packaging process, or CI workflow was executed while preparing this project.
+This guide lists the exact commands to run every pipeline stage locally from the project root. The results of actually running them are recorded in `TEST_RESULTS.md`.
 
-## Static validation checklist
+Prerequisite: a JDK 21 (`java -version`, `javac -version`). No build tool or external dependency is needed.
 
-- [ ] Confirm `GreetingService` rejects null, blank, and oversized names.
-- [ ] Confirm normal names are trimmed and formatted correctly.
-- [ ] Confirm test assertions fail with a non-zero process result.
-- [ ] Confirm workflow stages appear in checkout, setup, compile, test, and package order.
-- [ ] Confirm packaging reads only from the application output directory.
+## A) Clean previous generated files
 
-## File existence checks
+Linux/macOS/Git Bash:
 
-- [ ] `src/cipipelinejavaapp/GreetingService.java` exists.
-- [ ] `src/cipipelinejavaapp/Main.java` exists.
-- [ ] `test/cipipelinejavaapp/GreetingServiceTest.java` exists.
-- [ ] `.github/workflows/ci.yml` exists.
-- [ ] `docs/PIPELINE.md`, `README.md`, and `TESTING.md` exist.
+```bash
+rm -rf out test-out dist
+```
 
-## Configuration review checklist
+Windows PowerShell:
 
-- [ ] Workflow working directories point to project 31.
-- [ ] Java version and distribution are consistent across steps.
-- [ ] Application and tests use separate output directories.
-- [ ] A test failure prevents packaging.
-- [ ] Artifact upload requires the expected JAR.
-- [ ] Manual-only triggering and nested placement are documented.
+```powershell
+Remove-Item -Recurse -Force out,test-out,dist -ErrorAction SilentlyContinue
+```
 
-## Security checks
+## B) Compile application source
 
-- [ ] No real secret or credential is present.
-- [ ] No production endpoint is present.
-- [ ] Workflow permissions are read-only unless a reviewed step needs more.
-- [ ] No untrusted script or downloaded executable is invoked.
-
-## Commands normally used - NOT executed
-
-```text
+```bash
 javac -d out src/cipipelinejavaapp/*.java
+```
+
+## C) Compile tests
+
+```bash
 javac -cp out -d test-out test/cipipelinejavaapp/*.java
+```
+
+Tests compile into `test-out`, separate from `out`, so they can never leak into the application JAR.
+
+## D) Run tests
+
+Linux/macOS/Git Bash (classpath separator `:`):
+
+```bash
+java -cp "out:test-out" cipipelinejavaapp.GreetingServiceTest
+```
+
+Windows PowerShell/Command Prompt (classpath separator `;`):
+
+```powershell
 java -cp "out;test-out" cipipelinejavaapp.GreetingServiceTest
+```
+
+Expected on success: `All tests passed (7 checks).` and exit code 0. On a failed check the runner prints `TEST FAILED: ...` and exits 1, which stops a CI pipeline.
+
+## E) Package executable JAR
+
+Linux/macOS/Git Bash:
+
+```bash
+mkdir -p dist
 jar --create --file dist/ci-pipeline-java-app.jar --main-class cipipelinejavaapp.Main -C out cipipelinejavaapp
 ```
 
-GitHub Actions would normally run equivalent Linux commands after the workflow is moved to repository scope. None were run here.
+Windows PowerShell:
 
-## Expected results in a proper environment
+```powershell
+New-Item -ItemType Directory -Force dist | Out-Null
+jar --create --file dist/ci-pipeline-java-app.jar --main-class cipipelinejavaapp.Main -C out cipipelinejavaapp
+```
 
-- Application and test classes compile cleanly.
-- All prepared greeting checks pass.
-- Invalid behavior causes the test stage and workflow to fail.
-- An executable application-only JAR is created after successful tests.
-- CI uploads the expected artifact only after every prior stage succeeds.
+Only the application package from `out` is included — no test classes.
+
+## F) Run the executable JAR
+
+```bash
+java -jar dist/ci-pipeline-java-app.jar
+java -jar dist/ci-pipeline-java-app.jar "GitHub"
+```
+
+Expected: `Hello, CI learner!` for the first command, `Hello, GitHub!` for the second, both with exit code 0.
+
+## G) GitHub Actions note
+
+The workflow file is included under `.github/workflows/ci.yml` inside this project folder, where it is a template only — GitHub discovers workflows exclusively in the repository-level `.github/workflows` directory. To activate it in a portfolio monorepo, copy it to the repository-level `.github/workflows/ci.yml` and adjust the `working-directory` and artifact `path` values to match the actual repo layout (in this repository: `Projects/31 (CIPipelineJavaApp)`).
+
+## H) Cleanup
+
+Linux/macOS/Git Bash:
+
+```bash
+rm -rf out test-out dist
+```
+
+Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force out,test-out,dist -ErrorAction SilentlyContinue
+```
+
+Generated files (`out/`, `test-out/`, `dist/`, `*.class`, `*.jar`) are gitignored and must not be committed.

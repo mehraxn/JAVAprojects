@@ -9,21 +9,26 @@ public class NumericStatistics {
     private final int invalidValueCount;
     private final BigDecimal minimum;
     private final BigDecimal maximum;
+    private final BigDecimal sum;
     private final BigDecimal average;
 
     public NumericStatistics(String column, int validValueCount, int missingValueCount,
-            int invalidValueCount, BigDecimal minimum, BigDecimal maximum, BigDecimal average) {
+            int invalidValueCount, BigDecimal minimum, BigDecimal maximum, BigDecimal sum,
+            BigDecimal average) {
         if (column == null || column.trim().isEmpty()) {
             throw new IllegalArgumentException("Statistics column cannot be empty.");
         }
         if (validValueCount < 0 || missingValueCount < 0 || invalidValueCount < 0) {
             throw new IllegalArgumentException("Statistics counts cannot be negative.");
         }
-        if (validValueCount == 0 && (minimum != null || maximum != null || average != null)) {
+        if (validValueCount == 0 && (minimum != null || maximum != null || sum != null
+                || average != null)) {
             throw new IllegalArgumentException("Empty numeric statistics cannot contain values.");
         }
-        if (validValueCount > 0 && (minimum == null || maximum == null || average == null)) {
-            throw new IllegalArgumentException("Nonempty numeric statistics require min, max, and average.");
+        if (validValueCount > 0 && (minimum == null || maximum == null || sum == null
+                || average == null)) {
+            throw new IllegalArgumentException(
+                    "Nonempty numeric statistics require min, max, sum, and average.");
         }
         if (minimum != null && maximum != null && minimum.compareTo(maximum) > 0) {
             throw new IllegalArgumentException("Minimum cannot exceed maximum.");
@@ -37,6 +42,7 @@ public class NumericStatistics {
         this.invalidValueCount = invalidValueCount;
         this.minimum = minimum;
         this.maximum = maximum;
+        this.sum = sum;
         this.average = average;
     }
 
@@ -64,6 +70,10 @@ public class NumericStatistics {
         return maximum;
     }
 
+    public BigDecimal getSum() {
+        return sum;
+    }
+
     public BigDecimal getAverage() {
         return average;
     }
@@ -76,6 +86,7 @@ public class NumericStatistics {
                 + ", invalid=" + invalidValueCount
                 + ", min=" + display(minimum)
                 + ", max=" + display(maximum)
+                + ", sum=" + display(sum)
                 + ", average=" + display(average);
     }
 

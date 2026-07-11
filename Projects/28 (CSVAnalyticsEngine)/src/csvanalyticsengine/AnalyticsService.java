@@ -58,7 +58,7 @@ public class AnalyticsService {
         BigDecimal average = validCount == 0 ? null
                 : sum.divide(BigDecimal.valueOf(validCount), 4, RoundingMode.HALF_UP).stripTrailingZeros();
         return new NumericStatistics(resolvedColumn, validCount, missingCount, invalidCount,
-                minimum, maximum, average);
+                minimum, maximum, validCount == 0 ? null : sum, average);
     }
 
     public BigDecimal sum(DataSet dataSet, String column) {

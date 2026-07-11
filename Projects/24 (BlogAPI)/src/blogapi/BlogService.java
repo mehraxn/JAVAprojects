@@ -19,6 +19,11 @@ public class BlogService {
 
     public synchronized User createUser(String name) {
         User user = new User("U-" + nextUserId, name);
+        for (User existing : users.values()) {
+            if (existing.getName().equalsIgnoreCase(user.getName())) {
+                throw new IllegalArgumentException("User name already exists: " + user.getName());
+            }
+        }
         users.put(user.getId(), user);
         nextUserId++;
         return user.copy();
@@ -30,6 +35,11 @@ public class BlogService {
             result.add(user.copy());
         }
         return Collections.unmodifiableList(result);
+    }
+
+    public synchronized User findUser(String userId) {
+        User user = users.get(requireId(userId, "User ID"));
+        return user == null ? null : user.copy();
     }
 
     public synchronized Post createPost(String authorId, String title, String content) {
@@ -81,6 +91,7 @@ public class BlogService {
         List<Post> result = new ArrayList<Post>();
         for (Post post : posts.values()) {
             if (post.getTitle().toLowerCase(Locale.ROOT).contains(query)
+                    || post.getContent().toLowerCase(Locale.ROOT).contains(query)
                     || post.getAuthor().getName().toLowerCase(Locale.ROOT).contains(query)) {
                 result.add(post.copy());
             }
@@ -122,7 +133,7 @@ public class BlogService {
         return user;
     }
 
-    private String requireId(String value, String fieldName) {
+    private static String requireId(String value, String fieldName) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(fieldName + " cannot be empty.");
         }

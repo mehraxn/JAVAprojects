@@ -2,7 +2,7 @@ package blogapi;
 
 import java.time.LocalDateTime;
 
-public class Post {
+public final class Post {
     private final String id;
     private final User author;
     private String title;
@@ -74,7 +74,7 @@ public class Post {
         this.content = validContent;
     }
 
-    private String requireText(String value, String fieldName) {
+    private static String requireText(String value, String fieldName) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(fieldName + " cannot be empty.");
         }

@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class BlogHttpServer {
+public final class BlogHttpServer {
     private static final int MAX_REQUEST_BYTES = 131_072;
     private final BlogService service;
     private HttpServer server;
@@ -24,8 +24,8 @@ public class BlogHttpServer {
     }
 
     public synchronized void start(int port) throws IOException {
-        if (port < 1 || port > 65_535) {
-            throw new IllegalArgumentException("Port must be between 1 and 65535.");
+        if (port < 0 || port > 65_535) {
+            throw new IllegalArgumentException("Port must be between 0 and 65535.");
         }
         if (server != null) {
             throw new IllegalStateException("Server is already running.");
@@ -33,6 +33,7 @@ public class BlogHttpServer {
         server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/users", this::handleUsers);
         server.createContext("/posts", this::handlePosts);
+        server.createContext("/", this::handleNotFound);
         server.setExecutor(null);
         server.start();
     }
@@ -41,6 +42,21 @@ public class BlogHttpServer {
         if (server != null) {
             server.stop(0);
             server = null;
+        }
+    }
+
+    public synchronized int getPort() {
+        if (server == null) {
+            throw new IllegalStateException("Server is not running.");
+        }
+        return server.getAddress().getPort();
+    }
+
+    private void handleNotFound(HttpExchange exchange) throws IOException {
+        try {
+            send(exchange, 404, BlogJson.error("Endpoint not found."));
+        } finally {
+            exchange.close();
         }
     }
 
@@ -58,10 +74,12 @@ public class BlogHttpServer {
                 exchange.getResponseHeaders().set("Allow", "GET, POST");
                 send(exchange, 405, BlogJson.error("Method not allowed."));
             }
-        } catch (IllegalArgumentException exception) {
+        } catch (PayloadTooLargeException exception) {
+            send(exchange, 413, BlogJson.error(exception.getMessage()));
+        } catch (IllegalArgumentException | BadRequestException exception) {
             send(exchange, 400, BlogJson.error(exception.getMessage()));
-        } catch (IOException exception) {
-            send(exchange, 400, BlogJson.error(exception.getMessage()));
+        } catch (RuntimeException exception) {
+            send(exchange, 500, BlogJson.error("Internal server error."));
         } finally {
             exchange.close();
         }
@@ -89,10 +107,12 @@ public class BlogHttpServer {
             } else {
                 send(exchange, 404, BlogJson.error("Endpoint not found."));
             }
-        } catch (IllegalArgumentException exception) {
+        } catch (PayloadTooLargeException exception) {
+            send(exchange, 413, BlogJson.error(exception.getMessage()));
+        } catch (IllegalArgumentException | BadRequestException exception) {
             send(exchange, 400, BlogJson.error(exception.getMessage()));
-        } catch (IOException exception) {
-            send(exchange, 400, BlogJson.error(exception.getMessage()));
+        } catch (RuntimeException exception) {
+            send(exchange, 500, BlogJson.error("Internal server error."));
         } finally {
             exchange.close();
         }
@@ -162,14 +182,14 @@ public class BlogHttpServer {
         while ((count = input.read(buffer)) != -1) {
             total += count;
             if (total > MAX_REQUEST_BYTES) {
-                throw new IOException("Request body is too large.");
+                throw new PayloadTooLargeException("Request body is too large.");
             }
             output.write(buffer, 0, count);
         }
         return new String(output.toByteArray(), StandardCharsets.UTF_8);
     }
 
-    private Map<String, String> parseParameters(String text) throws IOException {
+    private Map<String, String> parseParameters(String text) throws BadRequestException {
         Map<String, String> result = new LinkedHashMap<String, String>();
         if (text == null || text.trim().isEmpty()) {
             return result;
@@ -179,17 +199,17 @@ public class BlogHttpServer {
             String key = decode(parts[0]);
             String value = parts.length == 2 ? decode(parts[1]) : "";
             if (result.put(key, value) != null) {
-                throw new IOException("Duplicate request field: " + key);
+                throw new BadRequestException("Duplicate request field: " + key);
             }
         }
         return result;
     }
 
-    private String decode(String value) throws IOException {
+    private String decode(String value) throws BadRequestException {
         try {
             return URLDecoder.decode(value, StandardCharsets.UTF_8.name());
         } catch (IllegalArgumentException exception) {
-            throw new IOException("Invalid URL-encoded data.", exception);
+            throw new BadRequestException("Invalid URL-encoded data.", exception);
         }
     }
 
@@ -198,5 +218,16 @@ public class BlogHttpServer {
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
         exchange.sendResponseHeaders(status, body.length);
         exchange.getResponseBody().write(body);
+    }
+
+    private static class BadRequestException extends IOException {
+        private static final long serialVersionUID = 1L;
+        BadRequestException(String message) { super(message); }
+        BadRequestException(String message, Throwable cause) { super(message, cause); }
+    }
+
+    private static final class PayloadTooLargeException extends IOException {
+        private static final long serialVersionUID = 1L;
+        PayloadTooLargeException(String message) { super(message); }
     }
 }

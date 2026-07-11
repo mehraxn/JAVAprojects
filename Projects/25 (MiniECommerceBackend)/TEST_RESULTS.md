@@ -6,16 +6,16 @@ Date: 2026-07-11
 
 | Check | Result | Notes |
 |---|---:|---|
-| Java version | NOT RUN | Pending validation |
-| Strict application compile | NOT RUN | `javac -Xlint:all -Werror` |
-| Strict test compile | NOT RUN | `javac -Xlint:all -Werror` |
-| Automated tests | NOT RUN | Pending test runner execution |
-| Main demo | NOT RUN | `Main demo` |
-| Checkout demo | NOT RUN | Successful checkout |
-| Cancel demo | NOT RUN | Stock restoration |
-| Failure demo | NOT RUN | Invalid/insufficient stock behavior |
-| Defensive copy tests | NOT RUN | Product/cart/order snapshots |
-| BigDecimal total tests | NOT RUN | Money calculation |
+| Java version | PASS | OpenJDK 21.0.11 LTS |
+| Strict application compile | PASS | `javac -Xlint:all -Werror` |
+| Strict test compile | PASS | `javac -Xlint:all -Werror` |
+| Automated tests | PASS | 100 checks across 5 suites |
+| Main demo | PASS | `Main demo` completed with paid order summary |
+| Checkout demo | PASS | Successful checkout and order creation |
+| Cancel demo | PASS | Stock restored from 3 to 5 |
+| Failure demo | PASS | Insufficient stock handled; cart unchanged |
+| Defensive copy tests | PASS | Product, cart, order, catalog, and order-list snapshots |
+| BigDecimal total tests | PASS | Exact cart and order decimal totals |
 
 ## Known limitations
 

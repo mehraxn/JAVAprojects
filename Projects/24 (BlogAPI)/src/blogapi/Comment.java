@@ -2,7 +2,7 @@ package blogapi;
 
 import java.time.LocalDateTime;
 
-public class Comment {
+public final class Comment {
     private final String id;
     private final String postId;
     private final User author;
@@ -52,7 +52,7 @@ public class Comment {
         return new Comment(id, postId, author, body, createdAt);
     }
 
-    private String requireText(String value, String fieldName) {
+    private static String requireText(String value, String fieldName) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(fieldName + " cannot be empty.");
         }

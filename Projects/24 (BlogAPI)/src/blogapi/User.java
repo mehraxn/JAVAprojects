@@ -1,6 +1,6 @@
 package blogapi;
 
-public class User {
+public final class User {
     private final String id;
     private final String name;
 
@@ -21,7 +21,7 @@ public class User {
         return new User(id, name);
     }
 
-    private String requireText(String value, String fieldName) {
+    private static String requireText(String value, String fieldName) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException(fieldName + " cannot be empty.");
         }

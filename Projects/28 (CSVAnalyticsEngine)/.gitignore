@@ -1,0 +1,20 @@
+# Generated build output (created by scripts/test.* and TESTING.md commands)
+out/
+test-out/
+*.class
+*.log
+tmp/
+*.tmp
+
+# Local CSV files created while using the CLI - never committed.
+# The tracked sample data in examples/ stays allowed.
+*.csv
+!examples/*.csv
+
+# OS files
+.DS_Store
+
+# IDE files
+.idea/
+.vscode/
+*.iml

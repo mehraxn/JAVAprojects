@@ -1,0 +1,7 @@
+id,category,product,amount,region
+1,Food,"Apples, red",12.50,North
+2,Books,"Clean Code",35.00,South
+3,Food,"Bread ""whole grain""",4.20,North
+4,Electronics,Keyboard,invalid,West
+5,Food,Milk,,South
+6,Books,Refactoring,-5.75,North

@@ -2,9 +2,10 @@ package filebasedaddressbook;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -73,25 +74,44 @@ public class FileStore {
         if (parent != null) {
             Files.createDirectories(parent);
         }
-        Files.write(absolutePath, lines, StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING,
-                StandardOpenOption.WRITE);
+        writeAtomically(absolutePath, lines);
+    }
+
+    /**
+     * Atomic-style save: write to a temporary file in the target directory, then
+     * move it over the target. If anything fails halfway, the original file is
+     * left untouched and the temporary file is cleaned up.
+     */
+    private void writeAtomically(Path target, List<String> lines) throws IOException {
+        Path directory = target.getParent();
+        Path tempFile = directory == null
+                ? Files.createTempFile("addressbook", ".tsv.tmp")
+                : Files.createTempFile(directory, "addressbook", ".tsv.tmp");
+        try {
+            Files.write(tempFile, lines, StandardCharsets.UTF_8);
+            try {
+                Files.move(tempFile, target,
+                        StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException exception) {
+                Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException exception) {
+            try {
+                Files.deleteIfExists(tempFile);
+            } catch (IOException cleanupFailure) {
+                exception.addSuppressed(cleanupFailure);
+            }
+            throw exception;
+        }
     }
 
     public void importContacts(Path path, AddressBook addressBook) throws IOException {
         if (addressBook == null) {
             throw new IllegalArgumentException("Address book must not be null");
         }
-        List<Contact> loadedContacts = load(path);
-        for (Contact contact : loadedContacts) {
-            if (addressBook.containsContact(contact.getId())) {
-                throw new IllegalArgumentException("Contact ID already exists: " + contact.getId());
-            }
-        }
-        for (Contact contact : loadedContacts) {
-            addressBook.addContact(contact);
-        }
+        // Load fully first, then hand off to the address book's conflict-safe
+        // import so a conflict leaves the existing contacts unchanged.
+        addressBook.importContacts(load(path));
     }
 
     public void exportContacts(Path path, AddressBook addressBook) throws IOException {

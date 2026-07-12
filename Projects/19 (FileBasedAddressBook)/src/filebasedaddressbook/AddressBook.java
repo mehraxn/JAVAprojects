@@ -4,8 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 public class AddressBook {
     private final Map<String, Contact> contacts = new LinkedHashMap<>();
@@ -17,7 +20,8 @@ public class AddressBook {
         if (contacts.containsKey(contact.getId())) {
             throw new IllegalArgumentException("Contact ID already exists: " + contact.getId());
         }
-        contacts.put(contact.getId(), contact);
+        // Store a defensive copy so the caller cannot mutate our stored contact.
+        contacts.put(contact.getId(), contact.copy());
     }
 
     public Contact getContact(String contactId) {
@@ -26,15 +30,36 @@ public class AddressBook {
         if (contact == null) {
             throw new IllegalArgumentException("Unknown contact ID: " + validId);
         }
-        return contact;
+        return contact.copy();
+    }
+
+    public Optional<Contact> findById(String contactId) {
+        Contact contact = contacts.get(requireId(contactId));
+        return contact == null ? Optional.empty() : Optional.of(contact.copy());
     }
 
     public boolean containsContact(String contactId) {
         return contactId != null && contacts.containsKey(contactId.trim());
     }
 
-    public void updateContact(String contactId, String name, String phone, String email) {
-        getContact(contactId).updateDetails(name, phone, email);
+    public int size() {
+        return contacts.size();
+    }
+
+    /**
+     * Updates an existing contact. Returns {@code false} if no contact has the
+     * given ID. A failed validation throws and leaves the stored contact
+     * unchanged (the update is applied to a copy first).
+     */
+    public boolean updateContact(String contactId, String name, String phone, String email) {
+        Contact existing = contacts.get(requireId(contactId));
+        if (existing == null) {
+            return false;
+        }
+        Contact updated = existing.copy();
+        updated.updateDetails(name, phone, email);
+        contacts.put(updated.getId(), updated);
+        return true;
     }
 
     public boolean deleteContact(String contactId) {
@@ -48,7 +73,7 @@ public class AddressBook {
         List<Contact> matches = new ArrayList<>();
         for (Contact contact : contacts.values()) {
             if (contact.matches(searchText)) {
-                matches.add(contact);
+                matches.add(contact.copy());
             }
         }
         sortContacts(matches);
@@ -56,9 +81,40 @@ public class AddressBook {
     }
 
     public List<Contact> listContactsSorted() {
-        List<Contact> sortedContacts = new ArrayList<>(contacts.values());
+        List<Contact> sortedContacts = new ArrayList<>();
+        for (Contact contact : contacts.values()) {
+            sortedContacts.add(contact.copy());
+        }
         sortContacts(sortedContacts);
         return Collections.unmodifiableList(sortedContacts);
+    }
+
+    /**
+     * Conflict-safe import: verifies every incoming contact before changing any
+     * state. If any contact is null, or any ID conflicts with an existing
+     * contact or repeats within the incoming list, nothing is imported.
+     */
+    public void importContacts(List<Contact> incoming) {
+        if (incoming == null) {
+            throw new IllegalArgumentException("Imported contacts must not be null");
+        }
+        Set<String> incomingIds = new LinkedHashSet<>();
+        for (Contact contact : incoming) {
+            if (contact == null) {
+                throw new IllegalArgumentException("Imported contacts must not contain null");
+            }
+            if (contacts.containsKey(contact.getId())) {
+                throw new IllegalArgumentException(
+                        "Contact ID already exists: " + contact.getId());
+            }
+            if (!incomingIds.add(contact.getId())) {
+                throw new IllegalArgumentException(
+                        "Duplicate contact ID in import: " + contact.getId());
+            }
+        }
+        for (Contact contact : incoming) {
+            contacts.put(contact.getId(), contact.copy());
+        }
     }
 
     private static void sortContacts(List<Contact> contactList) {

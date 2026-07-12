@@ -1,6 +1,6 @@
 package quizexamplatform;
 
-public class AnswerResult {
+public final class AnswerResult {
     private final Question question;
     private final int selectedOptionIndex;
     private final boolean correct;

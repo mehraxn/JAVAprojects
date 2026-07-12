@@ -7,7 +7,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-public class Question {
+/**
+ * An immutable multiple-choice question. Options are copied on construction and
+ * exposed only as an unmodifiable list. Duplicate options are rejected
+ * case-insensitively (e.g. "True" and "true" cannot both appear).
+ */
+public final class Question {
     private final String prompt;
     private final List<String> options;
     private final int correctOptionIndex;

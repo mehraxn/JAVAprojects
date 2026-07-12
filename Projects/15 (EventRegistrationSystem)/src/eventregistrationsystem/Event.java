@@ -8,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Event {
+public final class Event {
     private final String id;
     private final String name;
     private final LocalDate date;
@@ -38,6 +38,10 @@ public class Event {
     public int getCapacity() { return capacity; }
 
     public Registration register(Attendee attendee) {
+        return register(attendee, LocalDateTime.now());
+    }
+
+    Registration register(Attendee attendee, LocalDateTime registeredAt) {
         if (attendee == null) {
             throw new IllegalArgumentException("Attendee must not be null");
         }
@@ -50,7 +54,7 @@ public class Event {
 
         String registrationId = id + "-R" + String.format("%03d", nextRegistrationNumber++);
         Registration registration = new Registration(
-                registrationId, attendee, LocalDateTime.now());
+                registrationId, id, attendee, registeredAt);
         registrationsByAttendee.put(attendee.getId(), registration);
         return registration;
     }
@@ -62,12 +66,31 @@ public class Event {
         }
     }
 
+    public void cancelRegistrationByRegistrationId(String registrationId) {
+        String validId = requireText(registrationId, "Registration ID");
+        String attendeeId = null;
+        for (Map.Entry<String, Registration> entry : registrationsByAttendee.entrySet()) {
+            if (entry.getValue().getId().equals(validId)) {
+                attendeeId = entry.getKey();
+                break;
+            }
+        }
+        if (attendeeId == null) {
+            throw new IllegalArgumentException("Registration does not exist: " + validId);
+        }
+        registrationsByAttendee.remove(attendeeId);
+    }
+
     public boolean isFull() {
         return registrationsByAttendee.size() >= capacity;
     }
 
     public int getAvailablePlaces() {
         return capacity - registrationsByAttendee.size();
+    }
+
+    public int getRegisteredCount() {
+        return registrationsByAttendee.size();
     }
 
     public List<Attendee> getParticipants() {

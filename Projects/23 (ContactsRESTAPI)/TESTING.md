@@ -1,89 +1,128 @@
 # Contacts REST API Testing
 
-The service tests need no server. HTTP tests should use an unused local port and stop the process afterward.
+All commands run from the project root. The automated tests need no running server — the HTTP tests start their own server on a free port (port 0) and stop it afterward.
 
-## Normal service tests
+## A) Clean
 
-| Test | Action | Expected result |
-|---|---|---|
-| Create | Add a complete contact | ID `C-1` assigned and record stored |
-| Sequential IDs | Add three contacts | IDs `C-1`, `C-2`, and `C-3` |
-| List | Add several contacts | Records returned in creation order |
-| Retrieve | Find a known ID | Matching contact returned |
-| Update | Replace editable fields | Updated contact returned; ID unchanged |
-| Delete | Delete known ID | Returns `true`; contact disappears |
-| Search | Search partial name/email/notes text with different casing | Matching records returned |
-| Pagination | Search with offset 1 and limit 2 | Correct two-record page returned |
-
-## Edge-case and invalid input test cases
-
-| Test | Input or action | Expected result |
-|---|---|---|
-| Empty repository | List or search before adding | Empty list |
-| Unknown retrieve/update | Use valid absent ID | Returns `null` |
-| Unknown delete | Delete absent ID | Returns `false` |
-| Blank name | Null, empty, or whitespace | `IllegalArgumentException` |
-| Invalid email | Missing `@` or domain | Rejected when nonempty |
-| Invalid phone | Letters or unsupported punctuation | Rejected when nonempty |
-| Empty contact methods | Blank email and phone | Accepted |
-| Negative offset | Search with `-1` | Rejected |
-| Invalid limit | Search with 0 or over 100 | Rejected |
-| Offset beyond results | Large valid offset | Empty list |
-| Duplicate repository ID | Add same explicit ID twice | Rejected |
-| Defensive copy | Mutate a returned contact | Stored record remains unchanged |
-| JSON special characters | Quotes, slashes, tabs, or line breaks in notes | Valid escaped JSON produced |
-
-## HTTP test cases
-
-| Request | Expected result |
-|---|---|
-| Valid `POST /contacts` | 201, contact JSON, and `Location` header |
-| `GET /contacts` | 200 JSON array |
-| Search/pagination GET | 200 with matching page |
-| `GET /contacts/C-1` | 200 for known ID; 404 otherwise |
-| Valid `PUT /contacts/C-1` | 200 with updated JSON |
-| `DELETE /contacts/C-1` | 204; subsequent GET is 404 |
-| Missing required form name | 400 error JSON |
-| Invalid pagination text | 400 error JSON |
-| Unsupported method | 405 and appropriate `Allow` header |
-| Unknown endpoint under `/contacts` | 404 error JSON |
-| Duplicate or malformed encoded field | 400 error JSON |
-| Request larger than 65,536 bytes | 400 error JSON |
-| Invalid port or second start | Validation exception |
-| Stop twice | Safe no-op |
-
-## Example HTTP requests
-
-After starting `contactsrestapi.Main server 8081`:
+Linux/macOS/Git Bash:
 
 ```text
-curl -i -X POST -d "name=Ada+Lovelace&email=ada%40example.com&phone=%2B49+123&notes=Developer" http://localhost:8081/contacts
-curl -i "http://localhost:8081/contacts?q=ada&offset=0&limit=10"
-curl -i http://localhost:8081/contacts/C-1
-curl -i -X PUT -d "name=Ada+Lovelace&email=ada%40example.com&phone=%2B49+456&notes=Updated" http://localhost:8081/contacts/C-1
-curl -i -X DELETE http://localhost:8081/contacts/C-1
+rm -rf out test-out
 ```
 
-Expected results are 201, 200, 200, 200, and 204. A later GET for `C-1` should return 404.
+Windows PowerShell:
 
-## Manual testing checklist
+```text
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+```
 
-- [ ] Compile all files under `src/contactsrestapi`.
-- [ ] Run the default console demonstration.
-- [ ] Start server mode and create at least three contacts.
-- [ ] Test list, individual retrieval, search, and pagination.
-- [ ] Update all editable fields and verify the ID remains unchanged.
-- [ ] Delete a contact and confirm later retrieval returns 404.
-- [ ] Test validation errors and unsupported methods.
-- [ ] Verify JSON escaping with quotation marks and line breaks in notes.
-- [ ] Restart the process and confirm storage is intentionally empty.
+## B) Strict compile: application
 
-## Phase 2 validation review additions
+```text
+javac -Xlint:all -Werror -d out src/contactsrestapi/*.java
+```
 
-| Test | Action | Expected result |
-|---|---|---|
-| Malformed contact ID | Find/update/delete ID containing spaces or `/` | Rejected consistently before repository lookup |
-| Oversized name | Use more than 100 characters | Rejected without creating/updating a contact |
-| Oversized email | Use more than 254 characters | Rejected |
-| Oversized notes | Use more than 5000 characters | Rejected atomically; old details remain unchanged |
-| Trimmed repository ID | Directly find ` C-1 ` | Resolves the same stored contact as `C-1` |
+## C) Strict compile: tests
+
+```text
+javac -Xlint:all -Werror -cp out -d test-out tests/contactsrestapi/*.java
+```
+
+## D) Run the automated tests
+
+Linux/macOS/Git Bash on Linux/macOS:
+
+```text
+java -cp "out:test-out" contactsrestapi.TestRunner
+```
+
+Windows (PowerShell or Git Bash — Windows Java uses `;`):
+
+```text
+java -cp "out;test-out" contactsrestapi.TestRunner
+```
+
+The runner prints per-suite PASS/FAIL counts and a final summary, and exits 0 only if every check passes.
+
+### What the suites cover
+
+| Suite | Coverage |
+|---|---|
+| `ContactTest` | Field validation, trimming, atomic updates, `copy()`, final class |
+| `InMemoryContactRepositoryTest` | Save/find/delete, duplicate IDs, insertion order, defensive copies, unmodifiable lists |
+| `ContactServiceTest` | Sequential IDs, CRUD, missing-ID handling, case-insensitive search, pagination bounds, failed updates not corrupting state |
+| `JsonUtilTest` | Escaping of quotes, backslashes, newlines, tabs, carriage returns, control characters; list and error JSON |
+| `ContactHttpServerTest` | 201/200/204 happy paths, JSON 400/404/405/413, `Allow` and `Location` headers, unknown routes returning JSON (never HTML), duplicate form fields, oversized bodies |
+| `MainTest` | Exit codes and output for `help`, `demo`, `service-demo`, `http-demo`, unknown commands, and bad `server` arguments |
+
+## E) Run the CLI demos
+
+```text
+java -cp out contactsrestapi.Main help
+java -cp out contactsrestapi.Main demo
+java -cp out contactsrestapi.Main service-demo
+java -cp out contactsrestapi.Main http-demo
+```
+
+All of these must exit 0. `java -cp out contactsrestapi.Main bogus` and `java -cp out contactsrestapi.Main server bad` must exit non-zero.
+
+## F) Run the server manually
+
+```text
+java -cp out contactsrestapi.Main server 8082
+```
+
+In another terminal:
+
+```text
+curl -i -X POST -d "name=Ada+Lovelace&email=ada%40example.com&phone=%2B49+123&notes=Developer" http://localhost:8082/contacts
+curl -i http://localhost:8082/contacts
+curl -i "http://localhost:8082/contacts?q=ada&offset=0&limit=10"
+curl -i http://localhost:8082/contacts/C-1
+curl -i -X PUT -d "name=Ada+Lovelace&email=ada%40example.com&phone=%2B49+456&notes=Updated" http://localhost:8082/contacts/C-1
+curl -i -X DELETE http://localhost:8082/contacts/C-1
+curl -i http://localhost:8082/unknown
+```
+
+Expected: 201, 200, 200, 200, 200, 204, and finally a JSON 404 (`{"error":"Endpoint not found."}`) for `/unknown`. A later `GET /contacts/C-1` returns a JSON 404. Stop the server with Ctrl+C.
+
+## G) Scripts
+
+Linux/macOS/Git Bash:
+
+```text
+./scripts/test.sh
+```
+
+Windows PowerShell:
+
+```text
+.\scripts\test.ps1
+```
+
+Both scripts clean, strict-compile the app and tests, run the full test suite, run the `demo` and `service-demo` commands, and remove `out/` and `test-out/` afterward.
+
+## H) Cleanup
+
+Linux/macOS/Git Bash:
+
+```text
+rm -rf out test-out
+```
+
+Windows PowerShell:
+
+```text
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+```
+
+## Manual edge cases worth trying
+
+- `POST /contacts` without a `name` field → 400 JSON
+- `GET /contacts?limit=abc`, `limit=0`, or `offset=-1` → 400 JSON
+- `PATCH /contacts` → 405 JSON with `Allow: GET, POST`
+- `POST /contacts/C-1` → 405 JSON with `Allow: GET, PUT, DELETE`
+- `GET /contacts-extra`, `/api/contacts`, `/contacts/C-1/extra` → 404 JSON
+- Body over 65,536 bytes → 413 JSON
+- Duplicate form field (`name=A&name=B`) → 400 JSON
+- Restart the process and confirm storage is intentionally empty

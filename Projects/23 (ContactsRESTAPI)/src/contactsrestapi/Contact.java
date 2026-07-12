@@ -1,6 +1,6 @@
 package contactsrestapi;
 
-public class Contact {
+public final class Contact {
     private final String id;
     private String name;
     private String email;

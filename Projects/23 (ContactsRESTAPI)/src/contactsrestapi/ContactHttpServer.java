@@ -24,22 +24,38 @@ public class ContactHttpServer {
     }
 
     public synchronized void start(int port) throws IOException {
-        if (port < 1 || port > 65_535) {
-            throw new IllegalArgumentException("Port must be between 1 and 65535.");
+        if (port < 0 || port > 65_535) {
+            throw new IllegalArgumentException("Port must be between 0 and 65535 (0 picks a free port).");
         }
         if (server != null) {
             throw new IllegalStateException("Server is already running.");
         }
         server = HttpServer.create(new InetSocketAddress(port), 0);
+        server.createContext("/", this::handleUnknown);
         server.createContext("/contacts", this::handleContacts);
         server.setExecutor(null);
         server.start();
+    }
+
+    public synchronized int getPort() {
+        if (server == null) {
+            throw new IllegalStateException("Server is not running.");
+        }
+        return server.getAddress().getPort();
     }
 
     public synchronized void stop() {
         if (server != null) {
             server.stop(0);
             server = null;
+        }
+    }
+
+    private void handleUnknown(HttpExchange exchange) throws IOException {
+        try {
+            sendJson(exchange, 404, JsonUtil.error("Endpoint not found."));
+        } finally {
+            exchange.close();
         }
     }
 
@@ -60,8 +76,12 @@ public class ContactHttpServer {
             }
         } catch (IllegalArgumentException exception) {
             sendJson(exchange, 400, JsonUtil.error(exception.getMessage()));
+        } catch (PayloadTooLargeException exception) {
+            sendJson(exchange, 413, JsonUtil.error(exception.getMessage()));
         } catch (IOException exception) {
             sendJson(exchange, 400, JsonUtil.error(exception.getMessage()));
+        } catch (RuntimeException exception) {
+            sendJson(exchange, 500, JsonUtil.error("Internal server error."));
         } finally {
             exchange.close();
         }
@@ -138,11 +158,19 @@ public class ContactHttpServer {
         while ((count = input.read(buffer)) != -1) {
             total += count;
             if (total > MAX_REQUEST_BYTES) {
-                throw new IOException("Request body is too large.");
+                throw new PayloadTooLargeException("Request body is too large.");
             }
             output.write(buffer, 0, count);
         }
         return new String(output.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    private static final class PayloadTooLargeException extends IOException {
+        private static final long serialVersionUID = 1L;
+
+        PayloadTooLargeException(String message) {
+            super(message);
+        }
     }
 
     private Map<String, String> parseParameters(String text) throws IOException {

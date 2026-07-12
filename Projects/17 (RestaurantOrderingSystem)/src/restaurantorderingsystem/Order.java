@@ -7,8 +7,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Order {
-    public static final BigDecimal DISCOUNT_THRESHOLD = new BigDecimal("50.00");
+/**
+ * An order: a set of {@link OrderItem}s and a lifecycle {@link OrderStatus}.
+ *
+ * <p><strong>Lifecycle:</strong> CREATED &rarr; PREPARING &rarr; READY &rarr; SERVED,
+ * with CREATED &rarr; CANCELLED and PREPARING &rarr; CANCELLED also allowed. SERVED and
+ * CANCELLED are terminal. Only CREATED orders are editable; a non-empty order is
+ * required to move to PREPARING.
+ *
+ * <p><strong>Money:</strong> orders above {@value #DISCOUNT_THRESHOLD_TEXT} (inclusive)
+ * receive a 10% discount. All amounts are {@link BigDecimal}, normalized to 2 decimals.
+ */
+public final class Order {
+    static final String DISCOUNT_THRESHOLD_TEXT = "50.00";
+    public static final BigDecimal DISCOUNT_THRESHOLD = new BigDecimal(DISCOUNT_THRESHOLD_TEXT);
     public static final BigDecimal DISCOUNT_RATE = new BigDecimal("0.10");
 
     private final String id;
@@ -21,10 +33,31 @@ public class Order {
         this.customerName = requireText(customerName, "Customer name");
     }
 
+    /** Deep copy: same id/customer/status with a copy of the items (items are immutable). */
+    public Order(Order other) {
+        if (other == null) {
+            throw new IllegalArgumentException("Order to copy must not be null");
+        }
+        this.id = other.id;
+        this.customerName = other.customerName;
+        this.items.putAll(other.items);
+        this.status = other.status;
+    }
+
+    public Order copy() {
+        return new Order(this);
+    }
+
     public String getId() { return id; }
     public String getCustomerName() { return customerName; }
     public OrderStatus getStatus() { return status; }
+    public boolean isEditable() { return status == OrderStatus.CREATED; }
+    public int getItemCount() { return items.size(); }
 
+    /**
+     * Adds a menu item with the given quantity. If the item is already in the
+     * order, the quantities are merged rather than duplicating the line.
+     */
     public void addItem(MenuItem item, int quantity) {
         ensureEditable();
         if (item == null) {
@@ -34,7 +67,7 @@ public class Order {
         if (existingItem == null) {
             items.put(item.getId(), new OrderItem(item, quantity));
         } else {
-            existingItem.addQuantity(quantity);
+            items.put(item.getId(), existingItem.withAdditionalQuantity(quantity));
         }
     }
 
@@ -46,6 +79,7 @@ public class Order {
         }
     }
 
+    /** An unmodifiable list of the order's items. The items themselves are immutable. */
     public List<OrderItem> getItems() {
         return Collections.unmodifiableList(new ArrayList<>(items.values()));
     }
@@ -55,19 +89,19 @@ public class Order {
         for (OrderItem item : items.values()) {
             subtotal = subtotal.add(item.calculateSubtotal());
         }
-        return subtotal;
+        return Money.scale(subtotal);
     }
 
     public BigDecimal calculateDiscount() {
         BigDecimal subtotal = calculateSubtotal();
         if (subtotal.compareTo(DISCOUNT_THRESHOLD) >= 0) {
-            return subtotal.multiply(DISCOUNT_RATE);
+            return Money.scale(subtotal.multiply(DISCOUNT_RATE));
         }
-        return BigDecimal.ZERO;
+        return Money.scale(BigDecimal.ZERO);
     }
 
     public BigDecimal calculateTotal() {
-        return calculateSubtotal().subtract(calculateDiscount());
+        return Money.scale(calculateSubtotal().subtract(calculateDiscount()));
     }
 
     public void updateStatus(OrderStatus newStatus) {
@@ -93,11 +127,11 @@ public class Order {
         for (OrderItem item : items.values()) {
             summary.append("- ").append(item.getMenuItem().getName())
                     .append(" x").append(item.getQuantity())
-                    .append(": ").append(item.calculateSubtotal()).append('\n');
+                    .append(": ").append(Money.format(item.calculateSubtotal())).append('\n');
         }
-        summary.append("Subtotal: ").append(calculateSubtotal()).append('\n')
-                .append("Discount: ").append(calculateDiscount()).append('\n')
-                .append("Total: ").append(calculateTotal());
+        summary.append("Subtotal: ").append(Money.format(calculateSubtotal())).append('\n')
+                .append("Discount: ").append(Money.format(calculateDiscount())).append('\n')
+                .append("Total: ").append(Money.format(calculateTotal()));
         return summary.toString();
     }
 
@@ -117,7 +151,6 @@ public class Order {
                 return next == OrderStatus.SERVED;
             case SERVED:
             case CANCELLED:
-                return false;
             default:
                 return false;
         }

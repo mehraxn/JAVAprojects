@@ -8,104 +8,111 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Hotel {
+/** Service layer for room, availability, booking, cancellation, and occupancy workflows. */
+public final class Hotel {
     private final Map<String, Room> rooms = new LinkedHashMap<>();
     private final Map<String, Booking> bookings = new LinkedHashMap<>();
     private int nextBookingNumber = 1;
 
     public void addRoom(Room room) {
-        if (room == null) {
-            throw new IllegalArgumentException("Room must not be null");
-        }
+        if (room == null) throw new IllegalArgumentException("Room must not be null");
         if (rooms.containsKey(room.getNumber())) {
             throw new IllegalArgumentException("Room number already exists: " + room.getNumber());
         }
-        rooms.put(room.getNumber(), room);
+        rooms.put(room.getNumber(), new Room(room.getNumber(), room.getType(),
+                room.getNightlyRate(), room.getCapacity()));
     }
 
-    public Room getRoom(String roomNumber) {
-        String validNumber = requireText(roomNumber, "Room number");
-        Room room = rooms.get(validNumber);
-        if (room == null) {
-            throw new IllegalArgumentException("Unknown room number: " + validNumber);
-        }
-        return room;
+    public RoomSnapshot getRoom(String roomNumber) {
+        return new RoomSnapshot(requireRoom(roomNumber));
     }
 
-    public List<Room> findAvailableRooms(LocalDate checkIn, LocalDate checkOut) {
+    public List<RoomSnapshot> findAvailableRooms(LocalDate checkIn, LocalDate checkOut) {
         Booking.validateDateRange(checkIn, checkOut);
-        List<Room> availableRooms = new ArrayList<>();
+        List<RoomSnapshot> available = new ArrayList<>();
         for (Room room : rooms.values()) {
-            if (isRoomAvailable(room.getNumber(), checkIn, checkOut)) {
-                availableRooms.add(room);
-            }
+            if (isRoomAvailable(room.getNumber(), checkIn, checkOut)) available.add(new RoomSnapshot(room));
         }
-        availableRooms.sort(Comparator.comparing(Room::getNumber));
-        return Collections.unmodifiableList(availableRooms);
+        available.sort(Comparator.comparing(RoomSnapshot::getNumber));
+        return Collections.unmodifiableList(available);
     }
 
-    public Booking bookRoom(String roomNumber, Guest guest, LocalDate checkIn, LocalDate checkOut) {
-        Room room = getRoom(roomNumber);
-        if (guest == null) {
-            throw new IllegalArgumentException("Guest must not be null");
-        }
-        Booking.validateDateRange(checkIn, checkOut);
-        if (!isRoomAvailable(room.getNumber(), checkIn, checkOut)) {
-            throw new IllegalStateException("Room is unavailable for the requested dates: "
-                    + room.getNumber());
-        }
+    public BookingSnapshot bookRoom(String roomNumber, Guest guest,
+            LocalDate checkIn, LocalDate checkOut) {
+        return bookRoom(roomNumber, guest, checkIn, checkOut, 1);
+    }
 
+    public BookingSnapshot bookRoom(String roomNumber, Guest guest,
+            LocalDate checkIn, LocalDate checkOut, int guestCount) {
+        Room room = requireRoom(roomNumber);
+        if (guest == null) throw new IllegalArgumentException("Guest must not be null");
+        Booking.validateDateRange(checkIn, checkOut);
+        if (guestCount <= 0 || guestCount > room.getCapacity()) {
+            throw new IllegalArgumentException("Guest count must be positive and within room capacity");
+        }
+        if (!isRoomAvailable(room.getNumber(), checkIn, checkOut)) {
+            throw new IllegalStateException("Room is unavailable for the requested dates: " + room.getNumber());
+        }
         String bookingId = String.format("B%04d", nextBookingNumber++);
-        Booking booking = new Booking(bookingId, room, guest, checkIn, checkOut);
+        Booking booking = new Booking(bookingId, room, guest, checkIn, checkOut, guestCount);
         bookings.put(bookingId, booking);
-        return booking;
+        return new BookingSnapshot(booking);
     }
 
     public void cancelBooking(String bookingId) {
-        String validId = requireText(bookingId, "Booking ID");
-        if (bookings.remove(validId) == null) {
-            throw new IllegalArgumentException("Unknown booking ID: " + validId);
-        }
+        requireBooking(bookingId).cancel();
+    }
+
+    public BookingSnapshot findBookingById(String bookingId) {
+        return new BookingSnapshot(requireBooking(bookingId));
     }
 
     public double calculateOccupancy(LocalDate date) {
-        if (date == null) {
-            throw new IllegalArgumentException("Date must not be null");
+        if (date == null) throw new IllegalArgumentException("Date must not be null");
+        if (rooms.isEmpty()) return 0.0;
+        int occupied = 0;
+        for (Room room : rooms.values()) {
+            if (!isRoomAvailable(room.getNumber(), date, date.plusDays(1))) occupied++;
         }
-        if (rooms.isEmpty()) {
-            return 0.0;
-        }
-        int occupiedRooms = 0;
-        for (Booking booking : bookings.values()) {
-            if (booking.includes(date)) {
-                occupiedRooms++;
-            }
-        }
-        return occupiedRooms * 100.0 / rooms.size();
+        return occupied * 100.0 / rooms.size();
     }
 
-    public List<Room> listRooms() {
-        return Collections.unmodifiableList(new ArrayList<>(rooms.values()));
+    public List<RoomSnapshot> listRooms() {
+        List<RoomSnapshot> snapshots = new ArrayList<>();
+        for (Room room : rooms.values()) snapshots.add(new RoomSnapshot(room));
+        snapshots.sort(Comparator.comparing(RoomSnapshot::getNumber));
+        return Collections.unmodifiableList(snapshots);
     }
 
-    public List<Booking> listBookings() {
-        return Collections.unmodifiableList(new ArrayList<>(bookings.values()));
+    public List<BookingSnapshot> listBookings() {
+        List<BookingSnapshot> snapshots = new ArrayList<>();
+        for (Booking booking : bookings.values()) snapshots.add(new BookingSnapshot(booking));
+        return Collections.unmodifiableList(snapshots);
     }
 
     private boolean isRoomAvailable(String roomNumber, LocalDate checkIn, LocalDate checkOut) {
         for (Booking booking : bookings.values()) {
-            if (booking.getRoom().getNumber().equals(roomNumber)
-                    && booking.overlaps(checkIn, checkOut)) {
-                return false;
-            }
+            if (booking.getRoom().getNumber().equals(roomNumber) && booking.overlaps(checkIn, checkOut)) return false;
         }
         return true;
     }
 
+    private Room requireRoom(String roomNumber) {
+        String valid = requireText(roomNumber, "Room number");
+        Room room = rooms.get(valid);
+        if (room == null) throw new IllegalArgumentException("Unknown room number: " + valid);
+        return room;
+    }
+
+    private Booking requireBooking(String bookingId) {
+        String valid = requireText(bookingId, "Booking ID");
+        Booking booking = bookings.get(valid);
+        if (booking == null) throw new IllegalArgumentException("Unknown booking ID: " + valid);
+        return booking;
+    }
+
     private static String requireText(String value, String fieldName) {
-        if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException(fieldName + " must not be blank");
-        }
+        if (value == null || value.trim().isEmpty()) throw new IllegalArgumentException(fieldName + " must not be blank");
         return value.trim();
     }
 }

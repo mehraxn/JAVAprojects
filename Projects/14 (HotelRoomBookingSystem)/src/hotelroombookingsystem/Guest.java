@@ -1,6 +1,6 @@
 package hotelroombookingsystem;
 
-public class Guest {
+public final class Guest {
     private final String id;
     private final String name;
 

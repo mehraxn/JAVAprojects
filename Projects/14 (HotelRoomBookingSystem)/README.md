@@ -1,52 +1,43 @@
 # Hotel Room Booking System
 
-## Description
+An educational, in-memory Java hotel room booking system focused on OOP, date ranges, availability, and service-layer business rules.
 
-Hotel Room Booking System is an in-memory Java project for room availability, date-range booking, cancellation, pricing, and occupancy.
+## What it demonstrates
+
+- Immutable Room and Guest domain models, plus Booking records with status
+- Hotel service-layer room, reservation, cancellation, and occupancy workflows
+- Positive room capacities and guest-count validation
+- Date-range validation and overlap prevention
+- Availability searches and adjacent bookings
+- `BigDecimal` money calculations to avoid floating-point pricing errors
+- Immutable room and booking snapshots
+- Dependency-free automated tests and strict compilation
+
+## Date-range and cancellation rules
+
+Check-in is inclusive and check-out is exclusive. A room becomes available on its check-out date, so Aug 10 to Aug 13 and Aug 13 to Aug 15 may coexist. Overlapping stays are rejected without changing booking state.
+
+Cancelled bookings remain in history with `CANCELLED` status. They no longer block availability and do not count toward occupancy.
 
 ## Features
 
-- Add rooms with unique numbers and nightly rates.
-- Search available rooms for a date range.
-- Book rooms using generated booking IDs.
-- Prevent overlapping bookings for the same room.
-- Allow adjacent stays on a checkout/check-in boundary.
-- Cancel bookings.
-- Calculate nights, total price, and occupancy percentage.
+Add uniquely numbered rooms, create capacity-aware bookings with generated IDs, calculate exact totals, search available rooms, cancel bookings, retain booking history, and calculate occupancy percentages. Public queries and booking results are snapshots, protecting internal hotel state.
 
-## Java concepts practiced
+## Quick start
 
-- LocalDate and date-range logic
-- BigDecimal price calculations
-- Map and List collections
-- Object composition
-- Validation, overlap detection, and defensive lists
+```text
+javac -Xlint:all -Werror -d out src/hotelroombookingsystem/*.java
+java -cp out hotelroombookingsystem.Main help
+java -cp out hotelroombookingsystem.Main demo
+java -cp out hotelroombookingsystem.Main availability-demo
+java -cp out hotelroombookingsystem.Main overlap-demo
+java -cp out hotelroombookingsystem.Main cancellation-demo
+java -cp out hotelroombookingsystem.Main occupancy-demo
+java -cp out hotelroombookingsystem.Main validation-demo
+```
 
-## Main classes
+See [TESTING.md](TESTING.md) for commands and [TEST_RESULTS.md](TEST_RESULTS.md) for recorded validation.
 
-- Room: stores room number, type, and nightly rate.
-- Guest: stores basic guest identity.
-- Booking: owns dates, overlap checks, and price calculation.
-- Hotel: manages rooms, availability, bookings, and occupancy.
-- Main: demonstrates booking and cancellation.
+## Limitations
 
-## How the program works
-
-Hotel stores Room objects by number and Booking objects by generated ID. Date ranges are check-in inclusive and check-out exclusive. A room is available only when none of its existing bookings overlaps the requested range.
-
-## Example usage
-
-~~~powershell
-javac -d out src\hotelroombookingsystem\*.java
-java -cp out hotelroombookingsystem.Main
-~~~
-
-The demo books a double room for three nights, prints price and occupancy, then cancels the booking.
-
-## Possible future improvements
-
-- Add room amenities and capacity.
-- Add guest registration and booking history.
-- Add seasonal pricing.
-- Search by room type or price range.
-- Save reservations to a file.
+No database, HTTP API, login/authentication, payment provider, external hotel/channel-manager integration, housekeeping workflow, deployment, or production booking guarantees are included.

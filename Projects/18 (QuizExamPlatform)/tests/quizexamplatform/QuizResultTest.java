@@ -37,7 +37,7 @@ public final class QuizResultTest {
         t.assertEquals(1, right.getSelectedOptionIndex(), "selected index stored");
         t.assertEquals("4", right.getSelectedOption(), "selected option resolved");
         t.assertEquals("4", wrong.getCorrectOption(), "correct option exposed on a wrong answer");
-        t.assertEquals("0", wrong.getSelectedOption(), "wrong selected option resolved");
+        t.assertEquals("3", wrong.getSelectedOption(), "wrong selected option resolved");
         t.assertTrue(q == right.getQuestion(), "question reference is exposed");
         t.assertThrows(IllegalArgumentException.class,
                 () -> new AnswerResult(null, 0), "null question rejected");

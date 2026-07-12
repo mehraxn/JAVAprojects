@@ -2,7 +2,7 @@ package taskmanagerjdbc;
 
 import java.time.LocalDate;
 
-public class Task {
+public final class Task {
     public enum Status {
         OPEN,
         IN_PROGRESS,

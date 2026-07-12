@@ -1,83 +1,128 @@
 # URL Shortener Backend Testing
 
-Use temporary paths for persistence tests and an unused local port for HTTP tests.
+All commands run from the project root. The automated tests need no running server — the HTTP tests start their own server on a free port (port 0) and stop it afterward. CSV tests use `Files.createTempFile` and delete their files.
 
-## Normal service tests
+## A) Clean
 
-| Test | Action | Expected result |
-|---|---|---|
-| Generated code | Shorten a valid HTTPS URL | Six-character code is created and stored |
-| Custom code | Shorten with code `java_docs` | Requested code is preserved |
-| Resolve | Resolve a stored code twice | Original URL returned and hit count becomes 2 |
-| List links | Add several URLs | Entries appear in creation order |
-| Find unknown | Find an unused valid code | Returns `null` without changing state |
-| Defensive results | Modify a returned `UrlEntry` | Stored entry remains unchanged |
-| CSV round trip | Save and load mappings | URL, code, timestamp, and hits are preserved |
-
-## Edge-case and invalid input test cases
-
-| Test | Input or action | Expected result |
-|---|---|---|
-| Duplicate custom code | Create the same custom code twice | Second request throws `IllegalArgumentException` |
-| Invalid scheme | `ftp://example.com` | Rejected |
-| Missing host | `https:///path` | Rejected |
-| Relative URL | `/articles/java` | Rejected |
-| Blank URL | Null, empty, or whitespace | Rejected |
-| Invalid code | Too short, too long, spaces, or punctuation | Rejected |
-| Unknown resolve | Resolve a valid but absent code | `NoSuchElementException` |
-| Negative hits | Construct entry with `-1` hits | Rejected |
-| Hit overflow | Record a hit at `Long.MAX_VALUE` | `IllegalStateException` |
-| Missing CSV | Load a nonexistent path | Empty map |
-| Empty CSV | Load zero-byte or blank file | Empty map |
-| Header only | Load only the expected header | Empty map |
-| Duplicate CSV code | Load two rows with one code | `IOException` |
-| Invalid CSV timestamp/hits | Load malformed stored values | `IOException` identifies the line |
-| Broken quoting | Load unclosed or misplaced quotes | `IOException` |
-
-## HTTP test cases
-
-| Request | Expected result |
-|---|---|
-| `POST /links` with valid encoded URL | 201 and link JSON |
-| `POST /links` with valid custom code | 201 with requested code |
-| Duplicate custom-code POST | 400 error JSON |
-| `GET /links` | 200 JSON array |
-| `GET /r/{knownCode}` | 302 with original URL in `Location` |
-| `GET /r/{unknownCode}` | 404 error JSON |
-| Unsupported method | 405 and `Allow` header |
-| Oversized POST body | 400 error JSON |
-| Invalid form encoding or duplicate field | 400 error JSON |
-| Start with invalid port or start twice | Validation exception |
-| Stop twice | Safe no-op |
-
-## Example HTTP requests
-
-After starting `urlshortenerbackend.Main server 8080`:
+Linux/macOS/Git Bash:
 
 ```text
-curl -i -X POST -d "url=https%3A%2F%2Fexample.com%2Fguide&code=guide" http://localhost:8080/links
-curl -i http://localhost:8080/r/guide
-curl -i http://localhost:8080/links
-curl -i http://localhost:8080/r/unknown
+rm -rf out test-out
 ```
 
-Expected results are 201 for creation, 302 for the known redirect, 200 for listing, and 404 for the unknown code.
+Windows PowerShell:
 
-## Manual testing checklist
+```text
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+```
 
-- [ ] Compile all source files.
-- [ ] Run the default demo and verify generated/custom links and hit counts.
-- [ ] Save and reload entries through `FileUrlStore` using a temporary file.
-- [ ] Start server mode and exercise all three endpoints.
-- [ ] Verify JSON escaping with URLs containing query parameters.
-- [ ] Confirm redirects increment the displayed hit count.
-- [ ] Test missing, empty, header-only, duplicate, and malformed CSV files.
-- [ ] Stop the server with Ctrl+C.
+## B) Strict compile: application
 
-## Phase 2 validation review additions
+```text
+javac -Xlint:all -Werror -d out src/urlshortenerbackend/*.java
+```
 
-| Test | Action | Expected result |
-|---|---|---|
-| Invalid URL port | Shorten `https://example.com:70000/path` | Rejected because the port exceeds 65535 |
-| Null restored map key | Replace entries with a map containing a null key | `IllegalArgumentException`, not `NullPointerException` |
-| Directory storage path | Load or save using an existing directory | `IOException` identifies a non-regular file |
+## C) Strict compile: tests
+
+```text
+javac -Xlint:all -Werror -cp out -d test-out tests/urlshortenerbackend/*.java
+```
+
+## D) Run the automated tests
+
+Linux/macOS:
+
+```text
+java -cp "out:test-out" urlshortenerbackend.TestRunner
+```
+
+Windows (PowerShell or Git Bash — Windows Java uses `;`):
+
+```text
+java -cp "out;test-out" urlshortenerbackend.TestRunner
+```
+
+The runner prints per-suite PASS/FAIL counts and a final summary, and exits 0 only if every check passes.
+
+### What the suites cover
+
+| Suite | Coverage |
+|---|---|
+| `CodeGeneratorTest` | Code shape, Base62 characters, uniqueness across samples, skipping taken codes, determinism |
+| `UrlEntryTest` | URL/scheme/host/port validation, short-code rules, hit counting, overflow, preserved counts, `copy()` |
+| `ShortenerServiceTest` | Generated and custom links, duplicate rejection, resolve/hit counting, failed resolves not counting, defensive snapshots, `replaceEntries` import |
+| `FileUrlStoreTest` | Save/load round trip, comma/quote quoting, malformed rows, duplicate codes, invalid URLs/timestamps/hit counts, missing/empty/header-only files, directory paths |
+| `UrlShortenerHttpServerTest` | 201/200/302 happy paths, JSON 400/404/405/409/413, `Allow`/`Location` headers, unknown routes returning JSON (never HTML), duplicate form fields, oversized bodies, hit counts through the API |
+| `MainTest` | Exit codes and output for `help`, `demo`, `service-demo`, `csv-demo`, `http-demo`, unknown commands, and bad `server` arguments |
+
+## E) Run the CLI demos
+
+```text
+java -cp out urlshortenerbackend.Main help
+java -cp out urlshortenerbackend.Main demo
+java -cp out urlshortenerbackend.Main service-demo
+java -cp out urlshortenerbackend.Main csv-demo
+java -cp out urlshortenerbackend.Main http-demo
+```
+
+All of these must exit 0. `java -cp out urlshortenerbackend.Main bogus` and `java -cp out urlshortenerbackend.Main server bad` must exit non-zero.
+
+## F) Run the server manually
+
+```text
+java -cp out urlshortenerbackend.Main server 8080
+```
+
+In another terminal:
+
+```text
+curl -i -X POST -d "url=https%3A%2F%2Fexample.com" http://localhost:8080/links
+curl -i -X POST -d "url=https%3A%2F%2Fexample.com%2Fdocs&code=docs" http://localhost:8080/links
+curl -i http://localhost:8080/links
+curl -i http://localhost:8080/r/docs
+curl -i http://localhost:8080/unknown
+```
+
+Expected: 201 for both creations, 200 for the list, a 302 with `Location: https://example.com/docs` for the redirect, and a JSON 404 (`{"error":"Endpoint not found."}`) for `/unknown`. Repeating the redirect increases `hitCount` in the list output. Stop the server with Ctrl+C.
+
+## G) Scripts
+
+Linux/macOS/Git Bash:
+
+```text
+./scripts/test.sh
+```
+
+Windows PowerShell:
+
+```text
+.\scripts\test.ps1
+```
+
+Both scripts clean, strict-compile the app and tests, run the full test suite, run the `demo`, `service-demo`, and `csv-demo` commands, and remove `out/` and `test-out/` afterward.
+
+## H) Cleanup
+
+Linux/macOS/Git Bash:
+
+```text
+rm -rf out test-out
+```
+
+Windows PowerShell:
+
+```text
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+```
+
+## Manual edge cases worth trying
+
+- `POST /links` with `url=ftp%3A%2F%2Fexample.com` → 400 JSON
+- `POST /links` with a taken `code` → 409 JSON
+- `POST /links` with duplicate form field (`url=...&url=...`) → 400 JSON
+- Body over 65,536 bytes → 413 JSON
+- `PUT /links` or `DELETE /links` → 405 JSON with `Allow: GET, POST`
+- `POST /r/docs` → 405 JSON with `Allow: GET`
+- `GET /r/nosuch` → 404 JSON; `GET /r/` → 404 JSON; `GET /r/ab` (too short) → 400 JSON
+- `GET /links-extra`, `/api/links`, `/r-extra`, `/r/abc/extra` → 404 JSON
+- Restart the process and confirm links are intentionally gone

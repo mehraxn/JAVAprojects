@@ -3,8 +3,10 @@ package expensetracker;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -105,11 +107,40 @@ public class CsvExpenseStore implements ExpenseStore {
                     + escape(expense.getDate().toString()));
         }
 
-        Path parent = path.toAbsolutePath().getParent();
+        Path target = path.toAbsolutePath();
+        Path parent = target.getParent();
         if (parent != null) {
             Files.createDirectories(parent);
         }
-        Files.write(path, lines, StandardCharsets.UTF_8);
+        writeAtomically(target, lines);
+    }
+
+    /**
+     * Atomic-style save: write to a temporary file in the target directory,
+     * then move it over the target. If anything fails halfway, the original
+     * file is left untouched and the temporary file is cleaned up.
+     */
+    private void writeAtomically(Path target, List<String> lines) throws IOException {
+        Path directory = target.getParent();
+        Path tempFile = directory == null
+                ? Files.createTempFile("expenses", ".csv.tmp")
+                : Files.createTempFile(directory, "expenses", ".csv.tmp");
+        try {
+            Files.write(tempFile, lines, StandardCharsets.UTF_8);
+            try {
+                Files.move(tempFile, target,
+                        StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException exception) {
+                Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException exception) {
+            try {
+                Files.deleteIfExists(tempFile);
+            } catch (IOException cleanupFailure) {
+                exception.addSuppressed(cleanupFailure);
+            }
+            throw exception;
+        }
     }
 
     private int firstNonBlankLine(List<String> lines) {

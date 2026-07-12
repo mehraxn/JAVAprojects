@@ -26,23 +26,39 @@ public class UrlShortenerHttpServer {
     }
 
     public synchronized void start(int port) throws IOException {
-        if (port < 1 || port > 65_535) {
-            throw new IllegalArgumentException("Port must be between 1 and 65535.");
+        if (port < 0 || port > 65_535) {
+            throw new IllegalArgumentException("Port must be between 0 and 65535 (0 picks a free port).");
         }
         if (server != null) {
             throw new IllegalStateException("Server is already running.");
         }
         server = HttpServer.create(new InetSocketAddress(port), 0);
+        server.createContext("/", this::handleUnknown);
         server.createContext("/links", this::handleLinks);
         server.createContext("/r", this::handleRedirect);
         server.setExecutor(null);
         server.start();
     }
 
+    public synchronized int getPort() {
+        if (server == null) {
+            throw new IllegalStateException("Server is not running.");
+        }
+        return server.getAddress().getPort();
+    }
+
     public synchronized void stop() {
         if (server != null) {
             server.stop(0);
             server = null;
+        }
+    }
+
+    private void handleUnknown(HttpExchange exchange) throws IOException {
+        try {
+            sendJson(exchange, 404, errorJson("Endpoint not found."));
+        } finally {
+            exchange.close();
         }
     }
 
@@ -55,18 +71,25 @@ public class UrlShortenerHttpServer {
             } else if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
                 Map<String, String> form = parseForm(readBody(exchange));
                 String customCode = form.get("code");
-                UrlEntry entry = customCode == null || customCode.trim().isEmpty()
-                        ? service.shorten(form.get("url"))
-                        : service.shorten(form.get("url"), customCode);
-                sendJson(exchange, 201, entryJson(entry));
+                if (customCode == null || customCode.trim().isEmpty()) {
+                    sendJson(exchange, 201, entryJson(service.shorten(form.get("url"))));
+                } else if (service.find(UrlEntry.validateShortCode(customCode)) != null) {
+                    sendJson(exchange, 409, errorJson("Custom code already exists."));
+                } else {
+                    sendJson(exchange, 201, entryJson(service.shorten(form.get("url"), customCode)));
+                }
             } else {
                 exchange.getResponseHeaders().set("Allow", "GET, POST");
                 sendJson(exchange, 405, errorJson("Method not allowed."));
             }
         } catch (IllegalArgumentException exception) {
             sendJson(exchange, 400, errorJson(exception.getMessage()));
+        } catch (PayloadTooLargeException exception) {
+            sendJson(exchange, 413, errorJson(exception.getMessage()));
         } catch (IOException exception) {
             sendJson(exchange, 400, errorJson(exception.getMessage()));
+        } catch (RuntimeException exception) {
+            sendJson(exchange, 500, errorJson("Internal server error."));
         } finally {
             exchange.close();
         }
@@ -80,8 +103,12 @@ public class UrlShortenerHttpServer {
                 return;
             }
             String path = exchange.getRequestURI().getPath();
-            if (!path.startsWith("/r/") || path.length() <= 3) {
+            if ("/r".equals(path) || "/r/".equals(path)) {
                 sendJson(exchange, 404, errorJson("Short code is missing."));
+                return;
+            }
+            if (!path.startsWith("/r/")) {
+                sendJson(exchange, 404, errorJson("Endpoint not found."));
                 return;
             }
             String code = path.substring(3);
@@ -96,6 +123,8 @@ public class UrlShortenerHttpServer {
             sendJson(exchange, 404, errorJson(exception.getMessage()));
         } catch (IllegalArgumentException exception) {
             sendJson(exchange, 400, errorJson(exception.getMessage()));
+        } catch (RuntimeException exception) {
+            sendJson(exchange, 500, errorJson("Internal server error."));
         } finally {
             exchange.close();
         }
@@ -110,11 +139,19 @@ public class UrlShortenerHttpServer {
         while ((count = input.read(buffer)) != -1) {
             total += count;
             if (total > MAX_REQUEST_BYTES) {
-                throw new IOException("Request body is too large.");
+                throw new PayloadTooLargeException("Request body is too large.");
             }
             output.write(buffer, 0, count);
         }
         return new String(output.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    private static final class PayloadTooLargeException extends IOException {
+        private static final long serialVersionUID = 1L;
+
+        PayloadTooLargeException(String message) {
+            super(message);
+        }
     }
 
     private Map<String, String> parseForm(String body) throws IOException {

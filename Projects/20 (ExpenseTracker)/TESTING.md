@@ -1,58 +1,107 @@
 # Expense Tracker Testing
 
-These are manual tests for the current console and public class APIs. Use a temporary CSV path so existing files are not overwritten.
+All commands run from the project root. The automated tests need only a JDK — CSV tests use `Files.createTempFile` and delete their files; nothing is written inside the repository.
 
-## Normal test cases
+## A) Clean
 
-| Test | Action | Expected result |
-|---|---|---|
-| Add expenses | Add three expenses with different IDs | All three appear in insertion order |
-| Category filter | Filter `Food` records using `food` | Category matching is case-insensitive and only Food records are returned |
-| Month filter | Filter by `YearMonth.of(2026, 7)` | Only expenses dated in July 2026 are returned |
-| Total | Calculate the total for `42.75` and `18.50` | Result is `61.25` |
-| CSV round trip | Save records, then load the file | Loaded values and record count match the originals |
-| Quoted CSV | Save a title containing a comma and quotation mark | Value is quoted, escaped, and restored correctly |
+Linux/macOS/Git Bash:
 
-## Edge-case test cases
+```text
+rm -rf out test-out
+```
 
-| Test | Action | Expected result |
-|---|---|---|
-| No expenses | List and total a new service | Empty list and total `0` |
-| No filter matches | Filter an unused category or month | Empty list |
-| Missing CSV | Load a path that does not exist | Empty list; no exception |
-| Empty CSV | Load a zero-byte or whitespace-only file | Empty list; no exception |
-| Header only | Load a file containing only the expected header | Empty list |
-| Blank lines | Put blank lines between valid CSV rows | Blank lines are ignored |
-| Remove unknown ID | Remove an ID not in the service | Returns `false` |
+Windows PowerShell:
 
-## Invalid input test cases
+```text
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+```
 
-| Test | Input | Expected result |
-|---|---|---|
-| Duplicate ID | Add two expenses with ID `E-001` | `IllegalArgumentException` |
-| Invalid amount | Use `0`, a negative amount, or `null` | Validation exception |
-| Empty field | Use a blank ID, title, or category | `IllegalArgumentException` |
-| Invalid date text | Load `2026-02-30` from CSV | `IOException` identifies the invalid line |
-| Invalid amount text | Load `twelve` as an amount | `IOException` identifies the invalid line |
-| Wrong header | Load a non-empty file with different columns | `IOException` describes the expected header |
-| Wrong field count | Load a row with fewer or extra fields | `IOException` identifies the line |
-| Broken quotes | Load an unclosed quoted field | `IOException` identifies malformed CSV |
-| Duplicate file ID | Load two rows with the same ID | `IOException` rejects the duplicate |
+## B) Strict compile: application
 
-## Manual testing checklist
+```text
+javac -Xlint:all -Werror -d out src/expensetracker/*.java
+```
 
-- [ ] Compile all files in `src/expensetracker`.
-- [ ] Run `Main` without arguments and verify list, filters, and total output.
-- [ ] Run `Main` with a temporary CSV path and verify the round-trip count.
-- [ ] Inspect the saved header and ISO-formatted dates.
-- [ ] Test a title containing a comma and quotation marks.
-- [ ] Test missing, empty, header-only, and malformed files.
-- [ ] Confirm returned lists cannot be modified.
-- [ ] Confirm invalid values fail with clear messages.
+## C) Strict compile: tests
 
-## Phase 2 validation review additions
+```text
+javac -Xlint:all -Werror -cp out -d test-out tests/expensetracker/*.java
+```
 
-| Test | Action | Expected result |
-|---|---|---|
-| Directory used as input | Load an existing directory path | `IOException` says the path is not a regular file |
-| Directory used as output | Save to an existing directory path | `IOException`; no expense data is changed |
+## D) Run the automated tests
+
+Linux/macOS:
+
+```text
+java -cp "out:test-out" expensetracker.TestRunner
+```
+
+Windows (PowerShell or Git Bash — Windows Java uses `;`):
+
+```text
+java -cp "out;test-out" expensetracker.TestRunner
+```
+
+The runner prints per-suite PASS/FAIL counts and a final summary, and exits 0 only if every check passes.
+
+### What the suites cover
+
+| Suite | Coverage |
+|---|---|
+| `ExpenseTest` | Field validation, trimming, zero/negative amounts, BigDecimal scale preservation, immutability (final class, private final fields, no setters) |
+| `ExpenseServiceTest` | Add/remove/find, duplicate IDs, category (case-insensitive), month, date-range, and amount-range filters, exact BigDecimal totals (including 0.10 × 10 = 1.00), category/monthly totals, highest expense, unmodifiable results |
+| `CsvExpenseStoreTest` | Round trip with commas/quotes/scale/dates, atomic save leaving no temp files, duplicate IDs, malformed rows, invalid dates/amounts, missing/empty/blank/header-only files, directory paths |
+| `MainTest` | Exit codes and output for `help`, `demo`, `csv-demo`, `report-demo`, `validation-demo`, no-args default, and unknown commands |
+
+## E) Run the CLI demos
+
+```text
+java -cp out expensetracker.Main help
+java -cp out expensetracker.Main demo
+java -cp out expensetracker.Main csv-demo
+java -cp out expensetracker.Main report-demo
+java -cp out expensetracker.Main validation-demo
+```
+
+All of these must exit 0 (the validation-demo failures are intentional demonstrations). `java -cp out expensetracker.Main bogus` must print an error to stderr and exit non-zero.
+
+## F) Scripts
+
+Linux/macOS/Git Bash:
+
+```text
+./scripts/test.sh
+```
+
+Windows PowerShell:
+
+```text
+.\scripts\test.ps1
+```
+
+Both scripts clean, strict-compile the app and tests, run the full test suite, run all four demo commands, and remove `out/` and `test-out/` afterward.
+
+## G) Cleanup
+
+Linux/macOS/Git Bash:
+
+```text
+rm -rf out test-out
+```
+
+Windows PowerShell:
+
+```text
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+```
+
+## Manual edge cases worth trying
+
+- `new Expense(..., BigDecimal.ZERO, ...)` → `IllegalArgumentException`
+- Add two expenses with the same ID → `IllegalArgumentException`
+- `filterByDateRange(later, earlier)` → `IllegalArgumentException`
+- `filterByAmountRange(new BigDecimal("-1"), ...)` → `IllegalArgumentException`
+- Load a CSV row with `2026-02-30` → `IOException` naming the line
+- Load a CSV with a duplicate ID → `IOException`
+- Add to any returned list → `UnsupportedOperationException`
+- Save over an existing CSV → contents fully replaced, no `.csv.tmp` files left behind

@@ -1,111 +1,129 @@
 # URL Shortener Backend
 
-A standard-Java URL shortener with in-memory storage, hit tracking, optional CSV persistence, and an optional HTTP interface built with Java's `HttpServer`.
+An educational Java URL shortener backend with service-layer logic, optional CSV persistence, and a lightweight HTTP interface built on Java's built-in `HttpServer`. It uses no framework, database, JSON library, or external dependency — plain `javac`/`java` is enough to build, run, and test it.
+
+## What it demonstrates
+
+- URL validation (absolute `http`/`https` URLs with a host — `ftp:`, `file:`, `javascript:` and relative URLs are rejected)
+- Generated Base62-style short codes and custom short codes
+- Duplicate-code protection (HTTP 409 for taken custom codes)
+- Redirect resolution via `GET /r/{code}` with hit counting
+- Defensive copies/snapshots so callers cannot mutate stored state
+- CSV save/load with quoting for commas and double quotes
+- Manual JSON responses with safe escaping
+- Consistent JSON error handling (400/404/405/409/413/500) — unknown routes return JSON, not the default HTML page
+- Dependency-free automated tests (custom assertion helper + test runner)
+- Strict compilation with `-Xlint:all -Werror`
 
 ## Features
 
-- Generate compact, URL-safe short codes.
-- Accept custom codes containing 3–20 letters, numbers, underscores, or hyphens.
-- Reject duplicate custom codes.
-- Validate absolute HTTP and HTTPS URLs with a host.
-- Resolve short codes and increment their hit counts.
-- List stored links in creation order.
-- Save and load mappings, timestamps, and hit counts from UTF-8 CSV.
-- Handle missing, empty, whitespace-only, and header-only storage files safely.
-- Expose optional REST-style endpoints without external libraries.
+- Create a short link with a generated or custom code
+- List stored links in creation order
+- Redirect via `/r/{code}` and track hits
+- Save/load links (codes, URLs, timestamps, hit counts) to/from UTF-8 CSV
+- HTTP API server with JSON responses and JSON errors
+- CLI demos of the service layer and CSV persistence
 
 ## Main classes
 
 - `UrlEntry` — validated URL mapping, creation time, and hit counter.
 - `CodeGenerator` — synchronized Base62-style sequential code generator.
 - `ShortenerService` — thread-safe in-memory operations and defensive snapshots.
-- `FileUrlStore` — optional CSV persistence.
-- `UrlShortenerHttpServer` — optional built-in HTTP adapter.
-- `Main` — console demonstration or explicit server launcher.
+- `FileUrlStore` — CSV persistence, kept separate from request handling.
+- `UrlShortenerHttpServer` — HTTP routing, status codes, and JSON errors.
+- `Main` — CLI commands (`help`, `demo`, `service-demo`, `csv-demo`, `http-demo`, `server`).
 
-## How the program works
+## Validation rules
 
-`ShortenerService` validates a long URL, generates or accepts a short code, and stores a `UrlEntry`. Resolving a code looks it up directly and increments its hit counter. HTTP handlers translate local requests into service calls, while `FileUrlStore` remains an optional persistence boundary.
+- **URLs** must be absolute `http` or `https` URLs with a host, at most one port up to 65535. Blank, whitespace-only, relative, schemeless, and non-HTTP-scheme URLs are rejected. URLs must be legal per `java.net.URI` (raw spaces/quotes are rejected; percent-encode them).
+- **Short codes** (generated and custom) must match `[A-Za-z0-9_-]{3,20}` — letters, digits, underscore, hyphen; 3–20 characters.
+- **Custom codes** that already exist are rejected (`IllegalArgumentException` in the service, HTTP 409 in the API).
+- **Hit counts** cannot be negative and overflow at `Long.MAX_VALUE` is detected.
 
-## In-memory storage
+## Quick start
 
-`ShortenerService` stores entries in a `LinkedHashMap` keyed by short code. This gives direct code lookup and stable creation order. Service methods are synchronized because the optional HTTP server can process multiple requests. Returned entries are copies, so callers cannot alter stored hit counts. Data is lost when the process exits unless `FileUrlStore` is used explicitly.
+```text
+javac -Xlint:all -Werror -d out src/urlshortenerbackend/*.java
+
+java -cp out urlshortenerbackend.Main help
+java -cp out urlshortenerbackend.Main demo
+java -cp out urlshortenerbackend.Main service-demo
+java -cp out urlshortenerbackend.Main csv-demo
+java -cp out urlshortenerbackend.Main http-demo
+java -cp out urlshortenerbackend.Main server 8080
+```
+
+`demo`/`service-demo` walk through generated/custom links, duplicate rejection, redirects, and hit counting. `csv-demo` saves links to a temporary CSV file, reloads them, verifies entries and hit counts survived, and deletes the file. `http-demo` prints example curl commands. `server <port>` starts the HTTP API; the port argument is required. `Main.run(args, out, err)` returns an exit code (0 on success, non-zero for unknown commands or bad server arguments), and only `main` calls `System.exit`.
 
 ## HTTP endpoints
 
-Start the server on the default port 8080:
-
-```text
-java -cp out urlshortenerbackend.Main server
-```
-
-Or select a port:
-
-```text
-java -cp out urlshortenerbackend.Main server 8090
-```
-
 | Method and path | Request | Result |
 |---|---|---|
-| `POST /links` | URL-encoded body `url=...` and optional `code=...` | Creates a link and returns JSON with status 201 |
-| `GET /links` | None | Returns all stored links as JSON |
-| `GET /r/{code}` | None | Increments hits and returns a 302 redirect |
+| `POST /links` | URL-encoded body `url=...` and optional `code=...` | 201 with link JSON |
+| `GET /links` | None | 200 with a JSON array of all links |
+| `GET /r/{code}` | None | 302 redirect with the original URL in `Location`; increments hits |
 
-POST bodies use `application/x-www-form-urlencoded`; no request JSON parser is included. Error responses are manually generated JSON.
+POST bodies use `application/x-www-form-urlencoded`; this project intentionally has no JSON request parser. Responses and errors are manually generated JSON.
 
-Example:
+### Error responses
+
+| Status | When | Example body |
+|---|---|---|
+| 400 | Invalid URL/code, malformed or duplicate form fields | `{"error":"URL must be an absolute HTTP or HTTPS URL with a host."}` |
+| 404 | Unknown short code or unknown route (e.g. `GET /unknown`) | `{"error":"Endpoint not found."}` |
+| 405 | Unsupported method (with an `Allow` header) | `{"error":"Method not allowed."}` |
+| 409 | Custom code already exists | `{"error":"Custom code already exists."}` |
+| 413 | Request body over 65,536 bytes | `{"error":"Request body is too large."}` |
+| 500 | Unexpected server error (no stack trace leaked) | `{"error":"Internal server error."}` |
+
+### Example curl commands
 
 ```text
-curl -i -X POST -d "url=https%3A%2F%2Fexample.com&code=example" http://localhost:8080/links
-curl -i http://localhost:8080/r/example
-curl http://localhost:8080/links
+curl -i -X POST -d "url=https%3A%2F%2Fexample.com" http://localhost:8080/links
+curl -i -X POST -d "url=https%3A%2F%2Fexample.com%2Fdocs&code=docs" http://localhost:8080/links
+curl -i http://localhost:8080/links
+curl -i http://localhost:8080/r/docs
+curl -i http://localhost:8080/unknown
 ```
 
-## Optional CSV persistence
+## CSV persistence
 
 `FileUrlStore` uses this header:
 
-```csv
+```text
 shortCode,originalUrl,createdAt,hitCount
 ```
 
-It supports commas and quotation marks in quoted fields. Multiline fields are intentionally unsupported. Persistence is kept separate from the service so the basic demonstration remains entirely in memory.
+It quotes fields containing commas or double quotes. Multiline fields are intentionally unsupported. Missing, empty, and header-only files load as an empty map; duplicate codes, malformed rows, invalid URLs, invalid timestamps, and invalid hit counts are rejected with an `IOException` naming the line. Persistence stays separate from the service; the HTTP server never touches the filesystem.
 
-## Example usage
+## Testing
+
+The project ships with dependency-free automated tests (custom `Assert` helper + `TestRunner`) covering the code generator, entry validation, service behavior, CSV persistence, HTTP endpoints, and CLI exit codes:
 
 ```text
-javac -d out src/urlshortenerbackend/*.java
-java -cp out urlshortenerbackend.Main
+javac -Xlint:all -Werror -cp out -d test-out tests/urlshortenerbackend/*.java
+java -cp "out;test-out" urlshortenerbackend.TestRunner   # Windows (use out:test-out on Linux/macOS)
 ```
 
-The normal command demonstrates service logic without starting a server or creating files.
+Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell). See [TESTING.md](TESTING.md) for the full procedure and [TEST_RESULTS.md](TEST_RESULTS.md) for the latest recorded results.
 
 ## Java concepts practiced
 
 - Classes, encapsulation, collections, and defensive copies
 - URI validation and Base62-style encoding
 - Synchronization and overflow checks
-- File I/O and manual CSV parsing
+- File I/O and manual CSV parsing/quoting
 - Built-in HTTP handlers, status codes, redirects, and headers
 - Manual JSON escaping and URL-encoded form parsing
-
-## Backend concepts practiced
-
-- Service-layer validation and in-memory key/value lookup
-- Collision handling and custom identifier uniqueness
-- HTTP routing, status codes, redirects, headers, and bounded request bodies
-- Optional file persistence kept separate from request handling
-
-## Storage approach
-
-The active service uses an insertion-ordered in-memory map. `FileUrlStore` can explicitly save or load UTF-8 CSV snapshots containing codes, URLs, timestamps, and hit counts. It is not invoked automatically by the HTTP server.
+- Exit codes and testable CLI entry points
 
 ## Limitations
 
-- Links are lost on restart unless file storage is integrated by the caller
-- The HTTP server has no authentication, TLS configuration, or rate limiting
+- Links live in memory and are lost on restart unless CSV storage is used explicitly
+- No database, authentication, rate limiting, TLS, or custom domain support
 - Generated codes are sequential rather than unpredictable
 - CSV persistence does not support multiline values or concurrent writers
+- No production JSON parser and no framework (no Spring Boot) — this is a learning project
 
 ## Possible future improvements
 
@@ -113,4 +131,4 @@ The active service uses an insertion-ordered in-memory map. `FileUrlStore` can e
 - Cryptographically random code generation
 - Automatic persistence integration and atomic file replacement
 - Custom aliases scoped by user
-- Automated tests and configurable HTTP limits
+- Configurable HTTP limits

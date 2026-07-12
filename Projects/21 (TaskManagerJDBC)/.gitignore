@@ -1,0 +1,13 @@
+out/
+test-out/
+*.class
+*.log
+tmp/
+*.tmp
+*.db
+*.sqlite
+*.sqlite3
+.DS_Store
+.idea/
+.vscode/
+*.iml

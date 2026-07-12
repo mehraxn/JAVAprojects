@@ -19,6 +19,21 @@ public class TaskService {
         return repository.add(new Task(0, title, description, dueDate, Task.Status.OPEN));
     }
 
+    public Optional<Task> findTask(long taskId) throws SQLException {
+        return repository.findById(taskId);
+    }
+
+    public boolean updateTaskDetails(long taskId, String title, String description,
+            LocalDate dueDate) throws SQLException {
+        Optional<Task> existing = repository.findById(taskId);
+        if (!existing.isPresent()) {
+            return false;
+        }
+        Task task = existing.get();
+        task.updateDetails(title, description, dueDate);
+        return repository.update(task);
+    }
+
     public boolean updateTaskStatus(long taskId, Task.Status status) throws SQLException {
         if (status == null) {
             throw new IllegalArgumentException("Task status cannot be null.");

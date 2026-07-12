@@ -1,59 +1,66 @@
 # Task Manager JDBC
 
-A small task manager demonstrating repository-based design with both a database-free in-memory implementation and a JDBC implementation built entirely with standard `java.sql` APIs.
+An educational Java task manager demonstrating repository-pattern architecture with two interchangeable implementations: a fully tested in-memory repository and a JDBC repository built entirely with standard `java.sql` APIs. No framework, database, driver, or external dependency is required — plain `javac`/`java` is enough to build, run, and test it.
+
+## What it demonstrates
+
+- A validated `Task` domain model (final class) with a `Status` enum (`OPEN`, `IN_PROGRESS`, `DONE`)
+- A `TaskRepository` interface with in-memory and JDBC implementations
+- `PreparedStatement` for every dynamic SQL value (no string-concatenated SQL)
+- Generated-key handling with `Statement.RETURN_GENERATED_KEYS` and validity checks
+- try-with-resources for `Connection`, `PreparedStatement`, and `ResultSet`
+- Service-layer validation independent of the storage implementation
+- Status filtering and defensive copies/unmodifiable lists
+- Dependency-free automated tests (custom assertion helper + test runner)
+- Strict compilation with `-Xlint:all -Werror`
 
 ## Features
 
-- Add tasks with a title, optional description, optional due date, and initial `OPEN` status.
-- Update task status to `OPEN`, `IN_PROGRESS`, or `DONE`.
-- Delete tasks and list all tasks.
-- Search tasks by status.
-- Reject blank titles, invalid IDs, null statuses, and duplicate in-memory IDs.
-- Run the console demonstration without a database or JDBC driver.
-- Study or configure JDBC CRUD operations using prepared statements and generated keys.
+- Create tasks with a title, optional description, optional due date, and initial `OPEN` status
+- List all tasks, update task details, change task status
+- Filter tasks by status and delete tasks
+- Command-based CLI demos of the in-memory stack and validation behavior
+- A complete JDBC repository implementation for learning (see the JDBC note below)
 
-## Main classes and repository structure
+## Main classes
 
-- `Task` — validated task model and status enum.
+- `Task` — validated, final task model with the `Status` enum.
 - `TaskRepository` — common CRUD and query contract.
 - `InMemoryTaskRepository` — `LinkedHashMap` storage with generated IDs and defensive copies.
 - `JdbcTaskRepository` — JDBC implementation using `Connection`, `PreparedStatement`, and `ResultSet`.
 - `DatabaseConnection` — validated JDBC configuration and `DriverManager` connection boundary.
 - `TaskService` — application operations independent of repository implementation.
-- `Main` — safe in-memory demonstration; it never contacts a database.
-
-The service depends on `TaskRepository`, so switching storage does not change task-management logic:
+- `Main` — command-based CLI (`help`, `demo`, `in-memory-demo`, `validation-demo`, `jdbc-info`).
 
 ```text
 TaskService -> TaskRepository -> InMemoryTaskRepository
                               -> JdbcTaskRepository -> DatabaseConnection
 ```
 
-## How the program works
+A task ID of `0` means "not yet saved" — the repository assigns the next sequential positive ID on `add`. Stored-task lookups require positive IDs.
 
-`TaskService` validates application operations and talks only to `TaskRepository`. The default `Main` supplies `InMemoryTaskRepository`, which assigns IDs and stores defensive task copies. `JdbcTaskRepository` provides the same operations with prepared SQL statements and maps database rows back into `Task` objects.
-
-## Runnable without a database
-
-`Main` uses `InMemoryTaskRepository`. It demonstrates adding, updating, filtering, listing, and deleting tasks without a driver, JDBC URL, schema, or database server.
+## Quick start
 
 ```text
-javac -d out src/taskmanagerjdbc/*.java
-java -cp out taskmanagerjdbc.Main
+javac -Xlint:all -Werror -d out src/taskmanagerjdbc/*.java
+
+java -cp out taskmanagerjdbc.Main help
+java -cp out taskmanagerjdbc.Main demo
+java -cp out taskmanagerjdbc.Main in-memory-demo
+java -cp out taskmanagerjdbc.Main validation-demo
+java -cp out taskmanagerjdbc.Main jdbc-info
 ```
 
-The in-memory repository keeps data only for the life of the process.
+Running with no command prints the usage text. `demo`/`in-memory-demo` walk through create → update details → change status → filter → delete using `InMemoryTaskRepository` (no database is contacted). `validation-demo` intentionally triggers validation failures and exits 0 because the rejections are the point. `jdbc-info` explains the JDBC repository without connecting to anything. `Main.run(args, out, err)` returns an exit code (0 for valid commands, non-zero for unknown ones) and only `main` calls `System.exit`.
 
-## JDBC learning example
+## JDBC note
 
-`JdbcTaskRepository` contains complete SQL operations, parameter binding, generated-key handling, row mapping, and try-with-resources cleanup. Real execution additionally requires:
+- `JdbcTaskRepository` is fully implemented using `java.sql` APIs and compiles without any driver.
+- Running it against a real database requires a JDBC driver on the classpath, a database, a matching `tasks` table, and a valid JDBC URL — none of which are bundled.
+- **Real database integration tests are not included.** The automated tests cover the in-memory repository, service layer, domain validation, CLI, `DatabaseConnection` failure handling, and a static safety review of the JDBC source (PreparedStatement usage, try-with-resources, generated-key checks).
+- There are no hardcoded credentials anywhere in the project.
 
-1. A database server or embedded database.
-2. Its JDBC driver on the runtime classpath.
-3. A matching `tasks` table.
-4. A valid JDBC URL and credentials where required.
-
-No JDBC driver is included or installed by this project. A representative schema is:
+A representative schema (identity-column syntax varies by database product):
 
 ```sql
 CREATE TABLE tasks (
@@ -65,7 +72,18 @@ CREATE TABLE tasks (
 );
 ```
 
-Identity-column syntax differs between database products, so adjust the schema for the selected database. The repository expects status text matching the Java enum names.
+The repository expects status text matching the Java enum names (`OPEN`, `IN_PROGRESS`, `DONE`).
+
+## Testing
+
+The project ships with dependency-free automated tests (custom `Assert` helper + `TestRunner`) covering the model, in-memory repository, service layer, `DatabaseConnection` failure paths, JDBC static safety review, and CLI exit codes:
+
+```text
+javac -Xlint:all -Werror -cp out -d test-out tests/taskmanagerjdbc/*.java
+java -cp "out;test-out" taskmanagerjdbc.TestRunner   # Windows (use out:test-out on Linux/macOS)
+```
+
+Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell). See [TESTING.md](TESTING.md) for the full procedure and [TEST_RESULTS.md](TEST_RESULTS.md) for the latest recorded results.
 
 ## Java concepts practiced
 
@@ -74,36 +92,16 @@ Identity-column syntax differs between database products, so adjust the schema f
 - `LocalDate` and nullable due dates
 - JDBC connections, prepared statements, generated keys, result sets, and SQL exceptions
 - Try-with-resources and input validation
-
-## Backend and database concepts practiced
-
-- Repository interfaces and interchangeable storage implementations
-- CRUD operations, generated keys, parameter binding, and row mapping
-- JDBC connection failures and checked `SQLException` propagation
-- Database-independent service logic and a database-free fallback
-
-## Example usage
-
-Compile and run the in-memory version:
-
-```text
-javac -d out src/taskmanagerjdbc/*.java
-java -cp out taskmanagerjdbc.Main
-```
-
-JDBC execution is intentionally not started by `Main`.
-
-## Storage approach
-
-- `InMemoryTaskRepository`: runnable storage that lasts only for the current process.
-- `JdbcTaskRepository`: JDBC-style learning implementation requiring a user-supplied driver, JDBC URL, database, and compatible `tasks` table.
+- Exit codes and testable CLI entry points
 
 ## Limitations
 
-- No JDBC driver, database, or schema migration tool is included
-- SQL identity syntax and generated-key behavior can vary by database product
+- No JDBC driver, database, schema migration tool, or demo database is bundled
+- Real JDBC integration tests are not included (the JDBC code is compiled and statically reviewed only)
+- No HTTP API, authentication, or users
+- No connection pool and no transaction manager beyond simple single-statement JDBC usage
 - In-memory records disappear when the process exits
-- No transactions are needed for the current single-operation service methods
+- Educational project, not production task-management software
 
 ## Possible future improvements
 
@@ -111,4 +109,4 @@ JDBC execution is intentionally not started by `Main`.
 - Pagination and title searching
 - Configurable database-specific schema scripts
 - Interactive console input
-- Automated tests with a user-provided test database
+- Optional integration tests against a user-provided test database

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 
-public class Expense {
+public final class Expense {
     private final String id;
     private final String title;
     private final BigDecimal amount;

@@ -15,4 +15,9 @@ public enum TriageLevel {
     public int getPriority() {
         return priority;
     }
+
+    public String getDisplayName() {
+        String text = name().toLowerCase().replace('_', ' ');
+        return Character.toUpperCase(text.charAt(0)) + text.substring(1);
+    }
 }

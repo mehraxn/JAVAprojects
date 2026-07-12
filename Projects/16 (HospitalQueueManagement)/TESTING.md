@@ -1,53 +1,55 @@
 # Testing Hospital Queue Management
 
-## Testing approach
+Run commands from this project directory.
 
-Use fixed arrival and current times for deterministic ordering and waiting-time results.
+## Clean
 
-## Normal test cases
+Linux/macOS/Git Bash: `rm -rf out test-out`
 
-| Test | Action | Expected result |
-|---|---|---|
-| Add patients | Add unique patient IDs | Records and queue contain patients |
-| Priority order | Add all triage levels | Emergency is served first |
-| Arrival tie-break | Add equal priority at different times | Earlier arrival is first |
-| Emergency override | Upgrade waiting patient | Patient moves to queue front |
-| Serve | Serve next patient | Patient leaves queue and enters treatment |
-| Discharge | Update treated patient | Status becomes discharged; record remains |
+Windows PowerShell: `Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue`
 
-## Edge-case test cases
+## Strict compile
 
-| Test | Action | Expected result |
-|---|---|---|
-| Empty queue | Calculate average waiting time | 0.0 |
-| Equal time/priority | Add different IDs | ID determines order |
-| Shared name | Add different IDs with same name | Both records are accepted |
-| Requeue treatment | Change in-treatment patient to waiting | Patient returns in priority order |
-| Queue snapshot | Call viewQueue repeatedly | Real queue remains unchanged |
-| Same status | Apply current status again | No state change |
+Application:
 
-## Invalid input test cases
+```text
+javac -Xlint:all -Werror -d out src/hospitalqueuemanagement/*.java
+```
 
-| Test | Action | Expected result |
-|---|---|---|
-| Serve empty | Call serveNextPatient with no waiting patients | IllegalStateException |
-| Duplicate ID | Add same patient ID | IllegalArgumentException |
-| Invalid data | Use blank identity, null priority, or null time | IllegalArgumentException |
-| Invalid clock | Current time before patient arrival | IllegalArgumentException |
-| Invalid priority update | Change non-waiting patient priority | IllegalStateException |
-| Terminal status | Move discharged patient to another status | IllegalStateException |
-| Unknown patient | Update missing patient ID | IllegalArgumentException |
+Tests:
 
-## Expected results
+```text
+javac -Xlint:all -Werror -cp out -d test-out tests/hospitalqueuemanagement/*.java
+```
 
-Queue order must follow priority, arrival, and ID. Status and queue membership must remain consistent after both accepted and rejected transitions.
+## Run automated tests
 
-## Manual testing checklist
+Linux/macOS/Git Bash: `java -cp "out:test-out" hospitalqueuemanagement.TestRunner`
 
-- [ ] Compile and run Main.
-- [ ] Verify all four priority levels.
-- [ ] Verify both tie-break rules.
-- [ ] Verify emergency override reorders the queue.
-- [ ] Verify serving changes status and preserves the record.
-- [ ] Verify rejected transitions preserve status and queue membership.
-- [ ] Verify returned queue and record lists cannot be modified.
+Windows PowerShell: `java -cp "out;test-out" hospitalqueuemanagement.TestRunner`
+
+## Run CLI demos
+
+```text
+java -cp out hospitalqueuemanagement.Main help
+java -cp out hospitalqueuemanagement.Main demo
+java -cp out hospitalqueuemanagement.Main queue-demo
+java -cp out hospitalqueuemanagement.Main emergency-demo
+java -cp out hospitalqueuemanagement.Main status-demo
+java -cp out hospitalqueuemanagement.Main statistics-demo
+java -cp out hospitalqueuemanagement.Main validation-demo
+```
+
+## One-command scripts
+
+Linux/macOS/Git Bash: `./scripts/test.sh`
+
+Windows PowerShell: `.\scripts\test.ps1`
+
+Both scripts clean generated output when they finish.
+
+## Manual cleanup
+
+Linux/macOS/Git Bash: `rm -rf out test-out`
+
+Windows PowerShell: `Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue`

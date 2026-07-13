@@ -1,52 +1,103 @@
 # Product Inventory Manager
 
-## Description
+An educational, dependency-free Java project that models a product inventory
+manager. It focuses on clean object-oriented design, a service layer with real
+business rules, `BigDecimal` money handling, defensive data exposure, and
+dependency-free automated tests — not on a database, web API, or barcode/warehouse
+integration.
 
-Product Inventory Manager is an in-memory Java project for products, stock changes, searching, sorting, and inventory reports.
+## What it demonstrates
+
+- **Product** domain model (SKU, name, category, price, quantity, reorder threshold)
+- **Inventory** service layer that owns all state changes
+- SKU-based product tracking (case-insensitive)
+- product validation
+- stock adjustment safeguards (underflow and overflow rejected)
+- search by SKU and name
+- sorting by name / price / quantity, ascending and descending
+- low-stock reporting
+- out-of-stock reporting
+- inventory valuation with `BigDecimal`
+- inventory value by category and highest-value reports
+- defensive `ProductSnapshot` copies so internal state cannot be mutated from outside
+- command-based CLI demos
+- dependency-free automated tests
+- strict compilation (`-Xlint:all -Werror`)
 
 ## Features
 
-- Add products with unique SKU values.
-- Update names, prices, and stock quantities.
-- Apply relative stock adjustments.
-- Prevent negative stock and integer overflow.
-- Remove and search products.
-- Sort by name, price, or quantity.
-- Report products at or below a low-stock threshold.
-- Calculate total inventory value with BigDecimal.
-
-## Java concepts practiced
-
-- Encapsulation and mutable domain objects
-- Map and List collections
-- Enums and Comparator-based sorting
-- BigDecimal arithmetic
-- Validation, overflow checks, and unmodifiable results
+- Add products and reject duplicate SKUs.
+- Find, remove, and list products.
+- Search products by SKU or name (case-insensitive).
+- Sort products by name, price, or quantity in either direction.
+- Increase/decrease stock and set absolute stock, with underflow/overflow protection.
+- Low-stock report (per-product reorder threshold).
+- Out-of-stock report.
+- Total inventory value, value by category, and highest-value products.
+- CLI demos for every feature area.
 
 ## Main classes
 
-- Product: owns product details, stock validation, and stock value.
-- ProductSortField: defines supported sorting choices.
-- Inventory: manages products, searching, sorting, and reports.
-- Main: demonstrates updates, sorting, warnings, and total value.
+| Class | Responsibility |
+|---|---|
+| `Product` | Immutable-from-outside product; only stock quantity changes, via `Inventory`. |
+| `ProductSnapshot` | Immutable read-only view returned to callers (includes inventory value). |
+| `ProductSortField` | Enum: `NAME`, `PRICE`, `QUANTITY`. |
+| `Inventory` | Service layer owning products, stock changes, search, sorting, and reports. |
+| `Main` | Command-based CLI / demo driver. |
 
-## How the program works
+## Behavior notes
 
-Inventory stores Product objects by SKU. Stock can be set directly or adjusted by a signed change. Queries create sorted, read-only result lists without changing the inventory's insertion order.
+- **SKU uniqueness is case-insensitive**: `p100` and `P100` are the same product.
+  Lookups, removal, and stock adjustments are also case-insensitive.
+- **Unit price must be greater than zero.** Free products are not modelled.
+- **Money uses `BigDecimal`** (never `double`) to avoid floating-point rounding
+  errors; comparisons use `compareTo`, totals use `add`/`multiply`. User-facing
+  output is shown with 2 decimals.
+- **Low-stock rule is `quantity <= reorderThreshold`** (inclusive), using each
+  product's own reorder threshold.
+- **Out-of-stock rule is `quantity == 0`.**
+- **Stock safeguards**: adjustments that would make quantity negative (underflow)
+  or exceed `Integer.MAX_VALUE` (overflow) are rejected and leave state unchanged.
+  Adjusting by zero is an allowed no-op.
+- **Public methods return `ProductSnapshot` copies in unmodifiable lists.** Live
+  `Product` objects are never leaked, so callers cannot mutate inventory state.
 
-## Example usage
+## Quick start
 
-~~~powershell
-javac -d out src\productinventorymanager\*.java
-java -cp out productinventorymanager.Main
+Compile:
+
+~~~
+javac -Xlint:all -Werror -d out src/productinventorymanager/*.java
 ~~~
 
-The demo updates stock, prints products sorted by price, reports low stock, and calculates total value.
+Run the CLI commands:
 
-## Possible future improvements
+~~~
+java -cp out productinventorymanager.Main help
+java -cp out productinventorymanager.Main demo
+java -cp out productinventorymanager.Main stock-demo
+java -cp out productinventorymanager.Main search-demo
+java -cp out productinventorymanager.Main sort-demo
+java -cp out productinventorymanager.Main report-demo
+java -cp out productinventorymanager.Main validation-demo
+~~~
 
-- Add product categories.
-- Add stock movement history.
-- Add reorder quantities and supplier information.
-- Import and export inventory files.
-- Add richer reports for zero stock and high-value items.
+## Testing
+
+The project ships with a dependency-free test suite (custom assertion helper and
+runner — no JUnit, Maven, or Gradle). See [TESTING.md](TESTING.md) for exact
+commands and [TEST_RESULTS.md](TEST_RESULTS.md) for the latest recorded run.
+
+## Limitations
+
+This is a learning project. It intentionally has:
+
+- no database (in-memory only)
+- no HTTP API
+- no login/authentication
+- no barcode scanner
+- no supplier / purchase-order workflow
+- no warehouse / location tracking
+- no production inventory guarantees
+- no production deployment

@@ -1,52 +1,110 @@
-# Testing Product Inventory Manager
+# Testing the Product Inventory Manager
 
-## Testing approach
+The project uses a small, dependency-free test harness: a custom assertion
+helper (`TestSupport`, including `assertBigDecimalEquals`) and a runner
+(`TestRunner`). No JUnit, Maven, Gradle, or other external libraries are
+involved. Tests live in `tests/productinventorymanager/` and share the source
+package, so they can exercise package-private behaviour directly.
 
-Create products with known prices and quantities. Verify both Product state and Inventory query results after each operation.
+## What is covered
 
-## Normal test cases
+- `ProductTest` — validation, defaults, `BigDecimal` price, low-stock boundary.
+- `ProductSortFieldTest` — enum values.
+- `InventoryTest` — product management, stock safeguards, search, sorting,
+  reports, and unchanged state after failures (the most important file).
+- `ProductSnapshotTest` — snapshot fields/value, unmodifiable results, and proof
+  that returned data cannot mutate internal inventory state.
+- `MainTest` — `Main.run` smoke tests, called in-process (no separate JVM).
 
-| Test | Action | Expected result |
-|---|---|---|
-| Add products | Add several unique SKUs | Products appear in listProducts |
-| Adjust stock | Add and subtract valid quantities | Quantity changes correctly |
-| Set stock | Set an absolute quantity | Product stores that value |
-| Search | Search partial SKU or name | Case-insensitive matches are returned |
-| Sort | Sort by each supported field | Results follow selected order |
-| Total value | Sum known products | Total equals price times quantity sum |
+## Commands
 
-## Edge-case test cases
+### A) Clean
 
-| Test | Action | Expected result |
-|---|---|---|
-| Zero values | Use zero stock or zero price | Both are accepted |
-| Empty inventory | Run lists, search, sort, and report | Empty lists and total zero |
-| Low-stock boundary | Quantity equals threshold | Product is included |
-| Shared name | Use different SKUs with same name | Both products are accepted |
-| Remove twice | Remove the same SKU twice | True then false |
-| Descending sort | Sort each field descending | Highest value appears first |
+Linux/macOS/Git Bash:
 
-## Invalid input test cases
+~~~
+rm -rf out test-out
+~~~
 
-| Test | Action | Expected result |
-|---|---|---|
-| Duplicate SKU | Add an existing SKU | IllegalArgumentException |
-| Negative data | Use negative price, stock, or threshold | IllegalArgumentException |
-| Stock underflow | Subtract below zero | IllegalArgumentException and quantity unchanged |
-| Stock overflow | Exceed Integer.MAX_VALUE | IllegalArgumentException and quantity unchanged |
-| Invalid sort | Use null ProductSortField | IllegalArgumentException |
-| Unknown/blank SKU | Update missing or blank SKU | IllegalArgumentException |
+Windows PowerShell:
 
-## Expected results
+~~~
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+~~~
 
-Queries must return correctly ordered read-only lists. Failed updates must preserve product quantities, prices, and inventory membership.
+### B) Strict compile: application
+
+~~~
+javac -Xlint:all -Werror -d out src/productinventorymanager/*.java
+~~~
+
+### C) Strict compile: tests
+
+~~~
+javac -Xlint:all -Werror -cp out -d test-out tests/productinventorymanager/*.java
+~~~
+
+### D) Run tests
+
+Linux/macOS/Git Bash:
+
+~~~
+java -cp "out:test-out" productinventorymanager.TestRunner
+~~~
+
+Windows PowerShell:
+
+~~~
+java -cp "out;test-out" productinventorymanager.TestRunner
+~~~
+
+### E) Run CLI demos
+
+~~~
+java -cp out productinventorymanager.Main help
+java -cp out productinventorymanager.Main demo
+java -cp out productinventorymanager.Main stock-demo
+java -cp out productinventorymanager.Main search-demo
+java -cp out productinventorymanager.Main sort-demo
+java -cp out productinventorymanager.Main report-demo
+java -cp out productinventorymanager.Main validation-demo
+~~~
+
+### F) Scripts
+
+Linux/macOS/Git Bash:
+
+~~~
+./scripts/test.sh
+~~~
+
+Windows PowerShell:
+
+~~~
+.\scripts\test.ps1
+~~~
+
+### G) Cleanup
+
+Linux/macOS/Git Bash:
+
+~~~
+rm -rf out test-out
+~~~
+
+Windows PowerShell:
+
+~~~
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+~~~
 
 ## Manual testing checklist
 
-- [ ] Compile and run Main.
+- [ ] Compile strictly with `-Xlint:all -Werror`.
+- [ ] Run `TestRunner` and confirm all cases pass.
 - [ ] Test absolute and relative stock updates.
-- [ ] Verify failed updates preserve quantity.
+- [ ] Verify underflow/overflow are rejected and leave quantity unchanged.
 - [ ] Verify all three sort fields in both directions.
 - [ ] Test low-stock values below, equal to, and above threshold.
-- [ ] Recalculate total after stock changes and removal.
-- [ ] Verify returned lists cannot be modified.
+- [ ] Recalculate total value after stock changes and removal.
+- [ ] Verify returned lists are unmodifiable and snapshots cannot mutate inventory.

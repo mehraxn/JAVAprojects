@@ -1,58 +1,96 @@
 # Student Grade Manager
 
-## Description
+Educational Java student grade manager focused on OOP, subject-based grades, statistics, reports, validation, and defensive snapshots.
 
-Student Grade Manager is a small, in-memory Java console project for recording students and grades. It calculates useful statistics through clear object-oriented code and collection-based storage.
+The project is dependency-free and runs with plain `javac`/`java`.
 
 ## Features
 
-- Add and remove students using unique IDs.
-- Record multiple grades for named subjects.
-- Reject grades outside the 0–100 range.
-- Calculate overall average, highest grade, and lowest grade.
-- Report pass or fail using a 60-point threshold.
-- List students from highest to lowest average.
-- Protect returned grade collections from modification.
-
-## Java concepts practiced
-
-- Classes, objects, constructors, and encapsulation
-- Map and List collections
-- Input validation and exceptions
-- Iteration, sorting, and Comparator
-- Defensive copies and unmodifiable collections
+- Student domain model
+- GradeBook service layer
+- Student registration with duplicate-ID protection
+- Subject-based grade recording
+- Grade validation from 0 to 100
+- Average, highest, and lowest grade calculations
+- Pass/fail evaluation
+- Letter-grade evaluation
+- Student transcript snapshots
+- Class average report
+- Subject performance report
+- Failing-students report
+- Student ranking by average
+- Defensive snapshots so public callers cannot mutate internal state
+- Command-based CLI demos
+- Dependency-free automated tests
+- Strict compilation with `javac -Xlint:all -Werror`
 
 ## Main classes
 
-- Student: owns student identity, subject grades, and grade calculations.
-- GradeBook: manages students and coordinates grade operations.
-- Main: demonstrates the implemented workflow with sample data.
+- `Student`: owns student identity, subject-based grades, validation, and per-student calculations.
+- `GradeBook`: service layer for student registration, grade recording, searching, ranking, and reports.
+- `StudentSnapshot`: immutable public view of a student transcript.
+- `SubjectGradeSummary`: immutable public view of one subject's class performance.
+- `GradeBookReport`: immutable class-level report.
+- `Main`: CLI/demo entry point only.
 
-## How the program works
+## Behavior notes
 
-1. Create a GradeBook.
-2. Add Student objects with unique IDs.
-3. Record grades through GradeBook.
-4. Student validates each grade and stores it by subject.
-5. GradeBook can return students sorted by calculated average.
+- Student IDs, student names, and subject names are trimmed.
+- Blank or null IDs, names, and subjects are rejected.
+- Grades must be finite numbers between 0 and 100.
+- Boundary grades `0` and `100` are valid.
+- Passing threshold is `60.0`.
+- Letter-grade rules:
+  - `A`: 90-100
+  - `B`: 80-89.99
+  - `C`: 70-79.99
+  - `D`: 60-69.99
+  - `F`: below 60
+- Students with no grades have average/highest/lowest `0.0`, are not passing, and use letter grade `N/A`.
+- Ranking is deterministic: average descending, then student name, then student ID.
+- Public GradeBook methods return snapshots, reports, or unmodifiable lists instead of internal `Student` objects.
+- Data is in memory only for the current program run.
 
-Data exists only for the current program run.
-
-## Example usage
+## Quick start
 
 From this project folder:
 
-~~~powershell
-javac -d out src\studentgrademanager\*.java
-java -cp out studentgrademanager.Main
-~~~
+```powershell
+javac -Xlint:all -Werror -d out src/studentgrademanager/*.java
 
-The demo prints each student's average, pass/fail status, highest grade, and lowest grade.
+java -cp out studentgrademanager.Main help
+java -cp out studentgrademanager.Main demo
+java -cp out studentgrademanager.Main grade-demo
+java -cp out studentgrademanager.Main report-demo
+java -cp out studentgrademanager.Main ranking-demo
+java -cp out studentgrademanager.Main search-demo
+java -cp out studentgrademanager.Main validation-demo
+```
 
-## Possible future improvements
+No command defaults to `help`.
 
-- Add an interactive menu with Scanner.
-- Add subject-specific averages.
-- Save and load grade data from a file.
-- Add dependency-free automated test drivers.
-- Produce class and subject summary reports.
+## Testing
+
+Linux/macOS/Git Bash:
+
+```bash
+bash scripts/test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\test.ps1
+```
+
+The scripts strictly compile the application, strictly compile the dependency-free tests, run the test runner, run each CLI demo, and remove generated build folders.
+
+## Limitations
+
+- No database
+- No HTTP API
+- No login/authentication
+- No weighted grading
+- No file import/export
+- No production school information system guarantees
+- Intended as a Java OOP/service-layer learning project

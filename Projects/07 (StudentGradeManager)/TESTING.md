@@ -1,50 +1,71 @@
 # Testing Student Grade Manager
 
-## Testing approach
+Run these commands from the `07 (StudentGradeManager)` project folder.
 
-The project uses no test framework. Compile the source and run Main, or create a small driver that calls Student and GradeBook directly.
+## Clean generated files
 
-## Normal test cases
+Linux/macOS/Git Bash:
 
-| Test | Action | Expected result |
-|---|---|---|
-| Add students | Add two students with different IDs | Both appear in listStudents |
-| Record grades | Add several grades to one student | Grades are stored under their subjects |
-| Calculate statistics | Request average, highest, and lowest | Values match the recorded grades |
-| Pass/fail | Test averages below and above 60 | Below 60 fails; 60 or above passes |
-| Sort students | List students by average | Highest average appears first |
-| Remove student | Remove an existing ID | Method returns true and student disappears |
+```bash
+rm -rf out test-out
+```
 
-## Edge-case test cases
+Windows PowerShell:
 
-| Test | Action | Expected result |
-|---|---|---|
-| Boundary grades | Record 0 and 100 | Both grades are accepted |
-| No grades | Request average for a new student | Average is 0.0 and status is fail |
-| Missing extrema | Request highest or lowest with no grades | IllegalStateException |
-| Duplicate names | Add different IDs with the same name | Both students are accepted |
-| Remove twice | Remove the same student twice | First returns true; second returns false |
+```powershell
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+```
 
-## Invalid input test cases
+## Compile the application
 
-| Test | Action | Expected result |
-|---|---|---|
-| Invalid grade | Use a grade below 0, above 100, NaN, or infinity | IllegalArgumentException |
-| Duplicate ID | Add the same student ID twice | IllegalArgumentException |
-| Blank values | Use blank ID, name, or subject | IllegalArgumentException |
-| Unknown student | Record a grade for an unknown ID | IllegalArgumentException |
-| Null student | Add null to GradeBook | IllegalArgumentException |
+```bash
+javac -Xlint:all -Werror -d out src/studentgrademanager/*.java
+```
 
-## Expected results
+## Compile the tests
 
-Valid operations should produce the documented statistics. Invalid operations should throw the stated exception and leave existing students and grades unchanged.
+```bash
+javac -Xlint:all -Werror -cp out -d test-out tests/studentgrademanager/*.java
+```
 
-## Manual testing checklist
+## Run automated tests
 
-- [ ] Compile all source files without external dependencies.
-- [ ] Run Main and inspect the printed statistics.
-- [ ] Verify grade boundaries 0 and 100.
-- [ ] Verify invalid grades do not change existing data.
-- [ ] Verify duplicate IDs are rejected.
-- [ ] Verify returned grade collections cannot be modified.
-- [ ] Verify students sort correctly when averages are equal.
+Linux/macOS/Git Bash:
+
+```bash
+java -cp "out:test-out" studentgrademanager.TestRunner
+```
+
+Windows PowerShell:
+
+```powershell
+java -cp "out;test-out" studentgrademanager.TestRunner
+```
+
+## Run CLI demos
+
+```bash
+java -cp out studentgrademanager.Main help
+java -cp out studentgrademanager.Main demo
+java -cp out studentgrademanager.Main grade-demo
+java -cp out studentgrademanager.Main report-demo
+java -cp out studentgrademanager.Main ranking-demo
+java -cp out studentgrademanager.Main search-demo
+java -cp out studentgrademanager.Main validation-demo
+```
+
+## Run everything with scripts
+
+Linux/macOS/Git Bash:
+
+```bash
+bash scripts/test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\test.ps1
+```
+
+The scripts remove generated build folders after they finish.

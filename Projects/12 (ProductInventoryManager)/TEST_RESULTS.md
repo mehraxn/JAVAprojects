@@ -6,7 +6,7 @@ Date: 2026-07-13
 
 | Check | Result | Notes |
 |---|---:|---|
-| Java version | PASS | OpenJDK 21.0.10 / javac 21.0.10 |
+| Java version | PASS | OpenJDK 21.0.11 / javac 21.0.11 |
 | Strict application compile | PASS | `javac -Xlint:all -Werror -d out src/productinventorymanager/*.java` |
 | Strict test compile | PASS | `javac -Xlint:all -Werror -cp out -d test-out tests/productinventorymanager/*.java` |
 | Automated tests | PASS | 68 / 68 test cases passed, 111 assertion checks |

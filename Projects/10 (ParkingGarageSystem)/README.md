@@ -1,54 +1,123 @@
 # Parking Garage System
 
-## Description
+An educational, dependency-free Java project that models a parking garage. It
+focuses on clean object-oriented design, a service layer with real business
+rules, compatible spot assignment, vehicle entry/exit workflows, started-hour
+`BigDecimal` fee calculation, completed parking history, defensive data exposure,
+and dependency-free automated tests — not on a database, web API, or camera/gate
+integration.
 
-Parking Garage System is an in-memory Java project that assigns typed parking spots, tracks active vehicles, and calculates an exit fee.
+## What it demonstrates
+
+- **Vehicle** domain model (normalized license plate, vehicle type)
+- **VehicleType** enum (`MOTORCYCLE`, `CAR`, `TRUCK`)
+- **ParkingSpot** domain model (ID, supported type, occupied/free state)
+- **ParkingLevel** domain model (numbered level with a unique-ID spot map)
+- **Garage** service layer that owns all state changes
+- compatible spot assignment across levels
+- active parking tracking
+- duplicate active vehicle prevention
+- multi-level availability tracking (total and by vehicle type)
+- vehicle exit workflow with exact spot release
+- **ParkingReceipt** generation and completed history
+- started-hour fee calculation with per-type rates
+- revenue reporting (total, by vehicle type) and occupancy percentage
+- defensive snapshots so internal state cannot be mutated from outside
+- command-based CLI demos
+- dependency-free automated tests
+- strict compilation (`-Xlint:all -Werror`)
 
 ## Features
 
-- Configure multiple parking levels.
-- Add globally unique parking spots.
-- Support motorcycle, car, and truck types.
-- Assign the first available compatible spot.
-- Prevent duplicate vehicle entry.
-- Track total and per-type availability.
-- Calculate 5.00 per started hour with a one-hour minimum.
-- Return a validated receipt when a vehicle exits.
-
-## Java concepts practiced
-
-- Classes, enums, and composition
-- List and Map collections
-- Date/time calculations with Duration and LocalDateTime
-- BigDecimal monetary calculations
-- State validation and exception handling
+- Add levels and reject duplicate level numbers or duplicate spot IDs.
+- Park a vehicle in the first compatible free spot; reject incompatible/full cases.
+- Reject duplicate active vehicles (by normalized plate).
+- Exit a vehicle: release the exact spot, generate a receipt, keep it in history.
+- Report available spots (total and by type), occupancy %, and revenue.
+- Per-vehicle-type hourly rates with started-hour billing, using `BigDecimal`.
+- CLI demos for every feature area.
 
 ## Main classes
 
-- Vehicle and VehicleType: describe an entering vehicle.
-- ParkingSpot: owns compatibility and occupancy.
-- ParkingLevel: groups spots and reports availability.
-- Garage: assigns spots, tracks entries, and calculates fees.
-- ParkingReceipt: describes a completed stay.
-- Main: demonstrates entry, availability, exit, and receipt output.
+| Class | Responsibility |
+|---|---|
+| `Vehicle` | Immutable vehicle: normalized plate + type; equality by normalized plate. |
+| `VehicleType` | Enum: `MOTORCYCLE`, `CAR`, `TRUCK`. |
+| `ParkingSpot` | One spot and its occupancy; only `Garage` assigns/releases it. |
+| `ParkingLevel` | Numbered level with a unique-ID spot map and availability queries. |
+| `ParkingReceipt` | Immutable completed-session record with the computed fee. |
+| `Garage` | Service layer: setup, entry, exit, availability, history, reports. |
+| `VehicleSnapshot` / `ParkingSpotSnapshot` / `ParkingLevelSnapshot` / `ActiveParkingSnapshot` / `ParkingReceiptSnapshot` | Immutable read-only views returned to callers. |
+| `Main` | Command-based CLI / demo driver. |
 
-## How the program works
+## Behavior notes
 
-Levels and spots are configured first. Garage searches levels for a compatible free spot and records the arrival time. On exit, it validates departure time, rounds duration up to started hours, releases the spot, and returns a ParkingReceipt.
+- **License plates are normalized** (trimmed, upper-cased). `" b-ab 123 "` and
+  `"B-AB 123"` are the same vehicle; duplicate detection uses the normalized plate.
+- **Vehicles only park in compatible spots**; a vehicle is assigned the first
+  compatible free spot, scanning levels in insertion order.
+- **Duplicate active vehicle entries are rejected**; a plate can be parked once
+  at a time.
+- **Exit releases the exact assigned spot**, removes the active record, and stores
+  a receipt in completed history. Completed receipts do not affect availability.
+- **Started-hour billing**: any started hour bills a full hour, with a minimum of
+  one hour. `0` minutes still bills `1` hour; `60` minutes bills `1` hour; `61`
+  minutes bills `2` hours. Exit before entry is rejected.
+- **Per-type rates**: `MOTORCYCLE 3.00`, `CAR 5.00`, `TRUCK 10.00` per hour.
+- **Money uses `BigDecimal`** (never `double`); user-facing fees show 2 decimals.
+- **Public methods return immutable snapshots in unmodifiable lists.** Live
+  `ParkingSpot`/`ParkingLevel`/`ParkingReceipt` objects are never leaked, so
+  external code cannot release spots or corrupt state without going through
+  `Garage`.
 
-## Example usage
+## Quick start
 
-~~~powershell
-javac -d out src\parkinggaragesystem\*.java
-java -cp out parkinggaragesystem.Main
+Compile:
+
+~~~
+javac -Xlint:all -Werror -d out src/parkinggaragesystem/*.java
 ~~~
 
-The demo parks a car for 90 minutes and reports a two-hour fee.
+Run the CLI commands:
 
-## Possible future improvements
+~~~
+java -cp out parkinggaragesystem.Main help
+java -cp out parkinggaragesystem.Main demo
+java -cp out parkinggaragesystem.Main parking-demo
+java -cp out parkinggaragesystem.Main exit-demo
+java -cp out parkinggaragesystem.Main fee-demo
+java -cp out parkinggaragesystem.Main full-garage-demo
+java -cp out parkinggaragesystem.Main report-demo
+java -cp out parkinggaragesystem.Main validation-demo
+~~~
 
-- Add configurable rates per vehicle type.
-- Add lost-ticket handling.
-- Add reserved or accessible spots.
-- Add daily maximum charges.
-- Save completed parking records to a file.
+## Testing
+
+The project ships with a dependency-free test suite (custom assertion helper and
+runner — no JUnit, Maven, or Gradle). Run everything with:
+
+~~~
+bash scripts/test.sh
+~~~
+
+Windows PowerShell:
+
+~~~
+.\scripts\test.ps1
+~~~
+
+See [TESTING.md](TESTING.md) for exact commands and [TEST_RESULTS.md](TEST_RESULTS.md)
+for the latest recorded run.
+
+## Limitations
+
+This is a learning project. It intentionally has:
+
+- no database (in-memory only)
+- no HTTP API
+- no login/authentication
+- no payment provider
+- no license-plate camera integration
+- no real parking barrier/gate integration
+- no production parking guarantees
+- no production deployment

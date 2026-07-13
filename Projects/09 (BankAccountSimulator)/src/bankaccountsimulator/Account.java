@@ -6,66 +6,107 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Account {
+/**
+ * An account: identity, owner, current balance, and transaction history.
+ *
+ * <p>Account number and owner are fixed at construction; only the balance and
+ * history change, and only through the package-private mutators driven by
+ * {@link Bank} (which owns transaction IDs and timestamps). Balances never go
+ * negative. Outside callers receive an immutable {@link AccountSnapshot}, so live
+ * accounts are never leaked and cannot be mutated to bypass {@link Bank}.
+ */
+public final class Account {
     private final String accountNumber;
     private final String ownerName;
-    private BigDecimal balance = BigDecimal.ZERO;
+    private BigDecimal balance;
     private final List<Transaction> transactions = new ArrayList<>();
 
-    public Account(String accountNumber, String ownerName) {
+    public Account(String accountNumber, String ownerName, BigDecimal initialBalance) {
         this.accountNumber = requireText(accountNumber, "Account number");
         this.ownerName = requireText(ownerName, "Owner name");
+        if (initialBalance == null) {
+            throw new IllegalArgumentException("Initial balance must not be null");
+        }
+        if (initialBalance.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Initial balance must not be negative");
+        }
+        this.balance = initialBalance;
     }
 
-    public String getAccountNumber() {
-        return accountNumber;
-    }
+    public String getAccountNumber() { return accountNumber; }
+    public String getOwnerName() { return ownerName; }
+    public BigDecimal getBalance() { return balance; }
 
-    public String getOwnerName() {
-        return ownerName;
-    }
+    public int getTransactionCount() { return transactions.size(); }
 
-    public BigDecimal getBalance() {
-        return balance;
-    }
+    // -------------------------------------------------------- package-private ops
 
-    public List<Transaction> getTransactionHistory() {
-        return Collections.unmodifiableList(new ArrayList<>(transactions));
-    }
-
-    public void deposit(BigDecimal amount) {
-        credit(amount, Transaction.Type.DEPOSIT, "Deposit");
-    }
-
-    public void withdraw(BigDecimal amount) {
-        debit(amount, Transaction.Type.WITHDRAWAL, "Withdrawal");
-    }
-
-    void receiveTransfer(BigDecimal amount, String fromAccountNumber) {
-        credit(amount, Transaction.Type.TRANSFER_IN, "Transfer from " + fromAccountNumber);
-    }
-
-    void sendTransfer(BigDecimal amount, String toAccountNumber) {
-        debit(amount, Transaction.Type.TRANSFER_OUT, "Transfer to " + toAccountNumber);
-    }
-
-    private void credit(BigDecimal amount, Transaction.Type type, String description) {
+    /** Adds funds and records a transaction; returns the new balance. */
+    void deposit(BigDecimal amount, String transactionId, LocalDateTime timestamp) {
         BigDecimal validAmount = requirePositiveAmount(amount);
         balance = balance.add(validAmount);
-        transactions.add(new Transaction(type, validAmount, LocalDateTime.now(), description));
+        record(transactionId, TransactionType.DEPOSIT, validAmount, timestamp, "Deposit", null);
     }
 
-    private void debit(BigDecimal amount, Transaction.Type type, String description) {
+    /** Removes funds (rejecting overdraft) and records a transaction. */
+    void withdraw(BigDecimal amount, String transactionId, LocalDateTime timestamp) {
         BigDecimal validAmount = requirePositiveAmount(amount);
-        if (balance.compareTo(validAmount) < 0) {
+        requireSufficientFunds(validAmount);
+        balance = balance.subtract(validAmount);
+        record(transactionId, TransactionType.WITHDRAWAL, validAmount, timestamp, "Withdrawal", null);
+    }
+
+    /** Sends funds to another account (rejecting overdraft) and records TRANSFER_OUT. */
+    void transferOut(BigDecimal amount, String transactionId, LocalDateTime timestamp,
+                     String toAccountNumber) {
+        BigDecimal validAmount = requirePositiveAmount(amount);
+        requireSufficientFunds(validAmount);
+        balance = balance.subtract(validAmount);
+        record(transactionId, TransactionType.TRANSFER_OUT, validAmount, timestamp,
+                "Transfer to " + toAccountNumber, toAccountNumber);
+    }
+
+    /** Receives funds from another account and records TRANSFER_IN. */
+    void transferIn(BigDecimal amount, String transactionId, LocalDateTime timestamp,
+                    String fromAccountNumber) {
+        BigDecimal validAmount = requirePositiveAmount(amount);
+        balance = balance.add(validAmount);
+        record(transactionId, TransactionType.TRANSFER_IN, validAmount, timestamp,
+                "Transfer from " + fromAccountNumber, fromAccountNumber);
+    }
+
+    /** True if this account has at least {@code amount} available. */
+    boolean hasFunds(BigDecimal amount) {
+        return balance.compareTo(amount) >= 0;
+    }
+
+    private void record(String transactionId, TransactionType type, BigDecimal amount,
+                        LocalDateTime timestamp, String description, String relatedAccountNumber) {
+        transactions.add(new Transaction(transactionId, type, amount, timestamp,
+                description, balance, relatedAccountNumber));
+    }
+
+    private void requireSufficientFunds(BigDecimal amount) {
+        if (balance.compareTo(amount) < 0) {
             throw new IllegalStateException("Insufficient funds in account " + accountNumber);
         }
-        balance = balance.subtract(validAmount);
-        transactions.add(new Transaction(type, validAmount, LocalDateTime.now(), description));
+    }
+
+    /** Immutable, read-only view of this account and its history. */
+    public AccountSnapshot toSnapshot() {
+        List<TransactionSnapshot> history = new ArrayList<>();
+        for (Transaction transaction : transactions) {
+            history.add(transaction.toSnapshot());
+        }
+        return new AccountSnapshot(accountNumber, ownerName, balance,
+                Collections.unmodifiableList(history), history.size());
     }
 
     static BigDecimal requirePositiveAmount(BigDecimal amount) {
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+        if (amount == null) {
+            throw new IllegalArgumentException("Amount must not be null");
+        }
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero");
         }
         return amount;

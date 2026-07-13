@@ -1,52 +1,113 @@
 # Bank Account Simulator
 
-## Description
+An educational, dependency-free Java project that simulates a bank. It focuses on
+clean object-oriented design, a service layer with real business rules,
+`BigDecimal` money handling, all-or-nothing transfers, deterministic transaction
+IDs and timestamps, transaction history, and defensive data exposure — not on a
+database, web API, or real banking integration.
 
-Bank Account Simulator is an in-memory Java project for accounts, balances, transfers, and transaction history. BigDecimal is used for money to avoid floating-point rounding errors.
+## What it demonstrates
+
+- **Account** domain model (number, owner, balance, transaction history)
+- **Transaction** domain model (ID, type, amount, timestamp, description, balanceAfter)
+- **TransactionType** enum (`DEPOSIT`, `WITHDRAWAL`, `TRANSFER_IN`, `TRANSFER_OUT`)
+- **Bank** service layer that owns all state changes
+- account creation, deposit, withdrawal, and transfer workflows
+- overdraft protection and self-transfer prevention
+- all-or-nothing transfer validation
+- deterministic transaction IDs (`T0001`, `T0002`, …)
+- deterministic timestamps via an injectable `Clock`
+- `balanceAfter` recorded on every transaction
+- transaction history and total-balance reporting
+- defensive `AccountSnapshot`/`TransactionSnapshot` so internal state cannot be mutated
+- command-based CLI demos
+- dependency-free automated tests
+- strict compilation (`-Xlint:all -Werror`)
 
 ## Features
 
-- Create accounts with unique account numbers.
-- Deposit and withdraw positive amounts.
-- Prevent overdrafts.
-- Transfer funds between different accounts.
-- Reject invalid, self, and underfunded transfers.
-- Record deposits, withdrawals, transfer-ins, and transfer-outs.
-- Return read-only account and transaction lists.
-
-## Java concepts practiced
-
-- Encapsulation of financial state
-- BigDecimal arithmetic and comparison
-- List and Map collections
-- Immutable transaction records
-- Validation and exception handling
-- Coordinating atomic-style operations between objects
+- Create accounts (with a non-negative initial balance) and reject duplicates.
+- Deposit and withdraw with positive-amount and overdraft checks.
+- Transfer funds between accounts as a single all-or-nothing operation.
+- Track full transaction history with running `balanceAfter`.
+- Report total bank balance and look up accounts by owner.
+- CLI demos for every feature area.
 
 ## Main classes
 
-- Account: owns balance and transaction history.
-- Transaction: represents a dated financial operation.
-- Bank: creates accounts and coordinates transfers.
-- Main: demonstrates deposits, withdrawal, transfer, and history.
+| Class | Responsibility |
+|---|---|
+| `Account` | Balance + history; only `Bank` mutates it (package-private ops). |
+| `Transaction` | Immutable money-movement record (ID, type, amount, balanceAfter). |
+| `TransactionType` | Enum: `DEPOSIT`, `WITHDRAWAL`, `TRANSFER_IN`, `TRANSFER_OUT`. |
+| `Bank` | Service layer: accounts, deposit, withdraw, transfer, reports. |
+| `AccountSnapshot` / `TransactionSnapshot` | Immutable read-only views returned to callers. |
+| `Main` | Command-based CLI / demo driver. |
 
-## How the program works
+## Behavior notes
 
-Account performs validated credits and debits. Bank validates both accounts, the amount, and available funds before applying a transfer. Successful operations append Transaction records; failed operations leave balances and history unchanged.
+- **Money uses `BigDecimal`** (never `double`/`float`); comparisons use
+  `compareTo`, and user-facing output is shown with 2 decimals.
+- **Balances never go negative**; deposit/withdraw/transfer amounts must be
+  strictly positive.
+- **Transfers are all-or-nothing.** Every check (both accounts exist, not the same
+  account, positive amount, sufficient funds) runs before any balance changes, so
+  a failed transfer changes no balance and records no transaction.
+- **Transaction IDs are deterministic** (`T0001`, `T0002`, …). A transfer creates
+  two: a `TRANSFER_OUT` on the source and a `TRANSFER_IN` on the target.
+- **Timestamps come from an injectable `Clock`**, so they are reproducible in
+  tests and demos.
+- **Public methods return immutable snapshots in unmodifiable lists.** Live
+  `Account` objects are never leaked, so external code cannot deposit/withdraw by
+  bypassing the bank.
 
-## Example usage
+## Quick start
 
-~~~powershell
-javac -d out src\bankaccountsimulator\*.java
-java -cp out bankaccountsimulator.Main
+Compile:
+
+~~~
+javac -Xlint:all -Werror -d out src/bankaccountsimulator/*.java
 ~~~
 
-The demo prints final balances and each account's transaction history.
+Run the CLI commands:
 
-## Possible future improvements
+~~~
+java -cp out bankaccountsimulator.Main help
+java -cp out bankaccountsimulator.Main demo
+java -cp out bankaccountsimulator.Main deposit-demo
+java -cp out bankaccountsimulator.Main withdraw-demo
+java -cp out bankaccountsimulator.Main transfer-demo
+java -cp out bankaccountsimulator.Main statement-demo
+java -cp out bankaccountsimulator.Main validation-demo
+~~~
 
-- Add account closing rules.
-- Add transaction filtering by type or date.
-- Add statement export to a text file.
-- Add configurable transfer limits.
-- Add currency and rounding policies.
+## Testing
+
+The project ships with a dependency-free test suite (custom assertion helper and
+runner — no JUnit, Maven, or Gradle). Run everything with:
+
+~~~
+bash scripts/test.sh
+~~~
+
+Windows PowerShell:
+
+~~~
+.\scripts\test.ps1
+~~~
+
+See [TESTING.md](TESTING.md) for exact commands and [TEST_RESULTS.md](TEST_RESULTS.md)
+for the latest recorded run.
+
+## Limitations
+
+This is a learning project. It intentionally has:
+
+- no database (in-memory only)
+- no HTTP API
+- no login/authentication
+- no real banking integration
+- no interest calculation
+- no concurrency/thread-safety guarantee
+- no production financial guarantees
+- no production deployment

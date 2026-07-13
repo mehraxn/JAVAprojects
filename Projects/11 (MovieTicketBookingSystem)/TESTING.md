@@ -1,52 +1,117 @@
-# Testing Movie Ticket Booking System
+# Testing the Movie Ticket Booking System
 
-## Testing approach
+The project uses a small, dependency-free test harness: a custom assertion
+helper (`TestSupport`, including `assertBigDecimalEquals`) and a runner
+(`TestRunner`). No JUnit, Maven, Gradle, or other external libraries are
+involved. Tests live in `tests/movieticketbookingsystem/` and share the source
+package, so they can exercise package-private behaviour directly.
 
-Build small showtimes with known seat maps. Check both returned bookings and individual Seat state after every operation.
+## What is covered
 
-## Normal test cases
+- `MovieTest` — validation, default genre, snapshot data.
+- `SeatTest` — availability, reserve/release rules, snapshot data.
+- `ShowtimeTest` — seat map, duplicate/null seats, ticket price, full detection.
+- `BookingTest` — validation, status transitions, unmodifiable seat list.
+- `BookingSystemTest` — booking, all-or-nothing safety, cancellation, availability
+  (the most important file), with a fixed `Clock` for deterministic timestamps.
+- `SnapshotTest` — unmodifiable results and proof that returned data cannot mutate
+  internal seat, showtime, or booking state.
+- `MainTest` — `Main.run` smoke tests, called in-process (no separate JVM).
 
-| Test | Action | Expected result |
-|---|---|---|
-| Add movie | Register a unique Movie | Movie appears in listMovies |
-| Add showtime | Add registered movie with seats | Showtime appears in listShowtimes |
-| Single booking | Book one available label | Seat becomes booked |
-| Group booking | Book several distinct labels | One Booking contains every label |
-| Price | Book three seats | Total is 36.00 |
-| Cancel | Cancel an existing booking | Every booked seat becomes available |
+## Commands
 
-## Edge-case test cases
+### A) Clean
 
-| Test | Action | Expected result |
-|---|---|---|
-| Empty selection | Submit an empty label list | IllegalArgumentException |
-| Duplicate request | Repeat a label in one request | IllegalArgumentException and no seats change |
-| Mixed request | Include valid and unknown labels | Request fails and valid seats remain available |
-| Empty showtime | Add a showtime without seats | IllegalArgumentException |
-| Registered identity | Use another Movie object with the same ID | IllegalArgumentException |
-| Read-only booking | Modify returned seat-label list | UnsupportedOperationException |
+Linux/macOS/Git Bash:
 
-## Invalid input test cases
+~~~
+rm -rf out test-out
+~~~
 
-| Test | Action | Expected result |
-|---|---|---|
-| Double booking | Book an occupied seat | IllegalStateException |
-| Invalid seat | Use zero/negative coordinates or unknown label | IllegalArgumentException |
-| Invalid movie | Use blank values or non-positive duration | IllegalArgumentException |
-| Duplicate IDs | Reuse movie, showtime, or seat identity | IllegalArgumentException |
-| Invalid Booking | Construct with blank/duplicate labels or invalid price | IllegalArgumentException |
-| Unknown cancellation | Cancel a missing booking ID | IllegalArgumentException |
+Windows PowerShell:
 
-## Expected results
+~~~
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+~~~
 
-Booking is all-or-nothing: either every requested seat is reserved and stored, or no requested seat changes. Cancellation must restore every stored seat.
+### B) Strict compile: application
+
+~~~
+javac -Xlint:all -Werror -d out src/movieticketbookingsystem/*.java
+~~~
+
+### C) Strict compile: tests
+
+~~~
+javac -Xlint:all -Werror -cp out -d test-out tests/movieticketbookingsystem/*.java
+~~~
+
+### D) Run tests
+
+Linux/macOS/Git Bash:
+
+~~~
+java -cp "out:test-out" movieticketbookingsystem.TestRunner
+~~~
+
+Windows PowerShell:
+
+~~~
+java -cp "out;test-out" movieticketbookingsystem.TestRunner
+~~~
+
+### E) Run CLI demos
+
+~~~
+java -cp out movieticketbookingsystem.Main help
+java -cp out movieticketbookingsystem.Main demo
+java -cp out movieticketbookingsystem.Main booking-demo
+java -cp out movieticketbookingsystem.Main cancellation-demo
+java -cp out movieticketbookingsystem.Main full-showtime-demo
+java -cp out movieticketbookingsystem.Main availability-demo
+java -cp out movieticketbookingsystem.Main validation-demo
+~~~
+
+### F) Scripts
+
+Linux/macOS/Git Bash:
+
+~~~
+./scripts/test.sh
+~~~
+
+Windows PowerShell:
+
+~~~
+.\scripts\test.ps1
+~~~
+
+> Note: the JVM classpath separator differs by platform — `:` on Linux/macOS,
+> `;` on Windows. `test.sh` uses `:` and `test.ps1` uses `;` accordingly.
+
+### G) Cleanup
+
+Linux/macOS/Git Bash:
+
+~~~
+rm -rf out test-out
+~~~
+
+Windows PowerShell:
+
+~~~
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+~~~
 
 ## Manual testing checklist
 
-- [ ] Compile and run Main.
-- [ ] Verify available-seat count before and after booking.
-- [ ] Verify multi-seat booking is all-or-nothing.
-- [ ] Verify duplicate labels are rejected case-insensitively.
-- [ ] Verify cancellation releases every stored seat.
-- [ ] Verify price equals seat count multiplied by 12.00.
-- [ ] Verify returned booking data cannot be modified.
+- [ ] Compile strictly with `-Xlint:all -Werror`.
+- [ ] Run `TestRunner` and confirm all cases pass.
+- [ ] Verify single- and multi-seat booking, and deterministic `B0001`/`B0002` IDs.
+- [ ] Verify all-or-nothing: a mixed valid/invalid request reserves nothing.
+- [ ] Verify duplicate-seat requests and already-booked seats are rejected.
+- [ ] Verify booking into a full showtime is rejected.
+- [ ] Verify cancellation releases exactly the booked seats and keeps history.
+- [ ] Verify seats can be rebooked after cancellation.
+- [ ] Verify total price equals ticket price × seat count with 2 decimals.
+- [ ] Verify returned lists are unmodifiable and snapshots cannot mutate state.

@@ -1,52 +1,119 @@
-# Testing Parking Garage System
+# Testing the Parking Garage System
 
-## Testing approach
+The project uses a small, dependency-free test harness: a custom assertion
+helper (`TestSupport`, including `assertBigDecimalEquals` and
+`assertDoubleEquals`) and a runner (`TestRunner`). No JUnit, Maven, Gradle, or
+other external libraries are involved. Tests live in
+`tests/parkinggaragesystem/` and share the source package, so they can exercise
+package-private behaviour directly.
 
-Use explicit arrival and departure times for repeatable fee tests. Inspect both Garage counts and ParkingSpot state.
+## What is covered
 
-## Normal test cases
+- `VehicleTest` — plate normalization, validation, equality, snapshot.
+- `ParkingSpotTest` — compatibility, occupancy, release rules, snapshot.
+- `ParkingLevelTest` — spot map, null/duplicate spots, availability, snapshot.
+- `ParkingReceiptTest` — validation, immutability, fee fields, snapshot.
+- `FeeCalculationTest` — started-hour billing boundaries and per-type rates.
+- `GarageTest` — parking, exit, history, reports (the most important file).
+- `SnapshotTest` — unmodifiable results and proof that returned data cannot mutate
+  internal spot/level/receipt state.
+- `MainTest` — `Main.run` smoke tests, called in-process (no separate JVM).
 
-| Test | Action | Expected result |
-|---|---|---|
-| Configure garage | Add levels and typed spots | Counts match configured spots |
-| Park vehicle | Park a compatible type | Matching spot becomes occupied |
-| Exit vehicle | Exit a parked plate | Spot becomes available and receipt is returned |
-| Count availability | Park and remove vehicles | Counts decrease and increase correctly |
-| One-hour fee | Stay exactly one hour | Fee is 5.00 |
-| Partial-hour fee | Stay 90 minutes | Fee is 10.00 |
+## Commands
 
-## Edge-case test cases
+### A) Clean
 
-| Test | Action | Expected result |
-|---|---|---|
-| Zero duration | Exit at arrival time | Minimum fee is 5.00 |
-| Full type | Fill every car spot | Further car entry is rejected |
-| No levels | Park before configuration | IllegalStateException |
-| Plate case | Reuse plate with different letter case | Duplicate entry is rejected |
-| Global spot ID | Reuse spot ID on another level | IllegalArgumentException |
-| Invalid exit | Use departure before arrival | Vehicle remains parked |
+Linux/macOS/Git Bash:
 
-## Invalid input test cases
+~~~
+rm -rf out test-out
+~~~
 
-| Test | Action | Expected result |
-|---|---|---|
-| Invalid level/spot | Use negative level or blank spot ID | IllegalArgumentException |
-| Wrong vehicle type | Assign car to motorcycle spot | IllegalArgumentException |
-| Unknown exit | Remove a plate not parked | IllegalArgumentException |
-| Null values | Use null vehicle, type, or time | IllegalArgumentException |
-| Invalid receipt | Use blank spot, negative fee, or reversed dates | IllegalArgumentException |
-| Duplicate configuration | Reuse level number or spot ID | IllegalArgumentException |
+Windows PowerShell:
 
-## Expected results
+~~~
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+~~~
 
-Spot occupancy, availability counts, active parking, and receipts must describe the same state. Invalid exits must not release a vehicle.
+### B) Strict compile: application
+
+~~~
+javac -Xlint:all -Werror -d out src/parkinggaragesystem/*.java
+~~~
+
+### C) Strict compile: tests
+
+~~~
+javac -Xlint:all -Werror -cp out -d test-out tests/parkinggaragesystem/*.java
+~~~
+
+### D) Run tests
+
+Linux/macOS/Git Bash:
+
+~~~
+java -cp "out:test-out" parkinggaragesystem.TestRunner
+~~~
+
+Windows PowerShell:
+
+~~~
+java -cp "out;test-out" parkinggaragesystem.TestRunner
+~~~
+
+### E) Run CLI demos
+
+~~~
+java -cp out parkinggaragesystem.Main help
+java -cp out parkinggaragesystem.Main demo
+java -cp out parkinggaragesystem.Main parking-demo
+java -cp out parkinggaragesystem.Main exit-demo
+java -cp out parkinggaragesystem.Main fee-demo
+java -cp out parkinggaragesystem.Main full-garage-demo
+java -cp out parkinggaragesystem.Main report-demo
+java -cp out parkinggaragesystem.Main validation-demo
+~~~
+
+### F) Scripts
+
+Linux/macOS/Git Bash:
+
+~~~
+./scripts/test.sh
+~~~
+
+Windows PowerShell:
+
+~~~
+.\scripts\test.ps1
+~~~
+
+> Note: the JVM classpath separator differs by platform — `:` on Linux/macOS,
+> `;` on Windows. `test.sh` uses `:` and `test.ps1` uses `;` accordingly.
+
+### G) Cleanup
+
+Linux/macOS/Git Bash:
+
+~~~
+rm -rf out test-out
+~~~
+
+Windows PowerShell:
+
+~~~
+Remove-Item -Recurse -Force out,test-out -ErrorAction SilentlyContinue
+~~~
 
 ## Manual testing checklist
 
-- [ ] Compile and run Main.
-- [ ] Test every vehicle type.
-- [ ] Verify availability before entry, after entry, and after exit.
-- [ ] Test fee boundaries at 0, 1 hour, and 1 hour plus 1 second.
-- [ ] Verify invalid exit times preserve active parking.
-- [ ] Verify duplicate plates and spot IDs are rejected.
-- [ ] Verify receipt fields match the completed stay.
+- [ ] Compile strictly with `-Xlint:all -Werror`.
+- [ ] Run `TestRunner` and confirm all cases pass.
+- [ ] Verify plate normalization (`" b-ab 123 "` == `"B-AB 123"`).
+- [ ] Verify a vehicle only parks in a compatible spot.
+- [ ] Verify duplicate active vehicles and full-garage cases are rejected.
+- [ ] Verify exit releases the exact spot and creates a receipt in history.
+- [ ] Verify started-hour billing at 0/60/61/90 minutes and 1h1s.
+- [ ] Verify exit before entry is rejected.
+- [ ] Verify total/by-type revenue and occupancy percentage.
+- [ ] Verify returned lists are unmodifiable and snapshots cannot mutate state.

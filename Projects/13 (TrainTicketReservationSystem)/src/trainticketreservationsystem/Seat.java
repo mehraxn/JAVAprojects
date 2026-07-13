@@ -1,6 +1,18 @@
 package trainticketreservationsystem;
 
-public class Seat {
+/**
+ * A single numbered seat on a train and its availability state.
+ *
+ * <p>Seat numbers are positive integers. A seat starts available and toggles
+ * between reserved and available through {@link #reserve()} and {@link #release()}.
+ * Reserving a reserved seat or releasing an available seat is rejected so that
+ * seat state can never drift silently out of sync with reservations.
+ *
+ * <p>{@code Seat} is mutable by design, so {@link ReservationSystem} never leaks
+ * live {@code Seat} instances to callers; it exposes {@link SeatSnapshot} copies
+ * instead.
+ */
+public final class Seat {
     private final int number;
     private boolean reserved;
 
@@ -13,6 +25,7 @@ public class Seat {
 
     public int getNumber() { return number; }
     public boolean isReserved() { return reserved; }
+    public boolean isAvailable() { return !reserved; }
 
     public void reserve() {
         if (reserved) {
@@ -26,5 +39,10 @@ public class Seat {
             throw new IllegalStateException("Seat is not reserved: " + number);
         }
         reserved = false;
+    }
+
+    @Override
+    public String toString() {
+        return "Seat " + number + (reserved ? " (reserved)" : " (available)");
     }
 }

@@ -4,7 +4,7 @@
 
 **Serialization** is the process of converting an object into a stream of bytes so it can be:
 - Saved to a file
-- Sent over a network
+- Sent through a remote connection
 - Stored in a database
 
 **Deserialization** is the reverse process - converting the byte stream back into an object.
@@ -715,7 +715,7 @@ public static Student loadWithTryWithResources(String filename) {
 **Common Uses:**
 - Saving game state
 - Caching data
-- Sending objects over network
+- Sending objects through remote connections
 - Session management
 - Deep copying objects
 

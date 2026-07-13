@@ -405,9 +405,9 @@ public class InstantiationExceptionExample {
 
 **Explanation:**
 
-`IOException` is a checked exception that signals an input/output operation has failed or been interrupted. This is one of the most commonly encountered exceptions in Java, occurring during file operations, network communications, stream processing, or any interaction with external resources. It serves as a parent class for many specific I/O-related exceptions like `FileNotFoundException`, `EOFException`, and `SocketException`.
+`IOException` is a checked exception that signals an input/output operation has failed or been interrupted. This is one of the most commonly encountered exceptions in Java, occurring during file operations, remote communications, stream processing, or any interaction with external resources. It serves as a parent class for many specific I/O-related exceptions like `FileNotFoundException`, `EOFException`, and `SocketException`.
 
-Common scenarios include reading from or writing to files that don't exist or are inaccessible, network connection failures, disk space issues, permission problems, corrupted data streams, or unexpected end of file. Proper handling of `IOException` is crucial for robust applications, typically involving resource cleanup using try-with-resources, providing meaningful error messages to users, and implementing appropriate recovery or retry mechanisms.
+Common scenarios include reading from or writing to files that don't exist or are inaccessible, remote connection failures, disk space issues, permission problems, corrupted data streams, or unexpected end of file. Proper handling of `IOException` is crucial for robust applications, typically involving resource cleanup using try-with-resources, providing meaningful error messages to users, and implementing appropriate recovery or retry mechanisms.
 
 **Example:**
 
@@ -431,8 +431,8 @@ public class IOExceptionExample {
         // Example 3: Proper file operations with exception handling
         properFileOperations();
         
-        // Example 4: Network-like operation (simulated)
-        simulateNetworkOperation();
+        // Example 4: Remote resource operation (simulated)
+        simulateRemoteResourceOperation();
     }
     
     /**
@@ -565,17 +565,17 @@ public class IOExceptionExample {
     }
     
     /**
-     * Example 4: Simulated network operation that can fail
+     * Example 4: Simulated remote resource operation that can fail
      */
-    private static void simulateNetworkOperation() {
-        System.out.println("Example 4: Simulated network operation");
+    private static void simulateRemoteResourceOperation() {
+        System.out.println("Example 4: Simulated remote resource operation");
         
         try {
             System.out.println("Simulating data transfer...");
             
             // Simulate reading from a stream that might fail
             ByteArrayInputStream inputStream = new ByteArrayInputStream(
-                "Network data".getBytes(StandardCharsets.UTF_8)
+                "Remote resource data".getBytes(StandardCharsets.UTF_8)
             );
             
             // Simulate an interrupted stream
@@ -589,11 +589,11 @@ public class IOExceptionExample {
             }
             
         } catch (IOException e) {
-            System.err.println("✗ IOException during network operation!");
+            System.err.println("✗ IOException during remote resource operation!");
             System.err.println("  Error: " + e.getMessage());
             System.err.println("  Scenario: Stream was closed or interrupted");
             System.err.println("  In real applications, this could be:");
-            System.err.println("    - Network connection lost");
+            System.err.println("    - Remote connection lost");
             System.err.println("    - Server closed connection");
             System.err.println("    - Timeout occurred");
             System.err.println("    - Data corruption detected");
@@ -641,13 +641,13 @@ public class IOExceptionExample {
  * ✓ Successfully read all lines
  * ✓ Test file cleaned up
  * 
- * Example 4: Simulated network operation
+ * Example 4: Simulated remote resource operation
  * Simulating data transfer...
- * ✗ IOException during network operation!
+ * ✗ IOException during remote resource operation!
  *   Error: Stream closed
  *   Scenario: Stream was closed or interrupted
  *   In real applications, this could be:
- *     - Network connection lost
+ *     - Remote connection lost
  *     - Server closed connection
  *     - Timeout occurred
  *     - Data corruption detected

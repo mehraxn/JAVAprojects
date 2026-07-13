@@ -365,7 +365,7 @@ System.out.println("Laptops ordered: " + laptopCount);
 // Output: Laptops ordered: 2
 ```
 
-### Example 2: Social Network Analysis
+### Example 2: Friend Graph Analysis
 ```java
 class Person {
     private String name;
@@ -386,7 +386,7 @@ List<Person> people = Arrays.asList(
     new Person("Charlie", Arrays.asList("Eve"))
 );
 
-// Find all unique people in the network (including friends)
+// Find all unique people in the friend graph (including friends)
 Set<String> allPeople = people.stream()
     .flatMap(person -> Stream.concat(
         Stream.of(person.getName()),
@@ -394,8 +394,8 @@ Set<String> allPeople = people.stream()
     ))
     .collect(Collectors.toSet());
 
-System.out.println("Network size: " + allPeople);
-// Output: Network size: [Alice, Bob, Charlie, Diana, Eve]
+System.out.println("Friend graph size: " + allPeople);
+// Output: Friend graph size: [Alice, Bob, Charlie, Diana, Eve]
 ```
 
 ### Example 3: File Processing

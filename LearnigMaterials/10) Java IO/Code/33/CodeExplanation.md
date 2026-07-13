@@ -13,7 +13,7 @@ import java.net.*;
 import java.io.*;
 ```
 
-- **`java.net.*`**: Provides classes for networking operations (URL, URI, URLConnection)
+- **`java.net.*`**: Provides classes for URL and URI connection operations
 - **`java.io.*`**: Provides classes for input/output operations (Reader, Writer, streams)
 
 ---
@@ -24,8 +24,8 @@ public class DownloadHtml {
     public static void main(String[] args) throws IOException {
 ```
 
-- **`throws IOException`**: Declares that this method can throw IOException (required for network and file operations)
-- **Why?** Network operations can fail (no internet, server down, etc.), so Java forces you to handle these potential errors
+- **`throws IOException`**: Declares that this method can throw IOException (required for remote connection and file operations)
+- **Why?** Remote connection operations can fail (no internet, server down, etc.), so Java forces you to handle these potential errors
 
 ---
 
@@ -118,13 +118,13 @@ Reader r = new InputStreamReader(con.getInputStream());
 
 **What it does:**
 - Returns an InputStream that reads data from the URL connection
-- This is where the actual network connection is established
+- This is where the actual remote connection is established
 
 **Breaking down the wrapping:**
 
 1. **`con.getInputStream()`**:
    - Returns a raw `InputStream` (bytes)
-   - This is the low-level binary data from the network
+   - This is the low-level binary data from the remote source
 
 2. **`new InputStreamReader(...)`**:
    - Wraps the InputStream
@@ -138,7 +138,7 @@ Reader r = new InputStreamReader(con.getInputStream());
 
 **Stream Hierarchy:**
 ```
-Network (bytes) 
+Remote source (bytes) 
     ↓
 InputStream (raw bytes)
     ↓
@@ -150,7 +150,7 @@ Your program (reads characters)
 **Important Notes:**
 - This method can throw `IOException` if connection fails
 - The stream must be closed after use (prevents resource leaks)
-- Reading from this stream pulls data from the network
+- Reading from this stream pulls data from the remote source
 
 ---
 
@@ -182,8 +182,8 @@ Writer w = new OutputStreamWriter(System.out);
 ```
 
 **Input side (Reader):**
-- Reads character data from the network
-- Converts bytes from the network to characters
+- Reads character data from the remote source
+- Converts bytes from the remote source to characters
 
 **Output side (Writer):**
 - Writes character data to the console
@@ -204,7 +204,7 @@ char[] buffer = new char[4096];
 
 **Why use a buffer?**
 - **Efficiency**: Reading in chunks is much faster than reading one character at a time
-- **Performance**: Reduces the number of network/IO operations
+- **Performance**: Reduces the number of remote IO operations
 - **Standard size**: 4096 is a common buffer size (balances memory use and speed)
 
 **Analogy:**
@@ -259,7 +259,7 @@ w.close();
 ```
 
 **Why close streams?**
-1. **Releases resources**: Network connections, file handles, memory
+1. **Releases resources**: Remote connections, file handles, memory
 2. **Prevents leaks**: Unclosed streams can cause resource exhaustion
 3. **Flushes buffers**: Ensures all data is written
 4. **Good practice**: Professional code always cleans up
@@ -301,11 +301,11 @@ w.close();
 
 ### Buffering
 - Reading/writing in chunks is more efficient
-- Reduces system calls and network roundtrips
+- Reduces system calls and remote roundtrips
 - Standard buffer sizes: 1024, 2048, 4096, 8192 bytes
 
 ### Exception Handling
-- Network operations are risky (failures are common)
+- Remote connection operations are risky (failures are common)
 - `throws IOException` delegates error handling to the caller
 - Better approach: Use try-catch-finally or try-with-resources
 
@@ -330,7 +330,7 @@ int responseCode = con.getResponseCode();
 ### 3. Better Error Handling
 ```java
 try {
-    // network code
+    // remote connection code
 } catch (IOException e) {
     System.err.println("Error: " + e.getMessage());
 }
@@ -343,7 +343,7 @@ try {
 1. **Forgetting to close streams**: Causes resource leaks
 2. **Not checking for null**: Can cause NullPointerException
 3. **Wrong buffer size**: Too small (inefficient) or too large (memory waste)
-4. **Ignoring exceptions**: Network failures are common, handle them!
+4. **Ignoring exceptions**: Remote connection failures are common, handle them!
 5. **Using deprecated constructors**: Use `URI.create().toURL()`
 
 ---
@@ -362,19 +362,19 @@ java DownloadHtml
 
 **Possible errors:**
 - **UnknownHostException**: No internet connection
-- **IOException**: Network problem
+- **IOException**: Remote connection problem
 - **SecurityException**: Firewall blocking connection
 
 ---
 
 ## Summary
 
-This program demonstrates fundamental Java networking concepts:
+This program demonstrates fundamental Java URL connection concepts:
 - Creating and using URLs
-- Establishing network connections
+- Establishing remote connections
 - Checking content types
 - Reading data from the internet
 - Efficient buffered I/O operations
 - Proper resource management
 
-These concepts form the foundation for web scraping, API clients, file downloads, and many other network-based applications in Java.
+These concepts form the foundation for web scraping, API clients, file downloads, and many other remote-data applications in Java.

@@ -1,121 +1,149 @@
 # Complete Java Study Roadmap
 
-This roadmap gives you a **step-by-step study path**: what to read first, what to practice after
-each section, and when to use the final revision pack. Follow the numbered folders `1)`–`13)`,
-practice with `15) Exercises`, and finish with `14) Final Revision Pack`.
-
-> Tip: all code examples were checked by static review and are meant for study — run them
-> yourself if you have a JDK.
-
----
+This roadmap gives a step-by-step study path through the Java learning materials. Follow the numbered folders in order and use `20) Exercises` throughout the course.
 
 ## How topics depend on each other
 
-Some topics only make sense after earlier ones:
+- Java fundamentals come before OOP.
+- OOP comes before inheritance, architecture, and persistence.
+- Generics make collections easier.
+- Collections and lambdas make streams easier.
+- Exceptions and IO prepare you for imports and persistence.
+- JDBC helps you understand what JPA and Hibernate automate.
+- EntityManager and JPQL make repository design more concrete.
+- Build tools and tests should be used throughout backend practice.
 
-- Collections are easier **after** generics.
-- Streams need lambdas and functional interfaces first.
-- ORM/JPA is easier **after** OOP, collections, and a little SQL/JDBC.
+## Suggested study blocks
 
-So the order below is deliberate — do not skip ahead.
+### Block 1 - Java fundamentals
 
----
+Read:
 
-## Week-by-week plan (8 weeks)
+- `1) Java Fundamentals`
 
-You can go faster or slower; each "week" is really "a study block". After each block, do the
-matching file in `15) Exercises`.
+Practice:
 
-### Week 1 — Core Java syntax
-**Read:** `1) Java Fundamentals` (a → e): JVM/JDK/JRE, variables & types, operators, strings,
-`if`/`switch`/loops, methods & pass-by-value, arrays.
-**Practice:** `15) Exercises/01_Java_Basics_Exercises.md` and `02_Methods_Arrays_Exercises.md`.
-**Goal:** write small programs with loops, methods, and arrays without help.
+- `20) Exercises/01_Java_Basics_Exercises.md`
+- `20) Exercises/02_Methods_Arrays_Exercises.md`
 
-### Week 2 — Object-Oriented core
-**Read:** `2) Basics OOP Core` (a → f): classes & encapsulation, access modifiers / static /
-final, `equals`/`hashCode`/`toString`, enums & records, inner classes, Comparator vs comparator.
-**Practice:** `15) Exercises/03_Classes_Objects_Constructors_Exercises.md`.
-**Goal:** design a small class with private fields, a constructor, and getters.
+Goal: write small Java programs with variables, loops, methods, and arrays.
 
-### Week 3 — Inheritance and polymorphism
-**Read:** `3) Inheritance and Polymorphism` (a → i): constructors & `super`, the `Object` root,
-abstract vs concrete, anonymous classes, `Comparable`, polymorphism & dynamic dispatch,
-overloading vs overriding, interface default/static/marker methods, UML basics.
-**Practice:** `15) Exercises/04_Inheritance_Polymorphism_Exercises.md`,
-`05_Abstract_Classes_Interfaces_Exercises.md`, and `13_UML_Class_Diagram_Exercises.md`.
-**Goal:** explain why `Animal a = new Dog(); a.sound();` runs the Dog version.
+### Block 2 - OOP core
 
-### Week 4 — Generics and collections
-**Read:** `4) Generics` (a → f) then `5) Collections`.
-**Practice:** `15) Exercises/07_Generics_Exercises.md` and `06_Collections_Exercises.md`.
-**Goal:** state the PECS rule and pick the right collection for a problem.
+Read:
 
-### Week 5 — Functional Java and streams
-**Read:** `6) Streams` (a → k): stream intro, intermediate operations, filtering, map/flatMap,
-collect & collectors, lambdas, method references, `Optional`, grouping/partitioning/primitive
-streams, functional interfaces, summarizing collectors.
-**Practice:** `15) Exercises/09_Lambdas_Streams_Optional_Exercises.md` and the
-`15) Exercises/Streams Lab - Mountain Huts (Stream API).md`.
-**Goal:** write a `filter → map → collect` pipeline and explain lazy evaluation.
+- `2) Basics OOP Core`
+- `3) Inheritance and Polymorphism`
 
-### Week 6 — Exceptions, IO, and date/time
-**Read:** `7) Exceptions`, `8) Java IO`, `13) Date and Time`.
-**Practice:** `15) Exercises/08_Exceptions_Exercises.md` and `10_File_IO_DateTime_Exercises.md`.
-**Goal:** use try-with-resources; explain `Duration` vs `Period`.
+Practice:
 
-### Week 7 — Testing and tools
-**Read:** `9) Testing with JUnit`, `10) Git and Build Tools`.
-**Practice:** `15) Exercises/11_JUnit_Exercises.md`.
-**Goal:** write a simple JUnit test; explain a merge conflict and the Maven lifecycle.
+- `20) Exercises/03_Classes_Objects_Constructors_Exercises.md`
+- `20) Exercises/04_Inheritance_Polymorphism_Exercises.md`
+- `20) Exercises/05_Abstract_Classes_Interfaces_Exercises.md`
 
-### Week 8 — Databases and ORM
-**Read:** `11) JDBC and Databases`, `12) ORM JPA and Hibernate`.
-**Practice:** `15) Exercises/12_JDBC_JPA_ORM_Theory_Exercises.md`.
-**Goal:** write a `PreparedStatement`; map a `@ManyToOne`; explain EAGER vs LAZY.
+Goal: design classes with private state, constructors, methods, inheritance, and interfaces.
 
----
+### Block 3 - Architecture foundations
 
-## What to read first (if you only have a little time)
+Read:
 
-1. `00) START HERE/Java Exam Cheat Sheet.md` — the big picture on one page.
-2. `1) Java Fundamentals` — you cannot skip the grammar of the language.
-3. `2) Basics OOP Core` and `3) Inheritance and Polymorphism` — the heart of Java.
+- `4) Software Architecture and Design Patterns`
 
----
+Practice:
 
-## What to practice after each section
+- `20) Exercises/Architecture and Design Pattern Exercises.md`
 
-- After **every** folder, do the matching file in `15) Exercises`.
-- For each exercise: attempt it first, then reveal the **Solution** heading.
-- Pay special attention to the **"predict the output"** and **"fix the bug"** questions —
-  they are exactly the style professors use.
+Goal: understand layers, services, repositories, factories, facades, and defensive snapshots.
 
----
+### Block 4 - Generics, collections, and streams
 
-## When to use the Final Revision Pack
+Read:
 
-Use `14) Final Revision Pack` in the **last week** before the exam, in this order:
+- `5) Generics`
+- `6) Collections`
+- `7) Streams`
 
-1. `Java_Final_Cheat_Sheet.md` — refresh everything quickly.
-2. `Mistakes_To_Avoid.md` and `Common Java Exam Traps.md` — the traps that lose marks.
-3. Topic question sets: `OOP_Theory_Questions.md`,
-   `Collections_Generics_Streams_Questions.md`, `Exceptions_IO_DateTime_Questions.md`,
-   `JDBC_JPA_ORM_Questions.md`.
-4. `Java_Code_Tracing_Practice.md` — do it **under time pressure** to simulate the exam.
-5. `Common_Exam_Questions.md`, `MCQ Set 1 (Questions 1).md`, `Mini MCQ Practice Set 2.md` —
-   final mixed practice.
+Practice:
 
----
+- `20) Exercises/07_Generics_Exercises.md`
+- `20) Exercises/06_Collections_Exercises.md`
+- `20) Exercises/09_Lambdas_Streams_Optional_Exercises.md`
 
-## Final study loop (per topic)
+Goal: use generic types, choose collections, and write stream pipelines.
+
+### Block 5 - Exceptions, workflows, IO, and testing
+
+Read:
+
+- `8) Exceptions`
+- `9) Application Layers, Domain Workflows, and Authorization`
+- `10) Java IO`
+- `11) Testing with JUnit`
+
+Practice:
+
+- `20) Exercises/08_Exceptions_Exercises.md`
+- `20) Exercises/Application Layer and Authorization Exercises.md`
+- `20) Exercises/10_File_IO_DateTime_Exercises.md`
+- `20) Exercises/11_JUnit_Exercises.md`
+
+Goal: build safe workflows with validation, authorization, failure handling, files, and tests.
+
+### Block 6 - Git, Maven, CI, JDBC, and ORM
+
+Read:
+
+- `12) Git, Maven, Build Tools, and CI CD`
+- `13) JDBC and Databases`
+- `14) ORM JPA and Hibernate`
+
+Practice:
+
+- `20) Exercises/Maven and CI Exercises.md`
+- `20) Exercises/12_JDBC_JPA_ORM_Theory_Exercises.md`
+
+Goal: understand repeatable builds, automated checks, JDBC basics, and ORM mappings.
+
+### Block 7 - EntityManager, JPQL, and repositories
+
+Read:
+
+- `15) EntityManager, Persistence Units, and Transactions`
+- `16) JPQL, TypedQuery, and Repository Pattern`
+
+Practice:
+
+- `20) Exercises/EntityManager and Transaction Exercises.md`
+- `20) Exercises/JPQL and Repository Exercises.md`
+
+Goal: use JPA persistence units, transactions, typed queries, and repository methods.
+
+### Block 8 - Date/time, imports, logging, reports, and revision
+
+Read:
+
+- `17) Date and Time`
+- `18) Data Import, Logging, and Statistical Reports`
+- `19) Final Revision Pack`
+
+Practice:
+
+- `20) Exercises/Data Import Logging and Report Exercises.md`
+- `20) Exercises/Mixed Backend Mini Project Exercises.md`
+
+Goal: handle dates, import files, log application events, build reports, and revise the full course.
+
+## Final study loop
+
+For each topic:
 
 1. Read the explanation.
-2. Run (or trace) the code example.
-3. Change one line and predict the result.
-4. Study the common mistakes.
-5. Do the exercises.
-6. Revise with the Final Revision Pack.
+2. Study or run the example.
+3. Change one detail and predict the result.
+4. Review common mistakes.
+5. Complete the matching exercises.
+6. Revisit the revision pack.
 
-That is the fastest way to move from "I read it" to "I can answer exam questions about it".
-See `All Markdown Files Index.md` for a one-line description of every file.
+## Quick rule
+
+If you are unsure where to start, read `1)` through `4)` first. Those folders create the base needed for most backend Java topics.

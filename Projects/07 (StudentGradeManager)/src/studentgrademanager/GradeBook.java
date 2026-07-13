@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -74,14 +75,14 @@ public final class GradeBook {
             throw new IllegalArgumentException("Search query must not be null");
         }
 
-        String normalizedQuery = query.trim().toLowerCase();
+        String normalizedQuery = query.trim().toLowerCase(Locale.ROOT);
         if (normalizedQuery.isEmpty()) {
             return Collections.emptyList();
         }
 
         List<StudentSnapshot> matches = new ArrayList<>();
         for (Student student : students.values()) {
-            if (student.getName().toLowerCase().contains(normalizedQuery)) {
+            if (student.getName().toLowerCase(Locale.ROOT).contains(normalizedQuery)) {
                 matches.add(student.toSnapshot());
             }
         }

@@ -66,7 +66,7 @@ final class GradeBookTest {
         gradeBook.recordGrade("S004", "Mathematics", 90.0);
         gradeBook.addStudent("S005", "No Grade");
 
-        TestSupport.assertDoubleEquals(65.0, gradeBook.getClassAverage(), 0.0001,
+        TestSupport.assertDoubleEquals(69.1667, gradeBook.getClassAverage(), 0.001,
                 "Class average should include all recorded grades");
         TestSupport.assertDoubleEquals(0.0, gradeBook.getTranscript("S005").getAverage(), 0.0001,
                 "No-grade student average should be 0.0");

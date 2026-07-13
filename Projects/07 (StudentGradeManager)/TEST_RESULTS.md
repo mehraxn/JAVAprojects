@@ -6,20 +6,22 @@ Date: 2026-07-13
 
 | Check | Result | Notes |
 |---|---:|---|
-| Java version | NOT RUN | JDK version |
-| Strict application compile | NOT RUN | `javac -Xlint:all -Werror` |
-| Strict test compile | NOT RUN | `javac -Xlint:all -Werror` |
-| Automated tests | NOT RUN | Number of tests/checks |
-| Student tests | NOT RUN | Validation and grade calculations |
-| GradeBook tests | NOT RUN | Student/grade/search/ranking workflows |
-| Report tests | NOT RUN | Transcript, class, and subject reports |
-| Statistics tests | NOT RUN | Average/highest/lowest/pass/fail/letter grade |
-| Defensive snapshot tests | NOT RUN | Public data cannot mutate internal state |
-| Main CLI tests | NOT RUN | help/demo/grade/report/ranking/search/validation |
-| Main demo | NOT RUN | Main demo command |
-| Grade demo | NOT RUN | Grade recording workflow |
-| Report demo | NOT RUN | Class and subject reports |
-| Ranking demo | NOT RUN | Student ranking behavior |
+| Java version | PASS | OpenJDK 21.0.11 Microsoft build |
+| Strict application compile | PASS | `javac -Xlint:all -Werror -d out src/studentgrademanager/*.java` |
+| Strict test compile | PASS | `javac -Xlint:all -Werror -cp out -d test-out tests/studentgrademanager/*.java` |
+| Automated tests | PASS | 5 test classes, 146 assertion checks |
+| Student tests | PASS | 46 checks for validation, grade calculations, boundaries, final class, and snapshots |
+| GradeBook tests | PASS | 41 checks for student/grade/search/ranking workflows |
+| Report tests | PASS | 24 checks for transcript, class, and subject reports |
+| Statistics tests | PASS | Covered by Student, GradeBook, and Report tests |
+| Defensive snapshot tests | PASS | 22 checks proving public data cannot mutate internal state |
+| Main CLI tests | PASS | 13 checks for help/demo/grade/report/ranking/search/validation and invalid command |
+| Main demo | PASS | `java -cp out studentgrademanager.Main demo` |
+| Grade demo | PASS | `java -cp out studentgrademanager.Main grade-demo` |
+| Report demo | PASS | `java -cp out studentgrademanager.Main report-demo` |
+| Ranking demo | PASS | `java -cp out studentgrademanager.Main ranking-demo` |
+| PowerShell script | PASS | `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\test.ps1` |
+| Bash script | NOT RUN | `bash` points to WSL, but no WSL distribution is installed, so `scripts/test.sh` did not execute |
 
 ## Known limitations
 

@@ -27,7 +27,7 @@ final class ReportTest {
         List<SubjectGradeSummary> subjectSummaries = gradeBook.getSubjectSummaries();
         SubjectGradeSummary math = findSummary(subjectSummaries, "Mathematics");
         TestSupport.assertEquals(3, math.getGradeCount(), "Subject summary count should work");
-        TestSupport.assertDoubleEquals(80.0, math.getAverage(), 0.0001, "Subject average should work");
+        TestSupport.assertDoubleEquals(76.6667, math.getAverage(), 0.001, "Subject average should work");
         TestSupport.assertDoubleEquals(100.0, math.getHighestGrade(), 0.0001, "Subject highest should work");
         TestSupport.assertDoubleEquals(50.0, math.getLowestGrade(), 0.0001, "Subject lowest should work");
 

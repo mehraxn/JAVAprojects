@@ -55,7 +55,7 @@ final class SnapshotTest {
         TestSupport.assertThrows(UnsupportedOperationException.class,
                 () -> gradeBook.getSubjectSummaries().add(summary), "Subject summaries result should be unmodifiable");
         TestSupport.assertThrows(UnsupportedOperationException.class,
-                () -> listed.getGradesBySubject().put("Fake Subject", new ArrayList<Double>()),
+                () -> listed.getGradesBySubject().put("Injected Subject", new ArrayList<Double>()),
                 "StudentSnapshot grade map should be unmodifiable");
         TestSupport.assertThrows(UnsupportedOperationException.class,
                 () -> listed.getGradesBySubject().get("Mathematics").add(100.0),

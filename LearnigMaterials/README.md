@@ -70,6 +70,36 @@ Review Java, OOP, collections, streams, exceptions, IO, testing, build tools, pe
 20) **Exercises**  
 Practice all topics with standalone exercises, including architecture, workflows, Maven/CI, JPA, JPQL, data import, logging, and reports.
 
+## Advanced Java Backend Learning Path
+
+Use this sequence when you want to move from core Java into backend-style application design:
+
+```text
+OOP
+-> Architecture
+-> Exceptions and workflows
+-> IO, testing, build tools
+-> JDBC
+-> JPA and Hibernate
+-> EntityManager
+-> JPQL and repositories
+-> Data import, logging, and reports
+-> Revision and exercises
+```
+
+Recommended folder order:
+
+1. Study folders 1-3 to build the OOP base: classes, encapsulation, inheritance, interfaces, and polymorphism.
+2. Study folder 4 to understand layered design, SOLID principles, dependency injection, package organization, and architecture diagrams.
+3. Study folders 8-9 to connect exception handling with service-layer workflows, domain invariants, authorization, idempotency, and transaction boundaries.
+4. Study folders 10-12 to practice file IO, testing, Maven, dependency scopes, profiles, CI, and build reports.
+5. Study folder 13 to understand JDBC, SQL execution, prepared statements, and database transactions.
+6. Study folder 14 to learn JPA and Hibernate mapping, relationships, cascade rules, fetch behavior, and common ORM mistakes.
+7. Study folder 15 to practice `EntityManager`, persistence contexts, persistence units, flush, clear, detach, merge, and rollback behavior.
+8. Study folder 16 to write JPQL, `TypedQuery`, joins, fetch joins, DTO projections, pagination, and repository methods.
+9. Study folders 17-18 to handle date/time logic, CSV imports, logging, row-level errors, immutable reports, and report edge cases.
+10. Finish with folders 19-20 for MCQs, cheat sheets, interview review, bug-fix practice, and larger backend exercises.
+
 ## Suggested study method
 
 1. Read the topic explanation.

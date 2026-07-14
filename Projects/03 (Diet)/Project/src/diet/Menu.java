@@ -1,87 +1,104 @@
 package diet;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Represents a complete menu.
- * 
- * It can be made up of both packaged products and servings of given recipes.
- *
+ * Represents a complete menu made of recipe portions and packaged products.
  */
 public class Menu implements NutritionalElement {
 
-	/**
-	 * Adds a given serving size of a recipe.
-	 * The recipe is a name of a recipe defined in the {@code food}
-	 * argument of the constructor.
-	 * 
-	 * @param recipe the name of the recipe to be used as ingredient
-	 * @param quantity the amount in grams of the recipe to be used
-	 * @return the same Menu to allow method chaining
-	 */
-    public Menu addRecipe(String recipe, double quantity) {
-		return null;
+	private static class RecipeItem {
+		private final Recipe recipe;
+		private final double quantity;
+
+		RecipeItem(Recipe recipe, double quantity) {
+			this.recipe = recipe;
+			this.quantity = quantity;
+		}
+	}
+
+	private final String name;
+	private final Food food;
+	private final List<RecipeItem> recipes = new ArrayList<>();
+	private final List<NutritionalElement> products = new ArrayList<>();
+
+	Menu(String name, Food food) {
+		this.name = ValidationUtils.requireNotBlank(name, "menu name");
+		if (food == null) {
+			throw new IllegalArgumentException("food cannot be null");
+		}
+		this.food = food;
 	}
 
 	/**
-	 * Adds a unit of a packaged product.
-	 * The product is a name of a product defined in the {@code food}
-	 * argument of the constructor.
-	 * 
-	 * @param product the name of the product to be used as ingredient
-	 * @return the same Menu to allow method chaining
+	 * Adds a given serving size of a recipe.
+	 *
+	 * @param recipe the recipe name
+	 * @param quantity the amount in grams
+	 * @return this menu for method chaining
 	 */
-    public Menu addProduct(String product) {
-		return null;
+	public Menu addRecipe(String recipe, double quantity) {
+		Recipe knownRecipe = food.requireRecipe(recipe);
+		double validQuantity = ValidationUtils.requirePositive(quantity, "recipe quantity");
+		recipes.add(new RecipeItem(knownRecipe, validQuantity));
+		return this;
+	}
+
+	/**
+	 * Adds one unit of a packaged product.
+	 *
+	 * @param product the product name
+	 * @return this menu for method chaining
+	 */
+	public Menu addProduct(String product) {
+		products.add(food.requireProduct(product));
+		return this;
 	}
 
 	@Override
 	public String getName() {
-		return null;
+		return name;
 	}
 
-	/**
-	 * Total KCal in the menu
-	 */
 	@Override
 	public double getCalories() {
-		return -1.0;
+		return totalValue(NutritionalElement::getCalories);
 	}
 
-	/**
-	 * Total proteins in the menu
-	 */
 	@Override
 	public double getProteins() {
-		return -1.0;
+		return totalValue(NutritionalElement::getProteins);
 	}
 
-	/**
-	 * Total carbs in the menu
-	 */
 	@Override
 	public double getCarbs() {
-		return -1.0;
+		return totalValue(NutritionalElement::getCarbs);
 	}
 
-	/**
-	 * Total fats in the menu
-	 */
 	@Override
 	public double getFat() {
-		return -1.0;
+		return totalValue(NutritionalElement::getFat);
 	}
 
-	/**
-	 * Indicates whether the nutritional values returned by the other methods
-	 * refer to a conventional 100g quantity of nutritional element,
-	 * or to a unit of element.
-	 * 
-	 * For the {@link Menu} class it must always return {@code false}:
-	 * nutritional values are provided for the whole menu.
-	 * 
-	 * @return boolean indicator
-	 */
 	@Override
 	public boolean per100g() {
 		return false;
+	}
+
+	private double totalValue(NutrientExtractor extractor) {
+		double total = 0.0;
+		for (RecipeItem item : recipes) {
+			total += extractor.valueOf(item.recipe) * item.quantity / 100.0;
+		}
+		for (NutritionalElement product : products) {
+			total += extractor.valueOf(product);
+		}
+		return total;
+	}
+
+	@FunctionalInterface
+	private interface NutrientExtractor {
+		double valueOf(NutritionalElement element);
 	}
 }

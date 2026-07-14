@@ -1,132 +1,197 @@
-# OOP Lab 3 - Diet and Restaurants
+# Diet and Takeaway Management System
 
-(The Italian version is available in file [README_it.md](README_it.md)).
+Maven-based Java OOP project for managing diet data and takeaway orders.
 
+The project models raw materials, products, recipes, menus, restaurants, opening hours, customers, and orders. It keeps the original lab API while completing the missing behavior and adding validation, tests, scripts, documentation, and CI.
 
-Write an application to manage a diet by means of nutritional values computation.
+## Features
 
-The application must allow the definition of raw materials, their use as ingredients for recipes, the definition of products and menus.
+- Define raw materials with nutritional values per 100 grams.
+- Define packaged products with nutritional values per unit.
+- Create recipes from raw materials and ingredient quantities.
+- Normalize recipe nutrition per 100 grams.
+- Create menus from recipe portions and packaged products.
+- Calculate total menu calories, proteins, carbohydrates, and fat.
+- Register restaurants and opening-hour intervals.
+- Check whether a restaurant is open at a time.
+- Register customers.
+- Create orders for restaurants.
+- Adjust delivery time to the next opening time when needed.
+- Add menu quantities to orders.
+- Track payment method and order status.
+- Query open restaurants.
+- Query restaurant orders by status.
+- Produce deterministic sorted collections and formatted outputs.
 
-All the classes must be in the package `diet`.
+## Tech stack
 
-You must use the [GitFlow](https://git-oop.polito.it/labs/docs/-/blob/main/Git/GitFlow_en.md) process, this repository `main` branch is protected so you cannot push any commit directly on it but only open merge requests and then merge the relative feature branch.
-The review will be performed by the same author of the code using the [review checklist](ReviewChecklist.md) as a guideline.
-Also, keep in mind that the project is configured to allow merging a MR only if the pipeline pass and all threads are resolved.
+- Java 21
+- Maven
+- JUnit 4 / JUnit 5 through the existing test setup
+- JaCoCo for optional local coverage reports
+- GitHub Actions CI
 
-You are supposed to develop the requirements incrementally, e.g. R2 after merging R1 Merge Request. Create a merge request and its branch only after you have merged the previous requirements MRs.
+## Requirements
 
+- Java 21
+- Maven wrapper included
 
-## R1 - Raw Materials
+Check versions:
 
-The system works though the facade class Food.
-
-To define a raw material, we can use the method `defineRawMaterial()` that accepts as arguments the name, the kilo-calories, the quantity of proteins, carbohydrates (carbs) and fat; all the values refer to 100 grams of raw material. The name of the raw material can be considered unique.
-
-To retrieve some information about the raw materials, we can use the method `rawMaterials()` which returns a list of raw materials, sorted by name in alphabetic order. To get info about a specific material, we can use the method `getRawMaterial()` that accepts the name of the raw material and returns the corresponding raw material.
-
-The raw materials returned by the above methods are objects implementing the interface `NutritionalElement`, which provides the getter methods `getName()`, `getCalories()`, `getProteins()`, `getCarbs()`, `getFat()`. Calories are expressed in KCal, while proteins, carbs, and fat are expressed in grams.
-
-Moreover, the interface includes the method `per100g()` that indicates whether the values refer to 100 grams of the nutritional element or represent an absolute value. For raw materials the nutritional values are always expressed per 100 grams, so the method returns true.
-
-
-## R2 - Products
-
-The diet may include also pre-packaged products (e.g., an ice cream or a snack). Products are defined by means of the method `defineProduct()` of class `Food` accepting as arguments the name, the kilo-calories, the quantity of proteins, carbohydrates (carbs) and fat. Such values express the value for the whole product, therefore the method `per100g()` returns false. The name of the product can be considered unique.
-
-To retrieve information about the products, we can use the method `products()` of class Food that returns a collection of products sorted by name. To get information about a specific product, method `getProduct()` is available that accepts the name of the product and returns the corresponding object.
-
-Both methods return the products as an object implementing the interface `NutritionalElement` (described in the previous requirement); the values are expressed for the whole product (i.e., the method `per100g()` returns false).
-
-
-## R3 - Recipes
-
-Raw materials can be combined as ingredients of recipes. To define a recipe, we can use the method `createRecipe()`, from class `Food`, that accepts as argument the name of the recipe. The name of the recipe can be considered unique.
-
-A recipe is represented by an object of class `Recipe` that allows adding new ingredients by means of its method `addIngredient()` accepting as arguments the name of the raw material and the relative amount in grams.
-
-Class `Recipe` implements the interface `NutritionalElement` and the values are expressed per 100 grams.
-
-To retrieve the information about the recipes, we can use the method `recipes()`, of class Food, that returns a collection of recipes sorted by name. To get information regarding a specific recipe, we can use the method `getRecipe()` that accepts as argument the name of the recipe and return the corresponding recipe. Both methods return recipes as `NutritionalElement`.
-
-Warning: While the sum of the quantities of ingredients (in grams) of a recipe is not necessarily equal to 100 g, the nutritional values of the recipe must refer to an ideal portion of 100 grams.
-
-
-## R4 - Menu
-
-A menu consists of either portions of recipes or pre-packaged products.
-
-Menus can be created with method `createMenu()` of class `Food`, that accepts as argument the name of the menu.
-
-A menu is represented by class `Menu` that allows to add a portion of a recipe to the menu through method `addRecipe()` that accepts as argument the name of the recipe and the size of the portion, in grams.
-
-To add an item of a pre-packaged product, class Menu provides the method `addProduct()` that accepts as argument the name of the product.
-
-Class Menu implements the NutritionalElement interface; in this case the values are referred to the whole menu.
-
----- 
-**Additional requirements**
-
-
-## R5 - Restaurant
-
-The management of restaurants is performed through the class `Takeaway` that represents a restaurant chain.
-
-Restaurants can be created using the method `addRestaurant()` that accepts the name of the restaurant and returns a `Restaurant` object. Getter `getName()` returns a restaurant's name. The method `restaurants()` of class `Takeaway` returns the names of the registered restaurants.
-
-Through the method `setHours()` working hours can be set for the restaurant. The method accepts an array of strings (with even number of elements) in the format `"HH:MM"`, so that the closing hours follow the opening hours (e.g., for a restaurant opened from 8:15 until 14:00 and from 19:00 until 00:00, arguments would be `"08:15", "14:00", "19:00", "00:00"`).
-It is possible to know whether a restaurant is open at a given time using the method `isOpenAt()` that accepts a time (with the previous format).
-
-Restaurants offer different menus, which can be added to the list of menus offered by a restaurant with the method `addMenu()` accepting as argument the `Menu` object. Such menus are linked to the restaurant and can be later used to make orders. It is possible to retrieve a menu of a restaurant given its nane using the method `getMenu()`.
-
-
-## R6 - Customers
-
-A customer is defined by providing their first name, last name, email, and phone number to the method `registerCustomer()` that returns a User object. Getters are provided for all the fields (`getFirstName()`, `getLastName()`, `getEmail()`, `getPhone()`), while setters are provided for the email and phone number only (`setEmail()`, `setPhone()`). The string representation of a `User` object returns the first name separated by a space and followed by the last name.
-
-To retrieve information about the customers, we can use the method `customers()` of class `Takeaway` that returns a collection of customers sorted by their last name and first name.
-
-
-## R7 - Orders
-
-A registered customer can make an order at one of the available restaurants. For such a purpose method `createOrder()` of class `Takeaway` accepts as arguments the `User` object making the order, restaurant's name, and the desired delivery time (with the same format as in [R5](#r5---restaurant)). Furthermore, if for the given order delivery time is outside the working hours for the restaurant, delivery time is set to the first successive opening hour (e.g., making an order for a restaurant having working hours from *8:15* until *14:00* and from *19:00* until *00:00*, and asking for a delivery at 15:30, would result in having the delivery time set for *19:00*).
-
-An order can have three statuses: `ORDERED`, `READY`, `DELIVERED` accessible through setter and getter `setStatus()` and `getStatus()` (`ORDERED` by default). Furthermore, payment type for an order can be: `PAID`, `CASH`, `CARD`, accessible through setter and getter `setPaymentMethod()` and `getPaymentMethod()` (`CASH` by default).
-
-Orders are made up of a set of menus with the relative quantity.
-Menus can be added to an order by calling the method `addMenus()` and specifying the menu name and the quantity.
-
-When an order is printed to a string, it should be formatted like:
-
-```
-"RESTAURANT_NAME, USER_FIRST_NAME USER_LAST_NAME : (DELIVERY_HH:MM):
-	MENU_NAME_1->MENU_QUANTITY_1
-	...
-	MENU_NAME_k->MENU_QUANTITY_k
-"
+```bash
+java -version
+./mvnw -version
 ```
 
-The menu names are sorted alphabetically and are printed on different lines, each preceded by a tab (`'\t'`).
+Windows:
 
-Warning: If a certain menu has been previously added to an order, using it again as an argument in `addMenus()`, should overwrite the previously defined quantity
-
-
-## R8 - Information
-
-To retrieve some information about the restaurants, we can use the method `openRestaurants()` that has one string argument with the format "`HH:MM`" and returns a collection of `Restaurant`s that are opened at the given time, sorted by their name alphabetically. A restaurant is opened if there is at least one working hour segment such that the defined time is inside the range `[open, close)`.
-
-Information about certain orders for a restaurant can be obtained through method `ordersWithStatus()` of the class `Restaurant`. This method returns a `String` obtained by concatenating all orders satisfying the criteria.
-E.g.
-
-```
-Napoli, Judi Dench : (19:00):
-	M6->1
-Napoli, Ralph Fiennes : (19:00):
-	M1->2
-	M6->1
+```powershell
+java -version
+.\mvnw.cmd -version
 ```
 
-The list is sorted by name of the restaurant, name of the customer, and delivery time.
+## Build and test
 
----
+Linux/macOS/Git Bash:
 
-Version 1.1.0 - 2025-10-26
+```bash
+./mvnw clean test
+```
+
+Windows PowerShell:
+
+```powershell
+.\mvnw.cmd clean test
+```
+
+Fallback:
+
+```bash
+mvn clean test
+```
+
+Convenience scripts:
+
+```bash
+./scripts/test.sh
+```
+
+```powershell
+.\scripts\test.ps1
+```
+
+## Optional coverage report
+
+```bash
+./mvnw clean test jacoco:report
+```
+
+Windows:
+
+```powershell
+.\mvnw.cmd clean test jacoco:report
+```
+
+Open the generated local report:
+
+```text
+target/site/jacoco/index.html
+```
+
+Do not commit the generated `target/` folder.
+
+## Project structure
+
+```text
+.
+├── pom.xml
+├── mvnw
+├── mvnw.cmd
+├── .mvn/wrapper/
+├── src/diet/
+│   ├── Food.java
+│   ├── NutritionalElement.java
+│   ├── Recipe.java
+│   ├── Menu.java
+│   ├── Takeaway.java
+│   ├── Restaurant.java
+│   ├── Customer.java
+│   ├── Order.java
+│   └── ValidationUtils.java
+├── test/
+│   ├── example/
+│   ├── custom/
+│   └── it/polito/oop/test/
+├── docs/
+├── scripts/
+├── TEST_RESULTS.md
+└── .github/workflows/java-ci.yml
+```
+
+The Maven build intentionally preserves the original `src` and `test` directories through `pom.xml`.
+
+## Nutritional calculation
+
+Raw materials are measured per 100 grams:
+
+```text
+raw material value = value per 100g
+```
+
+Products are measured per unit:
+
+```text
+product value = value for one product/package
+```
+
+Recipes are normalized per 100 grams:
+
+```text
+ingredient contribution = raw material value * ingredient grams / 100
+recipe per 100g = total contribution / total recipe weight * 100
+```
+
+Menus are totals for the whole menu:
+
+```text
+recipe contribution = recipe value per 100g * portion grams / 100
+product contribution = product value per unit
+menu total = all recipe contributions + all product contributions
+```
+
+## Restaurant and order workflow
+
+1. Create restaurants with `Takeaway.addRestaurant()`.
+2. Configure opening hours with `Restaurant.setHours()`.
+3. Add menus to restaurants with `Restaurant.addMenu()`.
+4. Register customers with `Takeaway.registerCustomer()`.
+5. Create orders with `Takeaway.createOrder()`.
+6. Add menu quantities with `Order.addMenus()`.
+7. Query orders by status with `Restaurant.ordersWithStatus()`.
+
+Opening intervals use `[start, end)`: start included, end excluded. Intervals crossing midnight are supported.
+
+If a requested delivery time is outside opening hours, the order is moved to the next opening time.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Testing](docs/TESTING.md)
+- [Design decisions](docs/DESIGN_DECISIONS.md)
+- [Final review](docs/FINAL_REVIEW.md)
+- [Test results](TEST_RESULTS.md)
+
+## Known limitations
+
+- Educational local Java project.
+- In-memory model only.
+- No database.
+- No REST API.
+- No authentication.
+- No frontend.
+- No deployment setup.
+- No payment integration.
+
+## Resume value
+
+Built and validated a Java diet and takeaway management system with raw materials, products, recipes, menus, restaurant opening-hour logic, customer registration, order workflows, nutritional calculations, automated tests, and clean Maven documentation.

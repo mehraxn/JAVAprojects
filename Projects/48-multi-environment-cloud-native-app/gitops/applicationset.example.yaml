@@ -1,0 +1,36 @@
+# ALTERNATIVE to app-of-apps: a single ApplicationSet that generates the three
+# environment Applications from a list. Editing one generator entry (e.g. a digest)
+# is how a promotion is expressed in Git. Apply appproject.yaml first. NOT deployed.
+#
+# Per-environment sync policy is shown in the individual Application manifests
+# under environments/. This ApplicationSet is an illustrative alternative.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cloud-native-app
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: app-dev
+          - env: staging
+            namespace: app-staging
+          - env: prod
+            namespace: app-prod
+  template:
+    metadata:
+      name: "cloud-native-app-{{env}}"
+    spec:
+      project: cloud-native-app
+      source:
+        repoURL: https://example.invalid/cloud-native-app.git
+        targetRevision: main
+        path: "Projects/48-multi-environment-cloud-native-app/k8s/overlays/{{env}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true

@@ -1,0 +1,57 @@
+# CI workflow TEMPLATE for the Testing Coverage Quality Gate project.
+#
+# GitHub only discovers workflows in the repository-level .github/workflows
+# directory. This file lives inside the project folder, so it will NOT run
+# until it is copied to <repo-root>/.github/workflows/.
+#
+# The working-directory below matches this portfolio's actual layout, where
+# the project lives at: Projects/31-testing-coverage-quality-gate
+# If your repository keeps project folders at the root instead, change every
+# occurrence to: 31-testing-coverage-quality-gate
+
+name: Testing and Coverage Quality Gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "Projects/31-testing-coverage-quality-gate"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: "Projects/31-testing-coverage-quality-gate/pom.xml"
+
+      # The executable bit can be lost when the wrapper is committed from
+      # Windows, so restore it before use.
+      - name: Make Maven Wrapper executable
+        run: chmod +x mvnw
+
+      - name: Run unit tests
+        run: ./mvnw --batch-mode --no-transfer-progress test
+
+      - name: Run full quality gate (tests + JaCoCo coverage check)
+        run: ./mvnw --batch-mode --no-transfer-progress verify
+
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-report
+          path: "Projects/31-testing-coverage-quality-gate/target/site/jacoco"
+          if-no-files-found: warn

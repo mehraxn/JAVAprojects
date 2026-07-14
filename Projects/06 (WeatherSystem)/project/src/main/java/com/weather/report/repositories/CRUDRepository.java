@@ -67,11 +67,11 @@ public class CRUDRepository<T, ID> {
         tx.rollback();
       // Retrowing as RuntimeException ensures the Service layer
       // catches it and throws IdAlreadyInUseException
-      throw new RuntimeException("Entity already exists", e);
+      throw new RuntimeException("Entity already exists: " + entityClass.getSimpleName(), e);
     } catch (Exception e) {
       if (tx.isActive())
         tx.rollback();
-      throw new RuntimeException("Error creating entity", e);
+      throw new RuntimeException("Failed to create entity " + entityClass.getSimpleName(), e);
     } finally {
       em.close();
     }
@@ -127,7 +127,7 @@ public class CRUDRepository<T, ID> {
     } catch (Exception e) {
       if (tx.isActive())
         tx.rollback();
-      throw new RuntimeException("Error updating entity", e);
+      throw new RuntimeException("Failed to update entity " + entityClass.getSimpleName(), e);
     } finally {
       em.close();
     }
@@ -153,7 +153,7 @@ public class CRUDRepository<T, ID> {
     } catch (Exception e) {
       if (tx.isActive())
         tx.rollback();
-      throw new RuntimeException("Error deleting entity", e);
+      throw new RuntimeException("Failed to delete entity " + entityClass.getSimpleName(), e);
     } finally {
       em.close();
     }

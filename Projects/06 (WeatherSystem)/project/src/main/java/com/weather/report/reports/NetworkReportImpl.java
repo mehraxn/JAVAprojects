@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -12,7 +13,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import com.weather.report.model.entities.Measurement;
-import com.weather.report.repositories.CRUDRepository;
+import com.weather.report.repositories.MeasurementRepository;
+import com.weather.report.util.DateParsingUtils;
 
 public class NetworkReportImpl implements NetworkReport {
 
@@ -20,63 +22,27 @@ public class NetworkReportImpl implements NetworkReport {
     private String startDateStr;
     private String endDateStr;
     private List<Measurement> measurements;
+    // Measurement counts per gateway, computed once from the (immutable) subset.
+    private Map<String, Long> countByGateway;
 
     public NetworkReportImpl(String networkCode, String startDate, String endDate) {
         this.code = networkCode;
         this.startDateStr = startDate;
         this.endDateStr = endDate;
 
-        CRUDRepository<Measurement, Long> repo = new CRUDRepository<>(Measurement.class);
-        List<Measurement> allMeasurements = repo.read();
+        MeasurementRepository repo = new MeasurementRepository();
 
-        LocalDateTime startDateTime = null;
-        if (startDate != null) {
-            int year = Integer.parseInt(startDate.substring(0, 4));
-            int month = Integer.parseInt(startDate.substring(5, 7));
-            int day = Integer.parseInt(startDate.substring(8, 10));
-            int hour = Integer.parseInt(startDate.substring(11, 13));
-            int minute = Integer.parseInt(startDate.substring(14, 16));
-            int second = Integer.parseInt(startDate.substring(17, 19));
-            startDateTime = LocalDateTime.of(year, month, day, hour, minute, second);
-        }
+        // Centralised date parsing (DATE_FORMAT); null bound stays unbounded.
+        LocalDateTime startDateTime = DateParsingUtils.parseNullable(startDate);
+        LocalDateTime endDateTime = DateParsingUtils.parseNullable(endDate);
 
-        LocalDateTime endDateTime = null;
-        if (endDate != null) {
-            int year = Integer.parseInt(endDate.substring(0, 4));
-            int month = Integer.parseInt(endDate.substring(5, 7));
-            int day = Integer.parseInt(endDate.substring(8, 10));
-            int hour = Integer.parseInt(endDate.substring(11, 13));
-            int minute = Integer.parseInt(endDate.substring(14, 16));
-            int second = Integer.parseInt(endDate.substring(17, 19));
-            endDateTime = LocalDateTime.of(year, month, day, hour, minute, second);
-        }
-
-        this.measurements = new ArrayList<>();
-
-        for (Measurement measurement : allMeasurements) {
-            boolean belongsToNetwork = measurement.getNetworkCode().equals(networkCode);
-            if (!belongsToNetwork) {
-                continue;
-            }
-
-            boolean isAfterStart = true;
-            if (startDateTime != null) {
-                if (measurement.getTimestamp().isBefore(startDateTime)) {
-                    isAfterStart = false;
-                }
-            }
-
-            boolean isBeforeEnd = true;
-            if (endDateTime != null) {
-                if (measurement.getTimestamp().isAfter(endDateTime)) {
-                    isBeforeEnd = false;
-                }
-            }
-
-            if (isAfterStart && isBeforeEnd) {
-                this.measurements.add(measurement);
-            }
-        }
+        // Database-side filtering (inclusive range, null bound = unbounded), replacing
+        // the previous "read all measurements then filter in Java" loop. Behaviour is
+        // identical: network code match + timestamp >= start + timestamp <= end.
+        this.measurements = new ArrayList<>(repo.findByNetworkCodeAndDateRange(networkCode, startDateTime, endDateTime));
+        // Compute per-gateway counts once (report data is immutable after construction),
+        // instead of recomputing on every most/least-active and load-ratio call.
+        this.countByGateway = countMeasurementsByGateway();
     }
 
     private Map<String, Long> countMeasurementsByGateway() {
@@ -115,7 +81,7 @@ public class NetworkReportImpl implements NetworkReport {
             return new ArrayList<>();
         }
 
-        Map<String, Long> gatewayMeasurementCounts = countMeasurementsByGateway();
+        Map<String, Long> gatewayMeasurementCounts = countByGateway;
 
         long maximumCount = 0;
         for (Long count : gatewayMeasurementCounts.values()) {
@@ -131,7 +97,7 @@ public class NetworkReportImpl implements NetworkReport {
             }
         }
 
-        return mostActiveGateways;
+        return Collections.unmodifiableList(mostActiveGateways);
     }
 
     @Override
@@ -140,7 +106,7 @@ public class NetworkReportImpl implements NetworkReport {
             return new ArrayList<>();
         }
 
-        Map<String, Long> gatewayMeasurementCounts = countMeasurementsByGateway();
+        Map<String, Long> gatewayMeasurementCounts = countByGateway;
 
         long minimumCount = Long.MAX_VALUE;
         for (Long count : gatewayMeasurementCounts.values()) {
@@ -156,7 +122,7 @@ public class NetworkReportImpl implements NetworkReport {
             }
         }
 
-        return leastActiveGateways;
+        return Collections.unmodifiableList(leastActiveGateways);
     }
 
     @Override
@@ -168,14 +134,15 @@ public class NetworkReportImpl implements NetworkReport {
         }
 
         double totalMeasurements = measurements.size();
-        Map<String, Long> gatewayMeasurementCounts = countMeasurementsByGateway();
+        Map<String, Long> gatewayMeasurementCounts = countByGateway;
 
+        // Percentage (0-100) of the network's measurements produced by each gateway.
         for (Map.Entry<String, Long> entry : gatewayMeasurementCounts.entrySet()) {
             double percentage = (entry.getValue() / totalMeasurements) * 100.0;
             loadRatios.put(entry.getKey(), percentage);
         }
 
-        return loadRatios;
+        return Collections.unmodifiableMap(loadRatios);
     }
 
     @Override
@@ -184,7 +151,7 @@ public class NetworkReportImpl implements NetworkReport {
         SortedMap<Range<LocalDateTime>, Long> histogramMap = new TreeMap<>(comparator);
 
         if (measurements.isEmpty()) {
-            return histogramMap;
+            return Collections.unmodifiableSortedMap(histogramMap);
         }
 
         LocalDateTime earliestTimestamp = measurements.get(0).getTimestamp();
@@ -202,24 +169,12 @@ public class NetworkReportImpl implements NetworkReport {
 
         LocalDateTime effectiveStartDate = earliestTimestamp;
         if (startDateStr != null) {
-            int year = Integer.parseInt(startDateStr.substring(0, 4));
-            int month = Integer.parseInt(startDateStr.substring(5, 7));
-            int day = Integer.parseInt(startDateStr.substring(8, 10));
-            int hour = Integer.parseInt(startDateStr.substring(11, 13));
-            int minute = Integer.parseInt(startDateStr.substring(14, 16));
-            int second = Integer.parseInt(startDateStr.substring(17, 19));
-            effectiveStartDate = LocalDateTime.of(year, month, day, hour, minute, second);
+            effectiveStartDate = DateParsingUtils.parseDateTime(startDateStr);
         }
 
         LocalDateTime effectiveEndDate = latestTimestamp;
         if (endDateStr != null) {
-            int year = Integer.parseInt(endDateStr.substring(0, 4));
-            int month = Integer.parseInt(endDateStr.substring(5, 7));
-            int day = Integer.parseInt(endDateStr.substring(8, 10));
-            int hour = Integer.parseInt(endDateStr.substring(11, 13));
-            int minute = Integer.parseInt(endDateStr.substring(14, 16));
-            int second = Integer.parseInt(endDateStr.substring(17, 19));
-            effectiveEndDate = LocalDateTime.of(year, month, day, hour, minute, second);
+            effectiveEndDate = DateParsingUtils.parseDateTime(endDateStr);
         }
 
         long totalHours = ChronoUnit.HOURS.between(effectiveStartDate, effectiveEndDate);
@@ -281,7 +236,7 @@ public class NetworkReportImpl implements NetworkReport {
             currentBucketStart = currentBucketEnd;
         }
 
-        return histogramMap;
+        return Collections.unmodifiableSortedMap(histogramMap);
     }
 
     private class RangeComparator implements Comparator<Range<LocalDateTime>> {

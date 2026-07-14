@@ -6,27 +6,62 @@
 
 
 
-    <persistence-unit name="weatherReportTestPU">
+    <!--
+        Runtime / development persistence unit.
+        Referenced by PersistenceManager.PU_NAME ("weatherReportPU") as the default
+        unit used when setTestMode() has NOT been called. Uses an in-memory H2
+        database so that running the application locally leaves no files on disk.
+    -->
+    <persistence-unit name="weatherReportPU">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-        
-   
+
         <class>com.weather.report.model.entities.User</class>
         <class>com.weather.report.model.entities.Measurement</class>
-        
         <class>com.weather.report.model.entities.Network</class>
         <class>com.weather.report.model.entities.Operator</class>
-        
         <class>com.weather.report.model.entities.Gateway</class>
         <class>com.weather.report.model.entities.Parameter</class>
-        
         <class>com.weather.report.model.entities.Sensor</class>
-        
+
+        <properties>
+            <property name="jakarta.persistence.jdbc.driver" value="org.h2.Driver"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:h2:mem:wrdb_runtime;DB_CLOSE_DELAY=-1"/>
+            <property name="jakarta.persistence.jdbc.user" value="sa"/>
+            <property name="jakarta.persistence.jdbc.password" value=""/>
+
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="false"/>
+        </properties>
+    </persistence-unit>
+
+    <!--
+        Test persistence unit.
+        Selected by PersistenceManager.setTestMode() (called from BasePersistenceTest).
+        In-memory H2 with schema (re)created on each EntityManagerFactory build, giving
+        every test class a clean database. Behaviour unchanged from Phase 1.
+    -->
+    <persistence-unit name="weatherReportTestPU">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+
+        <class>com.weather.report.model.entities.User</class>
+        <class>com.weather.report.model.entities.Measurement</class>
+
+        <class>com.weather.report.model.entities.Network</class>
+        <class>com.weather.report.model.entities.Operator</class>
+
+        <class>com.weather.report.model.entities.Gateway</class>
+        <class>com.weather.report.model.entities.Parameter</class>
+
+        <class>com.weather.report.model.entities.Sensor</class>
+
         <properties>
             <property name="jakarta.persistence.jdbc.driver" value="org.h2.Driver"/>
             <property name="jakarta.persistence.jdbc.url" value="jdbc:h2:mem:wrdb;DB_CLOSE_DELAY=0"/>
             <property name="jakarta.persistence.jdbc.user" value="sa"/>
             <property name="jakarta.persistence.jdbc.password" value=""/>
-            
+
             <property name="hibernate.hbm2ddl.auto" value="create"/>
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>

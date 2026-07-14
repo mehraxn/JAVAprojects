@@ -7,11 +7,23 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 /// Represnts a measurement taken by a sensor in the weather report system
+///
+/// Indexes support the code+timestamp range queries in MeasurementRepository
+/// (Phase 3). The leading-column of each composite also serves code-only lookups.
 @Entity
-@Table(name = "MEASUREMENTS")
+@Table(
+    name = "MEASUREMENTS",
+    indexes = {
+        @Index(name = "idx_meas_sensor_ts", columnList = "sensorCode, measurement_timestamp"),
+        @Index(name = "idx_meas_gateway_ts", columnList = "gatewayCode, measurement_timestamp"),
+        @Index(name = "idx_meas_network_ts", columnList = "networkCode, measurement_timestamp"),
+        @Index(name = "idx_meas_ts", columnList = "measurement_timestamp")
+    }
+)
 public class Measurement {
 
   @Id 

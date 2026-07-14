@@ -1,3 +1,141 @@
+# WeatherSystem (Weather Report)
+
+A Maven-based Java backend for environmental monitoring data collected from a topology of
+**networks → gateways → sensors**. It stores measurements, imports them from CSV, checks
+configurable thresholds (with alerting), and produces statistical reports (mean, sample variance,
+standard deviation, outliers, histograms) at network, gateway and sensor level.
+
+> Educational/portfolio project. It runs entirely locally on an in-memory **H2** database — it is not
+> a production monitoring system (see [Known Limitations](#known-limitations)).
+
+## What This Project Demonstrates
+
+- Maven project structure with a Maven wrapper and reproducible builds
+- **JPA / Hibernate** persistence on **H2** (in-memory), with a test and a runtime persistence unit
+- **Repository pattern** (generic `CRUDRepository` + `MeasurementRepository`) with **JPQL/TypedQuery**
+  date-range queries and supporting indexes
+- **Facade + operation-layer** design (`WeatherReport` facade delegating to `*Operations`)
+- Entity relationships (topology), an embeddable threshold, and audit metadata
+- **CSV import** with a dependency-free parser, UTF-8 reading, partial-import with row-numbered errors
+- Centralized validation, date parsing, custom exception hierarchy, and log4j2 logging
+- Statistical **reports** with documented edge-case behavior and immutable return values
+- A substantial test suite (professor base tests + custom tests) and **CI + coverage** readiness
+
+## Architecture
+
+```mermaid
+flowchart TD
+    A[Facade API] --> B[Operation Classes]
+    B --> C[Services]
+    C --> D[Repositories]
+    D --> E[JPA / Hibernate]
+    E --> F[H2 Database]
+```
+
+More detail: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
+[`docs/DECISIONS.md`](docs/DECISIONS.md), [`docs/TESTING.md`](docs/TESTING.md).
+
+## Tech Stack
+
+Java 21 · Maven (wrapper) · JPA (Jakarta Persistence) · Hibernate ORM · H2 · JUnit 5 · Mockito ·
+log4j2 · JaCoCo · GitHub Actions.
+
+## Project Structure
+
+```
+project/
+├── pom.xml, mvnw, mvnw.cmd, .mvn/        # build + Maven wrapper
+├── .github/workflows/java-ci.yml         # CI
+├── scripts/test.sh, scripts/test.ps1     # test convenience scripts
+├── docs/                                  # audit, per-phase notes, architecture, testing, decisions
+├── src/main/java/com/weather/report/
+│   ├── WeatherReport.java                 # facade
+│   ├── operations/                        # NetworkOperations/GatewayOperations/... + factory
+│   ├── services/                          # DataImportingService, AlertingService, ImportResult
+│   ├── reports/                           # Sensor/Gateway/Network reports + Range types
+│   ├── repositories/                      # CRUDRepository, MeasurementRepository
+│   ├── persistence/PersistenceManager.java
+│   ├── model/                             # entities, enums, embeddable, Timestamped
+│   └── util/                              # CsvUtils, DateParsingUtils, ValidationUtils
+└── src/test/java/com/weather/report/test/ # base/ (professor tests) + custom/ (added tests)
+```
+
+## Requirements
+
+- **Java 21** (LTS). The project targets `maven.compiler.release = 21` in `pom.xml`.
+- **Maven 3.9+**, or simply use the bundled **Maven wrapper** (`mvnw` / `mvnw.cmd`) — no local Maven install required.
+
+## Build and Test
+
+Linux / macOS / Git Bash:
+
+```bash
+./mvnw clean test
+# or, if the wrapper is unavailable:
+mvn clean test
+# convenience script:
+bash scripts/test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\mvnw.cmd clean test
+# or:
+mvn clean test
+# convenience script:
+.\scripts\test.ps1
+```
+
+## Project Notes
+
+- **H2** is used for both local/dev and test persistence (in-memory).
+- Two persistence units are defined in `src/main/resources/META-INF/persistence.xml`:
+  - `weatherReportPU` — runtime/dev unit (default used by `PersistenceManager`).
+  - `weatherReportTestPU` — test unit (selected via `PersistenceManager.setTestMode()`, used by the base tests).
+- The generated `target/` folder is not committed (see `.gitignore`).
+- **Report statistics (see also section 3.3 and `docs/PHASE_4_REPORTS_AND_STATISTICS.md`):** mean uses
+  the actual average (a single measurement reports its own value); **sample** variance
+  (`Σ(x−mean)²/(n−1)`) and its square-root std dev are used, and are `0` for fewer than 2 measurements;
+  a value is an outlier iff `|x − mean| >= 2·stdDev`, with **no** outliers when the std dev is `0`
+  (identical values). Both load-ratio maps (`getSensorsLoadRatio`, `getGatewaysLoadRatio`) are
+  expressed as a **percentage (0–100)**. All report collections are returned as read-only views.
+- **CSV import** (`importDataFromFile`): expects a header row `date, networkCode, gatewayCode, sensorCode, value`
+  (`date` in `DATE_FORMAT`). Reading is UTF-8 with try-with-resources. Import is **partial**: valid rows
+  are persisted; malformed rows are skipped and recorded (with row numbers) — see
+  `DataImportingService.storeMeasurementsWithResult` returning an `ImportResult`. The CSV parser
+  (`util.CsvUtils`) handles quoted fields, embedded commas and escaped quotes, but is intentionally
+  minimal (no multi-line quoted fields). See `docs/PHASE_5_IMPORT_LOGGING_VALIDATION.md`.
+- **Resolved (Phase 5):** the base tests load fixtures via `URL.getPath()`, which percent-encodes spaces.
+  Earlier phases failed the CSV tests when checked out under a path containing spaces (e.g.
+  `06 (WeatherSystem)`, giving `...%20...`). The import now decodes such paths, so the **full suite
+  passes in the real path**, not only in a spaceless copy.
+
+## Coverage
+
+```bash
+./mvnw clean test jacoco:report      # or: mvn clean test jacoco:report
+```
+
+Open the generated report at `target/site/jacoco/index.html` (not committed). At the time of the last
+run, overall line coverage was ~85% (see `TEST_RESULTS.md`).
+
+## Known Limitations
+
+- Educational/portfolio project — **not production-ready**.
+- Uses an **in-memory H2** database only (no PostgreSQL/production datastore or deployment profile).
+- Alerting only **logs** notifications — there is no real email/SMS/external notification provider.
+- No REST API, no UI, no Docker; not a real-time monitoring system.
+- `CsvUtils` is a minimal parser (no multi-line quoted fields); no large-dataset benchmarking.
+
+## Learning / Resume Value
+
+Demonstrates layered backend design (facade/operations/service/repository), JPA/Hibernate modelling and
+JPQL querying, robust file/CSV handling, statistics with careful edge-case handling, a real test suite,
+and CI/coverage tooling — evolved through a documented, phased refactor (see `docs/`).
+
+---
+
 Contents:
 
 - 1. [Weather Report](#1-weather-report)

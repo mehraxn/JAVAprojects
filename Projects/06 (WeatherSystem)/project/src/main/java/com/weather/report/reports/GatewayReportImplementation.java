@@ -14,6 +14,8 @@ import com.weather.report.model.entities.Gateway;
 import com.weather.report.model.entities.Measurement;
 import com.weather.report.model.entities.Parameter;
 import com.weather.report.repositories.CRUDRepository;
+import com.weather.report.repositories.MeasurementRepository;
+import com.weather.report.util.DateParsingUtils;
 
 public class GatewayReportImplementation implements GatewayReport {
   String code;
@@ -27,23 +29,21 @@ public class GatewayReportImplementation implements GatewayReport {
     this.start = start;
     this.end = end;
 
-    CRUDRepository <Measurement, Long> measurementRepo = new CRUDRepository<>(Measurement.class);
+    MeasurementRepository measurementRepo = new MeasurementRepository();
 
-    List<Measurement> allMeasurements = measurementRepo.read();
     //turning start and end time strings to LocalDateTime format
-    LocalDateTime startDateTime = Optional.ofNullable(start) 
+    LocalDateTime startDateTime = Optional.ofNullable(start)
                                   .map(this::toLocalDateTime)
                                   .orElse(null);
 
     LocalDateTime endDateTime = Optional.ofNullable(end)
                                 .map(this::toLocalDateTime)
                                 .orElse(null);
-    
-    this.measurements = allMeasurements.stream()
-                                       .filter(m -> m.getGatewayCode().equals(code))//among the measurements finds gateway that has the code
-                                       .filter(m -> startDateTime == null || !m.getTimestamp().isBefore(startDateTime)) //checks if it is after start time
-                                       .filter(m -> endDateTime == null || !m.getTimestamp().isAfter(endDateTime)) //checks if its before end time
-                                       .toList();//returns a list
+
+    // Database-side filtering (inclusive range, null bound = unbounded), replacing
+    // the previous "read all measurements then filter in Java" pattern. Behaviour
+    // is identical: gateway code match + timestamp >= start + timestamp <= end.
+    this.measurements = measurementRepo.findByGatewayCodeAndDateRange(code, startDateTime, endDateTime);
 
     this.countBySensor = measurements.stream()
                                      .collect(Collectors.groupingBy(Measurement::getSensorCode, //group measurements by sensor code
@@ -107,11 +107,14 @@ public class GatewayReportImplementation implements GatewayReport {
     return Collections.emptyMap();
     }
 
-    Map<String, Double> sensorsLoadRatio = countBySensor.entrySet().stream().collect(Collectors.toMap( //transform stream to map
-                                          Map.Entry::getKey,//gets key per entryv
-                                          e -> e.getValue() /(double) getNumberOfMeasurements())); //number of measurements/total num measurements
+    // Percentage (0-100) of the gateway's measurements produced by each sensor.
+    // Consistent with NetworkReport.getGatewaysLoadRatio and README section R2
+    // (both load ratios are expressed as a percentage).
+    Map<String, Double> sensorsLoadRatio = countBySensor.entrySet().stream().collect(Collectors.toMap(
+                                          Map.Entry::getKey,
+                                          e -> (e.getValue() / (double) getNumberOfMeasurements()) * 100.0));
 
-    return sensorsLoadRatio;
+    return Collections.unmodifiableMap(sensorsLoadRatio);
   }
 
   @Override
@@ -163,7 +166,7 @@ inter-arrival time. */
     SortedMap<Range<Duration>, Long> histogram = new java.util.TreeMap<>();
 
   if (measurements.size() < 2) { //if there isnt enough measurements
-    return histogram; //return empty histogram
+    return Collections.unmodifiableSortedMap(histogram); //return empty histogram
   }
 
   List<Measurement> sorted = measurements.stream()
@@ -185,7 +188,7 @@ inter-arrival time. */
 
   if (min.equals(max)) {//if all deltas equal then create one range 
     histogram.put(new GatewayRange<>(min, max), (long) deltas.size());
-    return histogram;
+    return Collections.unmodifiableSortedMap(histogram);
   }
 
   Duration step = max.minus(min).dividedBy(20);//divide the range to 20 equal parts
@@ -212,30 +215,21 @@ inter-arrival time. */
 }
 
 
-  return histogram;
+  return Collections.unmodifiableSortedMap(histogram);
   }
 
   //HELPER FUNCTIONS
-  LocalDateTime toLocalDateTime(String dateString){ //turns the string to LocalDateTime format 
-    String[] parts = dateString.split(" ");                                     
-    String date = parts[0];                                                 
-    String time = parts[1];                                                 
-    String[] dateParts = date.split("-");                                  
-    int year = Integer.parseInt(dateParts[0]);                                 
-    int month = Integer.parseInt(dateParts[1]);                                 
-    int day = Integer.parseInt(dateParts[2]);                                   
-    String[] timeParts = time.split(":");                                   
-    int hour = Integer.parseInt(timeParts[0]);                                  
-    int min = Integer.parseInt(timeParts[1]);                                
-    int sec = Integer.parseInt(timeParts[2]);                                
-    return LocalDateTime.of(year, month, day, hour, min, sec);
-
+  LocalDateTime toLocalDateTime(String dateString){ // centralised date parsing (DATE_FORMAT)
+    return DateParsingUtils.parseDateTime(dateString);
   }
 
   private double getGatewayParameterValue(String parameterCode) {
   CRUDRepository<Gateway, String> repo = new CRUDRepository<>(Gateway.class);
 
   Gateway gateway = repo.read(code);
+  if (gateway == null) {
+    return 0.0; // gateway removed/absent -> safe default, avoids NPE
+  }
 
   return gateway.getParameters().stream()
       .filter(p -> p.getCode().equals(parameterCode))

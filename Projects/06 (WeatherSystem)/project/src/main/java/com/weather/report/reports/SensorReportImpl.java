@@ -1,6 +1,7 @@
 package com.weather.report.reports;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.SortedMap;
@@ -34,27 +35,46 @@ public class SensorReportImpl implements SensorReport {
         List<Measurement> safeMeasurements = (measurements == null) ? new ArrayList<>() : measurements;
         this.numberOfMeasurements = safeMeasurements.size();
 
-        // Calculate Statistics (Mean, Variance, StdDev)
-        if (numberOfMeasurements < 2) {
+        // Calculate Statistics (Mean, Variance, StdDev).
+        //
+        // Behaviour (see README section 3.3 and docs/PHASE_4_REPORTS_AND_STATISTICS.md):
+        //  - 0 measurements: mean/variance/stdDev = 0, no outliers.
+        //  - 1 measurement : mean = that value; variance/stdDev = 0 (not meaningful
+        //    for < 2 measurements per spec), no outliers.
+        //  - >= 2          : mean; SAMPLE variance = sum((x-mean)^2)/(n-1); stdDev = sqrt(variance).
+        if (numberOfMeasurements == 0) {
             this.mean = 0.0;
             this.variance = 0.0;
             this.stdDev = 0.0;
             this.outliers = new ArrayList<>();
         } else {
             double sum = safeMeasurements.stream().mapToDouble(Measurement::getValue).sum();
+            // Mean is well defined for a single measurement too (previously wrongly 0.0).
             this.mean = sum / numberOfMeasurements;
 
-            double sqSum = safeMeasurements.stream()
-                    .mapToDouble(m -> Math.pow(m.getValue() - mean, 2))
-                    .sum();
-            this.variance = sqSum / (numberOfMeasurements - 1);
-            this.stdDev = Math.sqrt(variance);
+            if (numberOfMeasurements < 2) {
+                this.variance = 0.0;
+                this.stdDev = 0.0;
+                this.outliers = new ArrayList<>();
+            } else {
+                double sqSum = safeMeasurements.stream()
+                        .mapToDouble(m -> Math.pow(m.getValue() - mean, 2))
+                        .sum();
+                this.variance = sqSum / (numberOfMeasurements - 1); // sample variance (README)
+                this.stdDev = Math.sqrt(variance);
 
-            // Identify outliers (value differs from mean by >= 2 * stdDev)
-            double limit = 2.0 * stdDev;
-            this.outliers = safeMeasurements.stream()
-                    .filter(m -> Math.abs(m.getValue() - mean) >= limit)
-                    .collect(Collectors.toList());
+                if (stdDev == 0.0) {
+                    // All values identical -> no spread -> no anomalies. Guards the
+                    // degenerate case where |x - mean| >= 2*0 would flag every value.
+                    this.outliers = new ArrayList<>();
+                } else {
+                    // Outlier rule (README): |x - mean| >= 2 * stdDev.
+                    double limit = 2.0 * stdDev;
+                    this.outliers = safeMeasurements.stream()
+                            .filter(m -> Math.abs(m.getValue() - mean) >= limit)
+                            .collect(Collectors.toList());
+                }
+            }
         }
 
         // Filter Non-Outliers
@@ -188,7 +208,8 @@ public class SensorReportImpl implements SensorReport {
 
     @Override
     public SortedMap<Range<Double>, Long> getHistogram() {
-        return histogram;
+        // Defensive: callers must not mutate the report's internal histogram.
+        return Collections.unmodifiableSortedMap(histogram);
     }
 
     @Override
@@ -218,6 +239,7 @@ public class SensorReportImpl implements SensorReport {
 
     @Override
     public List<Measurement> getOutliers() {
-        return outliers;
+        // Defensive: callers must not mutate the report's internal outlier list.
+        return Collections.unmodifiableList(outliers);
     }
 }

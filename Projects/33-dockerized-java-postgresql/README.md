@@ -46,7 +46,7 @@ README.md, TESTING.md, TEST_RESULTS.md  Documentation and validation evidence
 1. `docker compose up --build` starts PostgreSQL with the schema from `configs/init.sql` and builds the app image with Maven inside Docker (no local Maven needed).
 2. Compose waits until the database healthcheck passes, then starts the app container.
 3. The app reads `DB_URL`, `DB_USER`, `DB_PASSWORD` from its environment, connects over JDBC, inserts a starter task if the table is empty, prints all tasks, and exits 0.
-4. The task data lives in the `postgres_data` named volume, so it survives `docker compose down` and reappears on the next run. Only `docker compose down -v` deletes it.
+4. The task data lives in the `postgres_data` named volume, so it survives a normal Compose stop and reappears on the next run. Removing that volume would delete the data, so destructive volume-cleanup commands are intentionally omitted.
 
 The database service intentionally publishes no host port; only containers on the Compose network can reach it. Configuration and database failures exit non-zero — the exact behaviors are validated in `TEST_RESULTS.md`.
 
@@ -73,6 +73,10 @@ To run the unit tests without Docker (JDK 21 required, Maven Wrapper included):
 - No connection pool; each operation opens a short-lived connection.
 - No cloud database, no secret manager — local demo credentials in `.env` only.
 - GitHub-ready does not mean production-ready.
+
+## Resume Value
+
+Containerized a tested Java/JDBC application with a multi-stage Docker build, PostgreSQL initialization, environment validation, Compose health-gated startup, and recorded end-to-end local evidence.
 
 ## How to validate
 

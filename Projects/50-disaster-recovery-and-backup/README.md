@@ -1,5 +1,30 @@
 # Disaster Recovery and Backup Lab
 
+## Overview
+
+This local disaster-recovery lab demonstrates PostgreSQL backup creation, checksum verification, guarded restore, data validation, retention, and operational recovery documentation. Supporting Kubernetes, Terraform, Ansible, and monitoring assets illustrate how the workflow could be integrated without claiming a real external environment.
+
+## Features
+
+- Create compressed PostgreSQL backups with metadata and SHA-256 checksums.
+- Refuse unsafe or production-like restore targets.
+- Restore into an isolated database and validate expected data.
+- Apply retention rules and record RPO/RTO measurements.
+- Provide Kubernetes CronJob, monitoring, Terraform, Ansible, and runbook examples.
+
+## What This Project Demonstrates
+
+- Backup/restore scripting and defensive guardrails.
+- Integrity verification, isolated recovery, and validation checklists.
+- Recovery objectives, runbooks, retention, and operational evidence.
+- Local Compose execution plus environment-dependent infrastructure examples.
+
+## Tech Stack
+
+- PostgreSQL and Docker Compose.
+- Bash recovery scripts.
+- Kubernetes, Terraform, Ansible, and Prometheus example assets.
+
 This project is a locally executable PostgreSQL disaster-recovery lab. It starts
 a primary database with sample data, creates custom-format `pg_dump` archives,
 adds SHA-256 checksums, and restores a selected archive into a separate disposable
@@ -52,9 +77,10 @@ docker compose exec -T postgres \
   psql -U app_user -d app -c "TABLE app_data;"
 ```
 
-Initialization scripts run only for a new PostgreSQL volume. To reset this lab
-completely, use `docker compose down -v` and then start it again. This deletes
-only the two local Compose database volumes; backup files remain in `backups/`.
+Initialization scripts run only for a new PostgreSQL volume. Resetting the lab
+would require deleting its local database volumes, so that destructive cleanup
+command is intentionally omitted. Backup files remain in `backups/` unless
+handled separately.
 
 ## Create a backup
 
@@ -159,6 +185,10 @@ terraform/                documented future cloud extension point
 - Logical dumps do not provide point-in-time recovery between backup runs.
 - Kubernetes and monitoring examples must be tested in their target environment
   before operational use.
+
+## Resume Value
+
+Built and validated a guarded PostgreSQL disaster-recovery workflow with compressed backups, checksums, isolated restore, data verification, retention, RPO/RTO evidence, and supporting infrastructure/runbook examples.
 
 ## Future improvements
 

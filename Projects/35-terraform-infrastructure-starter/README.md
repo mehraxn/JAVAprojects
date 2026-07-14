@@ -94,6 +94,10 @@ the honestly recorded results of the 2026-07-10 run (Terraform v1.9.8),
 [docs/architecture.md](docs/architecture.md) for the module and state
 boundaries.
 
+## Resume Value
+
+Created a provider-free Terraform starter with reusable modules, typed variables, deterministic outputs, native tests, and safe positive/negative validation workflows.
+
 ## Possible future improvements
 
 - CI job running fmt/validate/test on every push

@@ -74,6 +74,10 @@ GitHub Actions has not been executed for this project, so no pipeline run or art
 - `TESTING.md` — exact commands for each pipeline stage, for both Windows and Linux/macOS.
 - `TEST_RESULTS.md` — the honest record of what was actually executed and the results.
 
+## Resume Value
+
+Built a dependency-free Java CI example that compiles, tests, packages an executable JAR, preserves failure exit codes, and documents artifact handling in a GitHub Actions workflow template.
+
 ## Possible future improvements
 
 - Add more service behavior and test cases.

@@ -126,6 +126,10 @@ curl -G "http://localhost:3100/loki/api/v1/query_range" \
 
 Java structured-log generation and static config parsing are validated in `TEST_RESULTS.md`. Docker Compose, Loki ingestion, Grafana dashboard loading, and alert evaluation should be recorded there only after a real local run.
 
+## Resume Value
+
+Built a local structured-logging pipeline from a Java JSON log producer through Promtail and Loki to provisioned Grafana exploration, with static validation and clearly documented unexecuted runtime steps.
+
 ## Possible future improvements
 
 - Add reviewed log rotation for the application file.

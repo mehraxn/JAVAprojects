@@ -71,10 +71,9 @@ kubectl apply -f examples/secret.example.yaml
 kubectl rollout restart deployment/java-app
 curl http://localhost:8080/config     # "secretConfigured": true
 
-# cleanup
-kubectl delete -k k8s/
-kind delete cluster --name k8s-java-app
 ```
+
+Cleanup commands are intentionally omitted. Review the active context and remove only the disposable local resources you created when the lab is finished.
 
 The image is a versioned local tag (`kubernetes-java-app:0.1.0`, never
 `latest`) loaded straight into kind — no registry involved.
@@ -95,6 +94,10 @@ Secret. The cluster was deleted afterward.
 - No real secret manager — the example Secret is a lab-only stand-in, and
   production should use External Secrets/sealed-secrets/a vault.
 - No cloud deployment; the image exists only locally.
+
+## Resume Value
+
+Packaged a Java HTTP service for Kubernetes with a non-root container, Deployment and Service manifests, probes, resource controls, Kustomize overlays, dry-run checks, and documented kind evidence.
 
 ## How to validate
 

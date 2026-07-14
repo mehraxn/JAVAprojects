@@ -128,6 +128,10 @@ docker build -f services/order-service/Dockerfile -t microservices-order/order-s
 - The Kubernetes ConfigMap holds only non-sensitive service URLs.
 - Images are local-only; nothing is pushed to a registry.
 
+## Resume Value
+
+Built and locally validated a four-service Java order workflow with explicit HTTP boundaries, idempotent order handling, payment rejection, inventory compensation, Docker Compose orchestration, and Kubernetes manifests.
+
 ## Future improvements
 
 - Client-provided `Idempotency-Key` header for `POST /orders`

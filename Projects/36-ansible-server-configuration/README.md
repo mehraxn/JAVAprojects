@@ -83,6 +83,10 @@ and `--list-tasks` (all 12 tasks resolve). See
 - No secrets, SSH keys, or cloud provisioning anywhere.
 - The systemd hardening is a demo baseline, not a CIS-style benchmark.
 
+## Resume Value
+
+Designed an Ansible configuration lab with inventory, group variables, reusable roles, handlers, systemd hardening, permission boundaries, and syntax/list validation without claiming a real server rollout.
+
 ## How to validate
 
 [TESTING.md](TESTING.md) for commands, [TEST_RESULTS.md](TEST_RESULTS.md) for

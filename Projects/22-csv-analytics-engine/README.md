@@ -1,8 +1,10 @@
 # CSV Analytics Engine
 
+## Overview
+
 A command-line Java CSV analytics engine. It reads tabular CSV data with a hand-written, quote-aware parser, validates it into `DataSet`/`DataRow` models, and runs filtering, grouping, and numeric statistics — with no external dependencies at all.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - Custom CSV parsing (quoted commas, escaped quotes, malformed-input rejection)
 - CSV writing/export with safe quoting and a verified read/write round trip
@@ -12,6 +14,31 @@ A command-line Java CSV analytics engine. It reads tabular CSV data with a hand-
 - A command-based CLI with correct exit codes and friendly error messages
 - Dependency-free automated tests (64 tests, 149 checks) with a custom runner
 - Strict compilation: everything builds under `javac -Xlint:all -Werror`
+
+## Features
+
+- Parse and validate quote-aware CSV data.
+- Summarize rows, columns, and headers.
+- Filter exact values and group rows with counts.
+- Calculate `BigDecimal` min, max, sum, average, missing, and invalid counts.
+- Export filtered datasets with safe quoting and read/write round-trip support.
+
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven or CSV library.
+- `BigDecimal` numeric aggregation.
+- Dependency-free tests plus Bash and PowerShell scripts.
+
+## Architecture / Design
+
+```text
+CsvReader → DataSet/DataRow → AnalyticsService → NumericStatistics
+                                      ↓
+                                  CsvWriter
+```
+
+Parsing, validated tabular state, analytics, and output are separate components. Models expose defensive copies and unmodifiable views so analysis cannot mutate source data.
 
 ## Commands
 
@@ -27,7 +54,7 @@ A command-line Java CSV analytics engine. It reads tabular CSV data with a hand-
 
 Column names are matched case-insensitively; filter values are matched exactly. Errors (missing file, malformed CSV, unknown command/column, missing arguments) print a clear message and exit non-zero — no stack traces.
 
-## Quick start
+## How to Run
 
 ```text
 javac -Xlint:all -Werror -d out src/csvanalyticsengine/*.java
@@ -43,7 +70,7 @@ java -cp out csvanalyticsengine.Main export-filtered examples/sales.csv filtered
 
 `examples/sales.csv` ships with deliberate edge cases: a quoted comma, escaped quotes, a missing amount, an invalid amount, and a negative amount. Generated CSVs like `filtered.csv` are gitignored; only `examples/*.csv` is tracked.
 
-## Project structure
+## Project Structure
 
 ```text
 src/csvanalyticsengine/     Application source (parser, writer, models, analytics, CLI)
@@ -63,19 +90,23 @@ TEST_RESULTS.md             Actual recorded validation results
 - `NumericStatistics` — immutable result object (count, missing, invalid, min, max, sum, average) with internal consistency checks.
 - `Main` — argument parsing and output only; the CLI logic lives in a testable `run(args, out, err)` method.
 
-## How to test
+## Testing
 
 - `TESTING.md` — exact commands for strict compile, the test runner, the CLI workflow, and error-behavior checks.
 - `TEST_RESULTS.md` — the honest record of the validation actually performed.
 - Quick version: `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell).
 
-## What is not production-grade
+## Known Limitations
 
 - Local CSV files only — no database, no cloud storage
 - Whole-file loading — not designed for huge files (no streaming)
 - No GUI, no charts or visualization
 - No authentication or multi-user support
 - Multiline CSV values are not supported
+
+## Resume Value
+
+Built a dependency-free Java CSV analytics engine with quote-aware parsing, validated tabular models, filtering, grouping, precise statistics, safe export, CLI commands, and automated tests.
 
 ## Possible future improvements
 

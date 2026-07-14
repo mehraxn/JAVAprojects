@@ -130,6 +130,10 @@ Full command list: [TESTING.md](TESTING.md). Actual recorded results:
 - The AppProject example restricts sources, destinations, and resource kinds;
   production should restrict further (RBAC roles, sync windows).
 
+## Resume Value
+
+Structured a GitOps portfolio project with a containerized Java workload, environment-specific Kustomize overlays, Helm packaging, Argo CD application examples, and validated render paths without claiming cluster synchronization.
+
 ## Future improvements
 
 - Immutable image-digest promotion wired into CI.

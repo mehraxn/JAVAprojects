@@ -1,10 +1,12 @@
 # Authentication System
 
-An educational, local Java authentication system: registration, PBKDF2 password hashing, expiring sessions, and USER/ADMIN authorization — dependency-free and fully covered by automated tests.
+## Overview
+
+An educational, local Java authentication system with registration, PBKDF2 password hashing, expiring sessions, and USER/ADMIN authorization. It is dependency-free and includes automated tests, but it is not an identity provider for real accounts.
 
 > This project is for learning only. It is not a production authentication system, not a replacement for Spring Security or a real identity provider, and should never protect real accounts or sensitive data. Every password in the docs and demos is a throwaway local example.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - User registration with username and password-policy validation
 - PBKDF2 password hashing (`PBKDF2WithHmacSHA256`, 120,000 iterations, 256-bit keys)
@@ -32,7 +34,18 @@ An educational, local Java authentication system: registration, PBKDF2 password 
 
 10–128 characters with at least one uppercase letter, one lowercase letter, one digit, and one symbol. Example of an accepted **local demo** password: `CorrectHorse1!`
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- PBKDF2-HMAC-SHA256, `SecureRandom`, and constant-time hash comparison.
+- Plain `javac`/`java`; no Maven or external security framework.
+- Dependency-free tests plus Bash and PowerShell scripts.
+
+## Architecture / Design
+
+`AuthService` owns users, sessions, registration, login/logout, and authorization. `PasswordPolicy` validates credentials, `PasswordHasher` encapsulates PBKDF2 and salt behavior, and public views prevent hashes and salts from leaving the service. An injectable `Clock` makes expiry deterministic in tests.
+
+## How to Run
 
 ```text
 javac -Xlint:all -Werror -d out src/authenticationsystem/*.java
@@ -47,7 +60,7 @@ java -cp out authenticationsystem.Main expiry-demo
 
 The demos print only masked tokens (first characters + `...`) and never print passwords, hashes, or salts. The expiry demo uses the injected Clock, so it finishes instantly — no waiting.
 
-## Project structure
+## Project Structure
 
 ```text
 src/authenticationsystem/     AuthService, PasswordHasher, PasswordPolicy,
@@ -64,13 +77,13 @@ TEST_RESULTS.md               Actual recorded validation results
 - Only ADMIN sessions pass an ADMIN-level check (so ADMIN can also do USER-level actions).
 - Invalid, expired, and logged-out tokens fail every check; `performUserAction`/`performAdminAction` throw `SecurityException` in those cases.
 
-## How to test
+## Testing
 
 - `TESTING.md` — exact commands for strict compile, the test runner, and the CLI demos.
 - `TEST_RESULTS.md` — the honest record of the validation actually performed.
 - Quick version: `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell).
 
-## Limitations
+## Known Limitations
 
 - Educational only — in-memory users and sessions, nothing persisted
 - No database, no HTTP API
@@ -78,6 +91,10 @@ TEST_RESULTS.md               Actual recorded validation results
 - No rate limiting or account lockout
 - No real audit logging, no compliance guarantee
 - Timing hardening is a learning exercise, not full side-channel resistance
+
+## Resume Value
+
+Built an educational Java authentication service with PBKDF2 password storage, random salts and session tokens, expiry and revocation, role checks, safe public views, deterministic tests, and explicit security limitations.
 
 ## Possible future improvements
 

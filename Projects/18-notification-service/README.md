@@ -1,8 +1,10 @@
 # Notification Service
 
+## Overview
+
 A local Java notification service simulation. It demonstrates a pluggable-channel service design — FIFO queue, retries, status tracking, and history — with **mock delivery only**: no real email, SMS, or push provider is ever contacted, and no external dependency is used.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - Java interfaces and pluggable delivery channels (`NotificationChannel`)
 - Mock delivery providers with deterministic, configurable failures
@@ -13,6 +15,26 @@ A local Java notification service simulation. It demonstrates a pluggable-channe
 - Dependency-free automated tests (47 tests, 136 checks) with a custom runner
 - Strict compilation: everything builds under `javac -Xlint:all -Werror`
 - A command-based demo CLI with correct exit codes and a testable `Main.run`
+
+## Features
+
+- Queue notifications in FIFO order.
+- Register pluggable mock senders for email, SMS, and app channels.
+- Track queued, sending, sent, and failed lifecycle states.
+- Retry deterministic failures up to a caller-defined attempt limit.
+- Validate recipients by channel and retain attempt/error history.
+- Expose defensive queue and history snapshots.
+
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven or external dependencies.
+- Local mock channel implementations only.
+- Dependency-free tests plus Bash and PowerShell scripts.
+
+## Architecture / Design
+
+`NotificationService` owns the FIFO queue, history, sender registry, dispatch, and retries. `NotificationChannel` is the delivery interface, while `MockNotificationSender` supplies deterministic local outcomes for demos and tests. `Notification` enforces lifecycle transitions.
 
 ## Commands
 
@@ -27,7 +49,7 @@ A local Java notification service simulation. It demonstrates a pluggable-channe
 
 `send` exits 0 only when the notification reaches `SENT`; invalid channels, recipients, or messages print a clear error and exit non-zero — no stack traces.
 
-## Quick start
+## How to Run
 
 ```text
 javac -Xlint:all -Werror -d out src/notificationservice/*.java
@@ -40,7 +62,7 @@ java -cp out notificationservice.Main validation-demo
 java -cp out notificationservice.Main missing-sender-demo
 ```
 
-## Project structure
+## Project Structure
 
 ```text
 src/notificationservice/     Application source (model, channel, mock sender, service, CLI)
@@ -66,13 +88,13 @@ TEST_RESULTS.md              Actual recorded validation results
 
 These are deliberately simple, beginner-appropriate rules — real-world address validation is far more involved.
 
-## How to test
+## Testing
 
 - `TESTING.md` — exact commands for strict compile, the test runner, and the CLI demos.
 - `TEST_RESULTS.md` — the honest record of the validation actually performed.
 - Quick version: `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell).
 
-## What is not production-grade
+## Known Limitations
 
 - Local mock service only — no real email/SMS/push integration
 - No database and no persistent queue (everything is in memory)
@@ -80,6 +102,10 @@ These are deliberately simple, beginner-appropriate rules — real-world address
 - No scheduled delivery
 - No authentication or user accounts
 - No production delivery guarantees
+
+## Resume Value
+
+Built a dependency-free Java notification service with pluggable channels, FIFO processing, deterministic failure injection, retries, lifecycle tracking, defensive history views, CLI workflows, and automated tests.
 
 ## Possible future improvements
 

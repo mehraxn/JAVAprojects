@@ -133,6 +133,10 @@ docker build -t registry.example.invalid/payments-api:0.1.0 examples/new-service
 - Wiring **GitOps per environment** with sane dev-auto / prod-manual defaults.
 - Committing a **generated example** so reviewers see real output.
 
+## Resume Value
+
+Built a working golden-path service generator with validated input/output safety, a runnable generated Java service, Docker and Helm templates, GitOps examples, policy checks, and clear platform automation boundaries.
+
 ## Future improvements
 
 - Back the golden path with Backstage software templates and a live catalog.

@@ -1,8 +1,10 @@
 # URL Shortener Backend
 
+## Overview
+
 An educational Java URL shortener backend with service-layer logic, optional CSV persistence, and a lightweight HTTP interface built on Java's built-in `HttpServer`. It uses no framework, database, JSON library, or external dependency — plain `javac`/`java` is enough to build, run, and test it.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - URL validation (absolute `http`/`https` URLs with a host — `ftp:`, `file:`, `javascript:` and relative URLs are rejected)
 - Generated Base62-style short codes and custom short codes
@@ -40,7 +42,33 @@ An educational Java URL shortener backend with service-layer logic, optional CSV
 - **Custom codes** that already exist are rejected (`IllegalArgumentException` in the service, HTTP 409 in the API).
 - **Hit counts** cannot be negative and overflow at `Long.MAX_VALUE` is detected.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library and built-in `HttpServer`.
+- UTF-8 CSV persistence with `java.nio.file`.
+- Plain `javac`/`java`; no Maven or external web framework.
+- Dependency-free service, persistence, and live HTTP smoke tests.
+
+## Architecture / Design
+
+```text
+HTTP handlers → ShortenerService → FileUrlStore → CSV file
+```
+
+`ShortenerService` owns URL/code validation, generation, lookup, and hit counts. `FileUrlStore` persists snapshots, while `UrlShortenerHttpServer` maps HTTP requests and errors without exposing storage details.
+
+## Project Structure
+
+```text
+.
+├── src/urlshortenerbackend/     # Service, store, HTTP server, models, CLI
+├── tests/urlshortenerbackend/   # Unit and live loopback HTTP tests
+├── scripts/                     # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 ```text
 javac -Xlint:all -Werror -d out src/urlshortenerbackend/*.java
@@ -55,7 +83,7 @@ java -cp out urlshortenerbackend.Main server 8080
 
 `demo`/`service-demo` walk through generated/custom links, duplicate rejection, redirects, and hit counting. `csv-demo` saves links to a temporary CSV file, reloads them, verifies entries and hit counts survived, and deletes the file. `http-demo` prints example curl commands. `server <port>` starts the HTTP API; the port argument is required. `Main.run(args, out, err)` returns an exit code (0 on success, non-zero for unknown commands or bad server arguments), and only `main` calls `System.exit`.
 
-## HTTP endpoints
+## API Overview
 
 | Method and path | Request | Result |
 |---|---|---|
@@ -117,13 +145,17 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - Manual JSON escaping and URL-encoded form parsing
 - Exit codes and testable CLI entry points
 
-## Limitations
+## Known Limitations
 
 - Links live in memory and are lost on restart unless CSV storage is used explicitly
 - No database, authentication, rate limiting, TLS, or custom domain support
 - Generated codes are sequential rather than unpredictable
 - CSV persistence does not support multiline values or concurrent writers
 - No production JSON parser and no framework (no Spring Boot) — this is a learning project
+
+## Resume Value
+
+Built a framework-free Java URL-shortening backend with generated codes, validated HTTP behavior, redirect lookup, hit tracking, CSV persistence, concurrent service access, and automated loopback tests.
 
 ## Possible future improvements
 

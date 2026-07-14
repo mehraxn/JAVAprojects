@@ -132,10 +132,9 @@ hey -z 3m -c 50 "http://localhost:8080/work?ms=200"   # or k6, see below
 # 6. watch it scale
 kubectl get hpa -w
 
-# 7. cleanup
-kubectl delete -k k8s/
-kind delete cluster --name autoscaling-lab
 ```
+
+Cleanup commands are intentionally omitted. Confirm the active Kubernetes context before removing only the disposable local lab resources you created.
 
 ## What evidence to record
 
@@ -153,6 +152,10 @@ not actually see.
 - `MAX_WORK_MS` caps a single `/work` request so a load test can't pin a pod
   indefinitely.
 - Only load-test **your own disposable cluster** — never a public endpoint.
+
+## Resume Value
+
+Created a Kubernetes autoscaling lab with a measurable Java workload, resource requests, HPA configuration, metrics-server setup, repeatable load generation, and recorded local kind scaling evidence.
 
 ## Future improvements
 

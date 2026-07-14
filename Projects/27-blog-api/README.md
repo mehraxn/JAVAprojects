@@ -1,82 +1,100 @@
 # Blog API
 
-An educational Java Blog API with in-memory service-layer logic and a lightweight REST-style interface built on Java's `HttpServer`.
+## Overview
 
-## What it demonstrates
-
-- Users, posts, and comments with referential validation
-- Service-layer search, update, and delete workflows
-- Cascading comment cleanup when a post is deleted
-- Defensive copies and unmodifiable result collections
-- Manual JSON serialization and safe escaping
-- Consistent JSON error handling for 400, 404, 405, 413, and 500 responses
-- REST-style routes, request validation, and `Allow`/`Location` headers
-- Dependency-free automated tests, real HTTP smoke tests, and strict compilation
+This educational Java backend manages users, posts, and comments through an in-memory service and a lightweight REST-style interface built with Java's `HttpServer`. It uses manual form parsing and JSON serialization to make HTTP behavior visible without a web framework.
 
 ## Features
 
-- Create and list unique users
-- Create, retrieve, list, update, search, and delete posts
-- Search case-insensitively across titles, content, and author names
-- Create and list comments for existing posts and users
-- Remove a deleted post's comment collection
-- Reject duplicate form fields, oversized bodies, invalid methods, and malformed routes
-- Return JSON for successful API responses and all handled API errors
+- Create and list unique users.
+- Create, retrieve, list, update, search, and delete posts.
+- Search post titles, content, and author names case-insensitively.
+- Create and list comments for existing users and posts.
+- Remove a post's comment collection when the post is deleted.
+- Reject duplicate form fields, oversized bodies, invalid methods, and malformed routes.
+- Return JSON for successful responses and handled errors.
 
-## Design
+## What This Project Demonstrates
 
-- `User`, `Post`, and `Comment` are the domain models.
-- `BlogService` owns all in-memory business logic.
-- `BlogJson` owns JSON serialization and escaping.
-- `BlogHttpServer` owns HTTP routing and response mapping.
-- `Main` owns CLI demos and server startup; `Main.run` is directly testable.
+- Multi-resource domain modeling with referential validation.
+- Service-layer CRUD, search, update, delete, and cascading cleanup.
+- HTTP routing, request parsing, response status/header mapping, and body limits.
+- Manual JSON serialization and escaping.
+- Defensive copies, dependency-free tests, and live loopback HTTP smoke tests.
 
-Bodies use `application/x-www-form-urlencoded`. Parsing is intentionally small and educational; it is not a general or production JSON/form framework. Responses are manually serialized JSON.
+## Tech Stack
 
-## HTTP routes
+- Java 21 standard library.
+- Built-in `com.sun.net.httpserver.HttpServer` and Java `HttpClient` tests.
+- Manual JSON and `application/x-www-form-urlencoded` processing.
+- Plain `javac`/`java`; no Maven or external framework.
 
-| Method and path | Behavior |
-|---|---|
-| `GET /users` | List users |
-| `POST /users` | Create from `name` |
-| `GET /posts` | List posts; optional `?q=keyword` search |
-| `POST /posts` | Create from `authorId`, `title`, `content` |
-| `GET /posts/{id}` | Retrieve a post |
-| `PUT /posts/{id}` | Update `title` and `content` |
-| `DELETE /posts/{id}` | Delete post and comments |
-| `GET /posts/{id}/comments` | List comments |
-| `POST /posts/{id}/comments` | Create from `authorId` and `body` |
-
-Unknown and malformed paths return a JSON 404. Unsupported methods return JSON 405 and an `Allow` header.
-
-## Quick start
+## Architecture / Design
 
 ```text
-javac -Xlint:all -Werror -d out src/blogapi/*.java
+BlogHttpServer → BlogService → in-memory users/posts/comments
+       ↓
+    BlogJson
+```
 
-java -cp out blogapi.Main help
+The HTTP layer owns routing and protocol responses, `BlogService` owns relationships and business rules, and `BlogJson` serializes success/error payloads. `Main` exposes demos and server startup.
+
+## Project Structure
+
+```text
+.
+├── src/blogapi/     # Models, service, JSON, HTTP server, CLI
+├── tests/blogapi/   # Unit and live loopback HTTP tests
+├── scripts/         # test.sh and test.ps1
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## API Overview
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/users` | List users. |
+| `POST` | `/users` | Create a user from `name`. |
+| `GET` | `/posts` | List posts; optional `q` search. |
+| `POST` | `/posts` | Create from `authorId`, `title`, and `content`. |
+| `GET` | `/posts/{id}` | Retrieve a post. |
+| `PUT` | `/posts/{id}` | Update title and content. |
+| `DELETE` | `/posts/{id}` | Delete a post and its comments. |
+| `GET` | `/posts/{id}/comments` | List comments. |
+| `POST` | `/posts/{id}/comments` | Create a comment from `authorId` and `body`. |
+
+## How to Run
+
+```bash
+javac -Xlint:all -Werror -d out src/blogapi/*.java
 java -cp out blogapi.Main demo
-java -cp out blogapi.Main service-demo
 java -cp out blogapi.Main server 8082
 ```
 
-Example requests:
+The port `8082` above is supplied explicitly to the CLI; it is not an assumed deployment default.
 
-```sh
-curl -i -X POST http://localhost:8082/users -d "name=alice"
-curl -i -X POST http://localhost:8082/posts -d "authorId=U-1&title=Hello&content=First+post"
-curl -i http://localhost:8082/posts
-curl -i -X POST http://localhost:8082/posts/P-1/comments -d "authorId=U-1&body=Nice+post"
-curl -i http://localhost:8082/posts/P-1/comments
-curl -i http://localhost:8082/unknown
+## Testing
+
+```bash
+bash scripts/test.sh
 ```
 
-See [TESTING.md](TESTING.md) for exact commands and [TEST_RESULTS.md](TEST_RESULTS.md) for recorded validation results.
+Windows PowerShell:
 
-## Limitations
+```powershell
+.\scripts\test.ps1
+```
 
-- Local, in-memory operation only; no persistence or database
-- No authentication, authorization, or ownership enforcement
-- No pagination, TLS, or cloud deployment
-- No production JSON parser or web framework such as Spring Boot
-- No production concurrency, rate limiting, or deployment packaging guarantees
+See [TESTING.md](TESTING.md) for exact requests and [TEST_RESULTS.md](TEST_RESULTS.md) for the latest recorded validation results.
+
+## Known Limitations
+
+- In-memory only; no database or persistence across restarts.
+- No authentication, authorization, ownership enforcement, pagination, TLS, or rate limiting.
+- Request bodies use form encoding and responses use a small manual JSON serializer.
+- No Spring Boot or deployment packaging.
+
+## Resume Value
+
+Built a framework-free Java blog API with users, posts, comments, referential validation, cascading cleanup, JSON responses, HTTP error handling, and automated loopback tests.

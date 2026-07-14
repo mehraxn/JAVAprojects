@@ -85,6 +85,10 @@ Exact commands: [TESTING.md](TESTING.md). Recorded results:
 [TEST_RESULTS.md](TEST_RESULTS.md). Metric semantics and PromQL guide:
 [app-metrics-example.md](app-metrics-example.md).
 
+## Resume Value
+
+Instrumented a Java service with Prometheus metrics and assembled a local Docker Compose monitoring stack with scrape configuration, alerts, provisioned Grafana dashboards, and recorded runtime checks.
+
 ## Possible future improvements
 
 - Alertmanager with reviewed routing/ownership.

@@ -122,6 +122,10 @@ deliberately configured a disposable registry and OIDC trust — see
 [docs/image-signing.md](docs/image-signing.md). Nothing in this project does
 so by default.
 
+## Resume Value
+
+Designed a security-gated CI/CD example covering Java tests, secret scanning, dependency/container scanning, SBOM generation, image build evidence, least-privilege workflow settings, and documented signing design.
+
 ## What I learned
 
 - Why **dependency + image scanning** catch different vulnerability classes.

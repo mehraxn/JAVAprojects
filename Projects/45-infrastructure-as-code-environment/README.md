@@ -202,6 +202,10 @@ provider and a disposable account you own.
 - Terraform/Ansible must be installed to run their validation steps; see
   [TEST_RESULTS.md](TEST_RESULTS.md) for what was executed where.
 
+## Resume Value
+
+Designed a multi-environment IaC workflow that separates Terraform provisioning from Ansible configuration, generates inventories from outputs, validates handoff scripts offline, and clearly marks provider-dependent steps as unexecuted.
+
 ## Future improvements
 
 - Swap `terraform_data` for a real provider module against a disposable account.

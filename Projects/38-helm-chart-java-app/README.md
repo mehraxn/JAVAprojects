@@ -88,6 +88,10 @@ Helm/kubectl commands.
   `secret.existingSecret`).
 - Resource sizes and probe timings are learning defaults, not tuned values.
 
+## Resume Value
+
+Created a configurable Helm chart with schema validation, secure workload defaults, checksummed configuration, environment values, render/lint tests, and optional cluster workflows.
+
 ## Possible future improvements
 
 - Automated chart tests (`helm unittest` / chart-testing) in CI

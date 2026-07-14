@@ -1,8 +1,10 @@
 # File-Based Address Book
 
+## Overview
+
 An educational Java file-based address book with contact CRUD/search and UTF-8 TSV persistence, built entirely with the Java standard library. No framework, database, or external dependency — plain `javac`/`java` is enough to build, run, and test it.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - A validated, immutable-by-convention `Contact` domain model (final class)
 - Add / update / delete / search contacts, with deterministic sorted listings
@@ -28,7 +30,29 @@ An educational Java file-based address book with contact CRUD/search and UTF-8 T
 - `FileStore` — UTF-8 TSV load/save (atomic-style), plus export/import helpers.
 - `Main` — CLI commands (`help`, `demo`, `file-demo`, `import-demo`, `validation-demo`).
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven or external dependencies.
+- UTF-8 tab-separated file storage with `java.nio.file`.
+- Dependency-free tests plus Bash and PowerShell scripts.
+
+## Architecture / Design
+
+`Contact` validates contact data, `AddressBook` owns CRUD/search workflows, and `FileStore` handles import/export and safe replacement of persisted data. File I/O is separated from in-memory operations, and callers receive defensive contact copies.
+
+## Project Structure
+
+```text
+.
+├── src/filebasedaddressbook/     # Contact, address book, file store, CLI
+├── tests/filebasedaddressbook/   # Custom tests and runner
+├── scripts/                      # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 ```text
 javac -Xlint:all -Werror -d out src/filebasedaddressbook/*.java
@@ -84,7 +108,7 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - Atomic-style file replacement with `Files.move`
 - Exit codes and testable CLI entry points
 
-## Limitations
+## Known Limitations
 
 - Local file-based storage only — no database and no cloud sync
 - No HTTP API, login, or authentication
@@ -92,6 +116,10 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - No advanced contact fields (multiple numbers, addresses, groups)
 - Email validation is simple/educational, not production-grade
 - Intended as a Java file-I/O learning project, not production address-book software
+
+## Resume Value
+
+Built a Java address book with validated CRUD, case-insensitive search, UTF-8 file persistence, safe replacement, conflict-aware import/export, defensive copies, and automated tests.
 
 ## Possible future improvements
 

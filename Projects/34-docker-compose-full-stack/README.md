@@ -59,8 +59,9 @@ curl -X POST http://localhost:8080/api/notes \
 curl http://localhost:8080/api/notes
 
 docker compose down      # notes survive (named volume)
-docker compose down -v   # ONLY if you want to delete the data too
 ```
+
+Destructive named-volume cleanup is intentionally omitted because it deletes the stored notes.
 
 ## Project structure
 
@@ -97,6 +98,10 @@ listing against real PostgreSQL, and **persistence across both
 - The hand-rolled JSON field extractor in the backend is deliberately minimal
   for a dependency-free demo; real projects should use a JSON library.
 - No Kubernetes or cloud deployment.
+
+## Resume Value
+
+Built a local three-service stack combining Nginx, a Java HTTP backend, and PostgreSQL with container health checks, persistent storage, exact API behavior, and Compose-based validation.
 
 ## How to validate
 

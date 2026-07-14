@@ -1,8 +1,10 @@
 # Task Manager JDBC
 
-An educational Java task manager demonstrating repository-pattern architecture with two interchangeable implementations: a fully tested in-memory repository and a JDBC repository built entirely with standard `java.sql` APIs. No framework, database, driver, or external dependency is required — plain `javac`/`java` is enough to build, run, and test it.
+## Overview
 
-## What it demonstrates
+An educational Java task manager demonstrating repository-pattern architecture with two interchangeable implementations: a behavior-tested in-memory repository and a JDBC repository built entirely with standard `java.sql` APIs. No framework, database, driver, or external dependency is required to compile and exercise the in-memory workflow with plain `javac`/`java`.
+
+## What This Project Demonstrates
 
 - A validated `Task` domain model (final class) with a `Status` enum (`OPEN`, `IN_PROGRESS`, `DONE`)
 - A `TaskRepository` interface with in-memory and JDBC implementations
@@ -39,7 +41,33 @@ TaskService -> TaskRepository -> InMemoryTaskRepository
 
 A task ID of `0` means "not yet saved" — the repository assigns the next sequential positive ID on `add`. Stored-task lookups require positive IDs.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- JDBC API and prepared statements.
+- Plain `javac`/`java`; no bundled database driver or build framework.
+- Dependency-free tests plus Bash and PowerShell scripts.
+
+## Architecture / Design
+
+```text
+CLI → TaskService → TaskRepository → InMemoryTaskRepository or JdbcTaskRepository → SQL database
+```
+
+The repository interface keeps workflows independent of storage. Automated behavior tests use the in-memory implementation; the JDBC repository accepts a caller-supplied `Connection` and uses prepared statements.
+
+## Project Structure
+
+```text
+.
+├── src/taskmanagerjdbc/     # Model, service, repository interface/implementations, CLI
+├── tests/taskmanagerjdbc/   # In-memory behavior and JDBC static checks
+├── scripts/                 # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 ```text
 javac -Xlint:all -Werror -d out src/taskmanagerjdbc/*.java
@@ -94,7 +122,7 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - Try-with-resources and input validation
 - Exit codes and testable CLI entry points
 
-## Limitations
+## Known Limitations
 
 - No JDBC driver, database, schema migration tool, or demo database is bundled
 - Real JDBC integration tests are not included (the JDBC code is compiled and statically reviewed only)
@@ -102,6 +130,10 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - No connection pool and no transaction manager beyond simple single-statement JDBC usage
 - In-memory records disappear when the process exits
 - Educational project, not production task-management software
+
+## Resume Value
+
+Built a Java task manager with service/repository separation, validated CRUD workflows, an in-memory test implementation, and a JDBC repository using prepared statements and caller-managed connections.
 
 ## Possible future improvements
 

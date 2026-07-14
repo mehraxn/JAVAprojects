@@ -128,7 +128,7 @@ Full command list is in [TESTING.md](TESTING.md); recorded real results are in
 - The app image runs as a non-root user; the app image tag is pinned (`0.1.0`,
   not `latest`), as are all stack images.
 
-## What is example-only / not production-ready
+## Example-Only Scope and Limitations
 
 - **Real span export** — traces are correlation-only; adding it is a documented
   next step ([docs/traces.md](docs/traces.md)).
@@ -138,6 +138,10 @@ Full command list is in [TESTING.md](TESTING.md); recorded real results are in
 - **Alert routing** (rules are evaluated but no Alertmanager / notifications).
 - **Sampling** policy, multi-tenancy, and **real incident response** tooling.
 - **Cloud deployment** — this runs locally only.
+
+## Resume Value
+
+Assembled and locally validated an observability stack combining Java metrics and structured logs with Prometheus, Loki, Promtail, Grafana provisioning, dashboards, alerts, and documented trace correlation boundaries.
 
 ## Future improvements
 

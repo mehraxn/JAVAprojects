@@ -1,8 +1,10 @@
 # Job Application Tracker
 
+## Overview
+
 A command-line Java job application tracker with CSV persistence. Records job applications, searches and filters them, updates statuses, shows status totals, and preserves everything in a UTF-8 CSV file — with no external dependencies at all.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - Java OOP: encapsulated domain model with validation (`JobApplication`)
 - Service/repository separation (`TrackerService` / `ApplicationRepository` / `CsvApplicationRepository`)
@@ -23,7 +25,22 @@ A command-line Java job application tracker with CSV persistence. Records job ap
 - Save/load CSV — missing files load as an empty tracker, malformed files are rejected before touching in-memory data
 - Safe in-memory demo workflow
 
-## Project structure
+## Tech Stack
+
+- Java 21 standard library.
+- UTF-8 CSV persistence with quote-aware parsing.
+- Plain `javac`/`java`; no Maven or external dependencies.
+- Dependency-free tests plus Bash and PowerShell scripts.
+
+## Architecture / Design
+
+```text
+CLI → TrackerService → ApplicationRepository → CsvApplicationRepository → CSV file
+```
+
+`JobApplication` owns validated record state, the service owns search/filter/update workflows, and the repository abstraction isolates file persistence. Loading validates a full file before replacing in-memory data.
+
+## Project Structure
 
 ```text
 src/jobapplicationtracker/     Application source (model, service, repository, CLI)
@@ -33,7 +50,7 @@ README.md, TESTING.md          Documentation
 TEST_RESULTS.md                Actual recorded validation results
 ```
 
-## How to run
+## How to Run
 
 Compile (strict flags — the build treats every warning as an error):
 
@@ -70,13 +87,13 @@ id,company,role,applicationDate,status,notes
 
 Dates use `yyyy-MM-dd`. Commas and quotation marks round-trip through quoted fields; multiline values are intentionally not supported. Loading validates the whole file (header, field count, IDs, dates, statuses, quoting, duplicates) before replacing any in-memory records.
 
-## How to test
+## Testing
 
 - `TESTING.md` — exact commands for strict compile, the test runner, the CLI workflow, and the scripts.
 - `TEST_RESULTS.md` — the honest record of the validation actually performed.
 - Quick version: `./scripts/test.sh` (Linux/macOS/Git Bash) or `.\scripts\test.ps1` (Windows PowerShell).
 
-## What is not production-grade
+## Known Limitations
 
 - Local CLI only — no GUI, no web UI
 - CSV file storage only — no database
@@ -84,6 +101,10 @@ Dates use `yyyy-MM-dd`. Commas and quotation marks round-trip through quoted fie
 - No encryption for stored files, no cloud sync
 - No atomic file replacement or backups
 - Status transitions are not constrained to a workflow
+
+## Resume Value
+
+Built a Java job-application tracker with repository/service separation, CSV persistence, quote-aware parsing, status updates, search, summaries, defensive copies, CLI error handling, and automated tests.
 
 ## Possible future improvements
 

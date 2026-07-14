@@ -1,5 +1,7 @@
 # Multi-Environment Cloud-Native Java App
 
+## Overview
+
 This project demonstrates one small Java HTTP service built into one container
 image and promoted through development, staging, and production by changing
 GitOps desired state. The core rule is:
@@ -9,6 +11,31 @@ GitOps desired state. The core rule is:
 
 Environment-specific configuration and scale change; application code and the
 promoted image do not.
+
+## Features
+
+- Framework-free Java service with health, readiness, configuration, and greeting endpoints.
+- Multi-stage Java 21 container build with a non-root runtime.
+- Shared Kubernetes base plus dev, staging, and production Kustomize overlays.
+- Environment-specific namespaces, replicas, log levels, and feature flags.
+- Optional Helm packaging with matching placeholder image digests.
+- Argo CD Application, ApplicationSet, AppProject, and app-of-apps examples.
+- Example CI build/promotion workflows and rollback documentation.
+
+## What This Project Demonstrates
+
+- Build-once, digest-based promotion between environments.
+- Separation of application code from environment desired state.
+- Kustomize overlays, Helm values, GitOps application definitions, and secret-shape examples.
+- Container and pod security contexts, probes, and resource controls.
+- Honest separation between local render validation and real cluster promotion.
+
+## Tech Stack
+
+- Java 21 and Docker.
+- Kubernetes, Kustomize, and Helm.
+- Argo CD/GitOps examples.
+- Terraform starter configuration and CI workflow examples.
 
 ## Architecture
 
@@ -144,6 +171,10 @@ TESTING.md               exact local validation workflow
 TEST_RESULTS.md           blank evidence template for measured outputs
 ```
 
+## Testing and Validation
+
+[`TESTING.md`](TESTING.md) provides Java endpoint, Docker, Kustomize, Helm, and manifest-validation commands. The current [`TEST_RESULTS.md`](TEST_RESULTS.md) is an unfilled evidence template, so this README does not claim that those commands or any deployment succeeded.
+
 ## Executable versus example-only
 
 Executable locally:
@@ -164,3 +195,15 @@ Example-only until real infrastructure and credentials are supplied:
 Do not claim any of those example-only operations succeeded without real
 evidence. [TEST_RESULTS.md](TEST_RESULTS.md) intentionally contains blank
 placeholders for outputs produced on the machine running the tests.
+
+## Known Limitations
+
+- No measured validation evidence has been recorded yet.
+- Image repositories, digests, Git URLs, clusters, and secret values are placeholders.
+- Argo CD registration and synchronization were not performed.
+- Terraform and CI assets are starter/examples rather than evidence of created infrastructure or executed promotion.
+- No real development, staging, or production environment is included.
+
+## Resume Value
+
+Designed a multi-environment Java delivery model with immutable-image promotion, Kustomize overlays, Helm packaging, GitOps application examples, environment configuration, pod security controls, and explicit evidence boundaries.

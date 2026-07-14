@@ -1,5 +1,9 @@
 # Blue-Green & Canary Deployment
 
+## Overview
+
+This educational progressive-delivery project provides two versioned Java services plus Kubernetes and Helm configurations for blue-green and canary rollout exercises. It documents traffic switching, observation, rollback, and the boundary between locally executable validation and example-only cluster operations.
+
 A progressive-delivery portfolio project for a small Java HTTP service. It shows
 two safer release strategies: **blue-green** for instant cutover/rollback and
 **canary** for gradual exposure with metrics-based decisions.
@@ -138,7 +142,7 @@ your own cluster and record the result.
 - Canary metrics depend on a real ingress/controller and Prometheus setup.
 - Database/schema migration compatibility is documented, not implemented.
 
-## Resume description
+## Resume Value
 
 Built a Java progressive-delivery lab showing blue-green and canary deployment
 patterns with Kubernetes manifests, secure pod settings, health/readiness probes,

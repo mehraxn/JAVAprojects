@@ -84,6 +84,10 @@ This workflow is included as a template. To activate it in a portfolio repositor
 - `TESTING.md` — exact commands to run the tests, the gate, and the negative gate check yourself.
 - `TEST_RESULTS.md` — the honest record of what was actually executed and the real coverage numbers.
 
+## Resume Value
+
+Implemented a Maven/JUnit quality-gate project with JaCoCo reporting, an enforced coverage threshold, negative gate validation, and a reusable GitHub Actions workflow template.
+
 ## Possible future improvements
 
 - Add a branch-coverage limit next to the line-coverage limit.

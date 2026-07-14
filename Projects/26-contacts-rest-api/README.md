@@ -1,8 +1,10 @@
 # Contacts REST API
 
+## Overview
+
 An educational Java Contacts REST API with service-layer CRUD/search/pagination logic and a lightweight interface built on Java's built-in `HttpServer`. It uses no framework, database, JSON library, or external dependency — plain `javac`/`java` is enough to build, run, and test it.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - A validated contact domain model (`Contact`)
 - In-memory repository with synchronized access and defensive copies
@@ -32,7 +34,35 @@ An educational Java Contacts REST API with service-layer CRUD/search/pagination 
 - `ContactHttpServer` — request routing, HTTP status handling, and JSON errors.
 - `Main` — CLI commands (`help`, `demo`, `service-demo`, `http-demo`, `server`).
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library and built-in `HttpServer`.
+- Manual JSON serialization and in-memory storage.
+- Plain `javac`/`java`; no Maven or external web framework.
+- Dependency-free repository, service, JSON, and live HTTP tests.
+
+## Architecture / Design
+
+```text
+HTTP routing → ContactService → InMemoryContactRepository
+                    ↓
+                 JsonUtil
+```
+
+The HTTP server handles routes and status mapping, the service owns validation/search/pagination workflows, and the repository returns copies rather than exposing live contacts.
+
+## Project Structure
+
+```text
+.
+├── src/contactsrestapi/     # Model, repository, service, JSON, HTTP server, CLI
+├── tests/contactsrestapi/   # Unit and live loopback HTTP tests
+├── scripts/                 # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 ```text
 javac -Xlint:all -Werror -d out src/contactsrestapi/*.java
@@ -46,7 +76,7 @@ java -cp out contactsrestapi.Main server 8082
 
 `demo`/`service-demo` run a service-layer walkthrough (create, list, search, update, pagination, delete). `http-demo` prints example curl commands. `server <port>` starts the HTTP API; the port argument is required. `Main.run(args, out, err)` returns an exit code (0 on success, non-zero for unknown commands or bad server arguments), and only `main` calls `System.exit`.
 
-## HTTP endpoints
+## API Overview
 
 | Method and path | Behavior |
 |---|---|
@@ -108,13 +138,17 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - URL decoding and manual JSON generation
 - Exit codes and testable CLI entry points
 
-## Limitations
+## Known Limitations
 
 - In-memory only: no database, persistence, or multi-process coordination
 - Request bodies use URL-encoded form fields — no production JSON parser
 - Email and phone validation is intentionally basic (an email needs `@` and a dot in the domain; this is not production-grade validation)
 - No authentication, authorization, TLS, or rate limiting
 - No framework (no Spring Boot) and no deployment packaging — this is a learning project
+
+## Resume Value
+
+Built a framework-free Java contacts API with CRUD, validation, JSON responses, search, pagination, in-memory repository isolation, HTTP status handling, and automated loopback tests.
 
 ## Possible future improvements
 

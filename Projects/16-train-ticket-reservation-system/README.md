@@ -1,11 +1,13 @@
 # Train Ticket Reservation System
 
+## Overview
+
 An educational, dependency-free Java project that models a train ticket
 reservation service. It focuses on clean object-oriented design, a service
 layer with real business rules, defensive data exposure, and dependency-free
 automated tests — not on a database, web API, or real railway integration.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - **Route** domain model (origin/destination, case-insensitive matching)
 - **Seat** domain model (numbered seat with availability state)
@@ -68,7 +70,29 @@ automated tests — not on a database, web API, or real railway integration.
   and recurring schedules are not modelled; reserved seats stay reserved on that
   service until cancelled.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven, Gradle, or external dependencies.
+- `java.time` and `BigDecimal` for schedules and pricing.
+- Dependency-free tests plus Bash and PowerShell validation scripts.
+
+## Architecture / Design
+
+`ReservationSystem` is the service layer over route, train, seat, and reservation models. It validates an entire reservation request before changing seat state and returns immutable snapshots so callers cannot bypass the service workflow.
+
+## Project Structure
+
+```text
+.
+├── src/trainticketreservationsystem/     # Domain, service, snapshots, CLI
+├── tests/trainticketreservationsystem/   # Custom tests and runner
+├── scripts/                              # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 Compile:
 
@@ -94,7 +118,7 @@ The project ships with a dependency-free test suite (custom assertion helper and
 runner — no JUnit, Maven, or Gradle). See [TESTING.md](TESTING.md) for exact
 commands and [TEST_RESULTS.md](TEST_RESULTS.md) for the latest recorded run.
 
-## Limitations
+## Known Limitations
 
 This is a learning project. It intentionally has:
 
@@ -106,3 +130,7 @@ This is a learning project. It intentionally has:
 - no ticket PDF generation
 - no production deployment
 - no travel dates / recurring schedules (each `Train` is one service)
+
+## Resume Value
+
+Built a dependency-free Java train-reservation system with route and schedule modeling, atomic seat booking, cancellation, exact pricing, defensive snapshots, CLI workflows, and automated tests.

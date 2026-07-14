@@ -1,8 +1,10 @@
 # Expense Tracker
 
+## Overview
+
 An educational Java expense tracker with service-layer logic and CSV persistence, built entirely with the Java standard library. Money values are handled with `BigDecimal` throughout — no framework, database, or external dependency, and plain `javac`/`java` is enough to build, run, and test it.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - An immutable, validated `Expense` domain model (final class, private final fields, no setters)
 - `BigDecimal` money handling — no `double` anywhere in money math, `compareTo` for comparisons
@@ -34,7 +36,29 @@ An educational Java expense tracker with service-layer logic and CSV persistence
 
 Money is stored as `BigDecimal`, not `double`, because binary floating point cannot represent most decimal fractions exactly (`0.1 + 0.2 != 0.3`). Totals use `BigDecimal.ZERO` and `add`, and comparisons use `compareTo`, so `0.10` added ten times is exactly `1.00` — the automated tests verify this.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven or external dependencies.
+- `BigDecimal`, `java.time`, and UTF-8 CSV persistence.
+- Dependency-free tests plus Bash and PowerShell scripts.
+
+## Architecture / Design
+
+`Expense` is the validated domain record. `ExpenseService` owns CRUD, filtering, totals, and reports through the `ExpenseStore` abstraction, while `CsvExpenseStore` implements local quote-aware persistence and safe file replacement.
+
+## Project Structure
+
+```text
+.
+├── src/expensetracker/     # Model, service, store abstraction/CSV store, CLI
+├── tests/expensetracker/   # Custom tests and runner
+├── scripts/                # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 ```text
 javac -Xlint:all -Werror -d out src/expensetracker/*.java
@@ -93,7 +117,7 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - Defensive, unmodifiable collection views
 - Exit codes and testable CLI entry points
 
-## Limitations
+## Known Limitations
 
 - Local in-memory service with explicit CSV persistence — no database and no automatic saving
 - No HTTP API, login, or authentication
@@ -101,6 +125,10 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - No recurring expenses, currency codes, or currency conversion
 - The educational CSV parser does not support multiline fields
 - No production accounting or audit guarantees — this is a learning project
+
+## Resume Value
+
+Built a Java expense tracker with validated `BigDecimal` records, CSV persistence, filtering, totals, category/date reports, safe file replacement, CLI workflows, and automated tests.
 
 ## Possible future improvements
 

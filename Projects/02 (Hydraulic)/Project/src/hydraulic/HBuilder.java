@@ -1,22 +1,28 @@
 package hydraulic;
 
-// No imports - as requested.
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * Hydraulics system builder providing a fluent API
  */
 public class HBuilder {
 	
-	private HSystem system = new HSystem();
+	private final HSystem system = new HSystem();
 	private Element lastElement;
-	
-	// (R8) Custom stack implementation using an array
-    // Replaces java.util.Stack to avoid imports.
-    // Assumes a maximum nesting depth of 10 for splits, which is reasonable.
-	private Element[] splitStack = new Element[10];
-	private int splitStackTop = -1; // -1 means stack is empty
-	
-	private int outputIndex = 0;
+	private final Deque<BuilderFrame> splitStack = new ArrayDeque<>();
+
+	private static final class BuilderFrame {
+		private final Element branchingElement;
+		private final int outputCount;
+		private int outputIndex;
+		private boolean branchStarted;
+
+		private BuilderFrame(Element branchingElement) {
+			this.branchingElement = branchingElement;
+			this.outputCount = branchingElement.internalOutputs().length;
+		}
+	}
 
     /**
      * Add a source element with the given name
@@ -24,6 +30,9 @@ public class HBuilder {
      * @return the builder itself for chaining 
      */
     public HBuilder addSource(String name) {
+		if (lastElement != null || system.size() != 0) {
+			throw new IllegalStateException("a source can only be added at the start of a builder");
+		}
         Source source = new Source(name);
         system.addElement(source);
         lastElement = source;
@@ -35,37 +44,38 @@ public class HBuilder {
      * * @return the hydraulic system
      */
     public HSystem complete() {
+		if (system.size() == 0) {
+			throw new IllegalStateException("cannot complete an empty hydraulic system");
+		}
+		for (BuilderFrame frame : splitStack) {
+			if (!frame.branchStarted || frame.outputIndex != frame.outputCount - 1) {
+				throw new IllegalStateException("all branching outputs must be defined before complete()");
+			}
+		}
         return this.system;
     }
     
-	/**
-	 * [FIXED]
-	 * Helper method to link a new element.
-	 * Now correctly handles chaining vs. branching.
-	 */
 	private HBuilder link(Element newElement) {
+		if (lastElement == null) {
+			throw new IllegalStateException("addSource() must be called before linking elements");
+		}
 		system.addElement(newElement);
 
 		boolean connectedToSplit = false;
-        // Check if our custom stack is not empty
-		if (splitStackTop != -1) { 
-            // Peek at the top element
-			Element currentSplit = splitStack[splitStackTop]; 
-			
-			// Only connect to split if lastElement IS the split
-			// (i.e., we are at the start of a new branch)
-			if (lastElement == currentSplit) { 
-				currentSplit.connect(newElement, outputIndex);
+		if (!splitStack.isEmpty()) {
+			BuilderFrame frame = splitStack.peek();
+			if (lastElement == frame.branchingElement) {
+				frame.branchingElement.connect(newElement, frame.outputIndex);
+				frame.branchStarted = true;
 				connectedToSplit = true;
 			}
 		}
 
-		// If we're not starting a branch, continue the chain
 		if (!connectedToSplit && lastElement != null) {
 			lastElement.connect(newElement);
 		}
 
-		lastElement = newElement; // Advance the chain
+		lastElement = newElement;
 		return this;
 	}
 
@@ -112,24 +122,28 @@ public class HBuilder {
      * of the latest split/multisplit.
      */
     public HBuilder withOutputs() {
-        // "Push" onto our custom stack
-        splitStackTop++;
-        splitStack[splitStackTop] = lastElement;
-        
-        outputIndex = 0;
+		if (!(lastElement instanceof Split)) {
+			throw new IllegalStateException("withOutputs() requires a split or multisplit");
+		}
+		splitStack.push(new BuilderFrame(lastElement));
         return this;     
     }
 
     /**
-	 * [FIXED]
      * inform the builder that the next element will be
      * linked to the successive output of the previous split or multisplit.
      */
     public HBuilder then() {
-        outputIndex++;
-		// This line is crucial: it resets the chain back to the split
-        // "Peek" at the top of our custom stack
-        lastElement = splitStack[splitStackTop]; 
+		BuilderFrame frame = requireFrame("then");
+		if (!frame.branchStarted) {
+			throw new IllegalStateException("then() requires an element on the current output");
+		}
+		if (frame.outputIndex + 1 >= frame.outputCount) {
+			throw new IllegalStateException("all outputs of the current split are already defined");
+		}
+		frame.outputIndex++;
+		frame.branchStarted = false;
+		lastElement = frame.branchingElement;
         return this;
     }
 
@@ -138,17 +152,21 @@ public class HBuilder {
      * to outputs of a split/multisplit. 
      */
     public HBuilder done() {
-    	// (R8) ...after it is called the last node is the one 
-    	// upstream the (multi)split
-        
-        // "Pop" from our custom stack
-        lastElement = splitStack[splitStackTop];
-        splitStack[splitStackTop] = null; // Clean up
-        splitStackTop--;
-        
-        outputIndex = 0;
+		BuilderFrame frame = requireFrame("done");
+		if (!frame.branchStarted) {
+			throw new IllegalStateException("done() requires an element on the current output");
+		}
+		splitStack.pop();
+		lastElement = frame.branchingElement;
         return this;
     }
+
+	private BuilderFrame requireFrame(String operation) {
+		if (splitStack.isEmpty()) {
+			throw new IllegalStateException(operation + "() requires withOutputs()");
+		}
+		return splitStack.peek();
+	}
 
     /**
      * define the flow of the previous source
@@ -156,9 +174,10 @@ public class HBuilder {
      * @return the builder itself for chaining 
      */
     public HBuilder withFlow(double flow) {
-        if (lastElement instanceof Source) {
-			((Source) lastElement).setFlow(flow);
+		if (!(lastElement instanceof Source)) {
+			throw new IllegalStateException("withFlow() requires the preceding element to be a source");
 		}
+		((Source) lastElement).setFlow(flow);
         return this;
     }
 
@@ -168,9 +187,10 @@ public class HBuilder {
      * * @return the builder itself for chaining 
      */
     public HBuilder open() {
-        if (lastElement instanceof Tap) {
-			((Tap) lastElement).setOpen(true);
+		if (!(lastElement instanceof Tap)) {
+			throw new IllegalStateException("open() requires the preceding element to be a tap");
 		}
+		((Tap) lastElement).setOpen(true);
         return this;
     }
 
@@ -180,9 +200,10 @@ public class HBuilder {
      * * @return the builder itself for chaining 
      */
     public HBuilder closed() {
-        if (lastElement instanceof Tap) {
-			((Tap) lastElement).setOpen(false);
+		if (!(lastElement instanceof Tap)) {
+			throw new IllegalStateException("closed() requires the preceding element to be a tap");
 		}
+		((Tap) lastElement).setOpen(false);
         return this;
     }
 
@@ -193,11 +214,20 @@ public class HBuilder {
      * @return the builder itself for chaining 
      */
     public HBuilder withPropotions(double... props) {
-		if (lastElement instanceof Multisplit) {
-			((Multisplit) lastElement).setProportions(props);
+		if (!(lastElement instanceof Multisplit)) {
+			throw new IllegalStateException(
+					"withPropotions() requires the preceding element to be a multisplit");
 		}
+		((Multisplit) lastElement).setProportions(props);
         return this;
     }
+
+	/**
+	 * Correctly spelled alias for {@link #withPropotions(double...)}.
+	 */
+	public HBuilder withProportions(double... props) {
+		return withPropotions(props);
+	}
 
     /**
      * define the maximum flow theshold for the previous element
@@ -205,9 +235,10 @@ public class HBuilder {
      * @return the builder itself for chaining 
      */
     public HBuilder maxFlow(double max) {
-        if (lastElement != null) {
-			lastElement.setMaxFlow(max);
+		if (lastElement == null) {
+			throw new IllegalStateException("maxFlow() requires a preceding element");
 		}
+		lastElement.setMaxFlow(max);
         return this;
     }
 }

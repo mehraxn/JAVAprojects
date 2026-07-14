@@ -19,7 +19,7 @@ public class Split extends Element {
 	}
 	
 	/**
-	 * (R2) In case of element with multiple outputs this method operates on the first one,
+	 * In case of an element with multiple outputs this method operates on the first one,
 	 * it is equivalent to calling {@code connect(elem,0)}.
 	 */
 	@Override
@@ -28,32 +28,45 @@ public class Split extends Element {
 	}
 	
 	/**
-	 * (R3) connect() method accepts an additional argument specifying which output
+	 * Connects the requested output.
 	 */
 	@Override
 	public void connect(Element elem, int index) {
-		if (index == 0 || index == 1) {
-			this.outputs[index] = elem;
-		}
-		// Optional: else throw an exception
+		ValidationUtils.requireOutputIndex(index, outputs.length);
+		this.outputs[index] = elem;
 	}
 
 	/**
-	 * (R3) returns an array with the two connected elements.
+	 * Returns an array with the two connected elements.
 	 */
 	@Override
 	public Element[] getOutputs() {
-		return this.outputs;
+		return this.outputs.clone();
+	}
+
+	@Override
+	Element[] internalOutputs() {
+		return outputs;
+	}
+
+	@Override
+	boolean replaceOutput(Element expected, Element replacement) {
+		boolean replaced = false;
+		for (int i = 0; i < outputs.length; i++) {
+			if (outputs[i] == expected) {
+				outputs[i] = replacement;
+				replaced = true;
+			}
+		}
+		return replaced;
 	}
 	
 	@Override
 	public void simulate(double inputFlow, SimulationObserver observer, boolean enableMaxFlowCheck) {
-		// (R7) Check max flow if enabled
 		if (enableMaxFlowCheck && inputFlow > maxFlow) {
 			observer.notifyFlowError("Split", getName(), inputFlow, maxFlow);
 		}
 		
-		// (R4) For the T split the input flow is divided into two equal output flows
 		double outputFlow = inputFlow / 2.0;
 		
 		observer.notifyFlow("Split", getName(), inputFlow, outputFlow, outputFlow);

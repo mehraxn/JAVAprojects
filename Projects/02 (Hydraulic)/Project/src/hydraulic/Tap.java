@@ -34,13 +34,10 @@ public class Tap extends Element {
 	
 	@Override
 	public void simulate(double inputFlow, SimulationObserver observer, boolean enableMaxFlowCheck) {
-		// (R7) Check max flow if enabled
 		if (enableMaxFlowCheck && inputFlow > maxFlow) {
 			observer.notifyFlowError("Tap", getName(), inputFlow, maxFlow);
 		}
 		
-		// (R4) When a tap is open the output flow is equal to the input flow,
-		// otherwise the output is zero.
 		double outputFlow = 0.0;
 		if (this.open) {
 			outputFlow = inputFlow;

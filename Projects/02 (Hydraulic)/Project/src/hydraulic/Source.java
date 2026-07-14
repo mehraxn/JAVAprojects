@@ -24,7 +24,7 @@ public class Source extends Element {
 	 * @param flow flow of the source (in cubic meters per hour)
 	 */
 	public void setFlow(double flow){
-		this.flow = flow;
+		this.flow = ValidationUtils.requireNonNegative(flow, "source flow");
 	}
 	
 	public double getFlow() {
@@ -32,12 +32,12 @@ public class Source extends Element {
 	}
 	
 	/**
-	 * (R7) For Source objects, calls to the setMaxFlow() method
+	 * For source objects, calls to the setMaxFlow() method
 	 * should not have any effect.
 	 */
 	@Override
 	public void setMaxFlow(double maxFlow) {
-		// Do nothing
+		ValidationUtils.requireNonNegative(maxFlow, "maximum flow");
 	}
 
 	@Override

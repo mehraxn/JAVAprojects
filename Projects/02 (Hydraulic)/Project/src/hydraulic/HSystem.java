@@ -1,26 +1,34 @@
 package hydraulic;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.StringJoiner;
+
 /**
  * Main class that acts as a container of the elements for
  * the simulation of a hydraulics system
  * */
 public class HSystem {
     
-    // (R1) You can safely assume that the maximum number of elements is 100.
     private static final int MAX_ELEMENTS = 100;
-    private Element[] elements = new Element[MAX_ELEMENTS];
+    private final Element[] elements = new Element[MAX_ELEMENTS];
     private int elementCount = 0;
 
-    // R1
     /**
      * Adds a new element to the system
      * @param elem the new element to be added to the system
      */
     public void addElement(Element elem){
-        if (elementCount < MAX_ELEMENTS) {
-            elements[elementCount++] = elem;
+        if (elem == null) {
+            throw new IllegalArgumentException("element cannot be null");
         }
-        // Optional: else throw an exception
+        if (getElementByName(elem.getName()) != null) {
+            throw new IllegalArgumentException("duplicate element name: " + elem.getName());
+        }
+        if (elementCount == MAX_ELEMENTS) {
+            throw new IllegalStateException("system capacity of " + MAX_ELEMENTS + " elements reached");
+        }
+        elements[elementCount++] = elem;
     }
 
     /**
@@ -37,15 +45,11 @@ public class HSystem {
      * the number of added elements
      */
     public Element[] getElements(){
-        // (R1) an array containing all and only the elements
         Element[] currentElements = new Element[elementCount];
-        for (int i = 0; i < elementCount; i++) {
-            currentElements[i] = elements[i];
-        }
+        System.arraycopy(elements, 0, currentElements, 0, elementCount);
         return currentElements;
     }
 
-    // R4
     /**
      * Starts the simulation of the system.
      * The notifications about the simulations are sent
@@ -55,12 +59,9 @@ public class HSystem {
      * @param observer the observer receiving notifications
      */
     public void simulate(SimulationObserver observer){
-        // (R4) This method performs the flow computations for each element
-        // (R7) a normal simulation
         simulate(observer, false);
     }
 
-    // R6
     /**
      * Deletes a previously added element 
      * with the given name from the system
@@ -68,42 +69,27 @@ public class HSystem {
     public boolean deleteElement(String name) {
         Element target = getElementByName(name);
         if (target == null) {
-            return true; // Element not found
+            return false;
         }
 
-        // (R6) If Split or Multisplit with > 1 output, no operation.
-        if (target instanceof Split) { // Also catches Multisplit
-            Element[] outputs = target.getOutputs();
-            int connectedOutputs = 0;
-            for (Element e : outputs) {
-                if (e != null) connectedOutputs++;
-            }
-            if (connectedOutputs > 1) {
-                return false;
-            }
-        }
-        
-        // Find upstream element
-        Element upstream = findUpstreamElement(target);
-        
-        // Find downstream element (only for 0 or 1 output)
         Element downstream = null;
-        if (target.getOutputs().length > 0) {
-            downstream = target.getOutputs()[0];
-        }
-        
-        // Rewire
-        if (upstream != null) {
-            Element[] upstreamOutputs = upstream.getOutputs();
-            for (int i = 0; i < upstreamOutputs.length; i++) {
-                if (upstreamOutputs[i] == target) {
-                    upstream.connect(downstream, i);
-                    break;
-                }
+        int connectedOutputs = 0;
+        for (Element candidate : target.internalOutputs()) {
+            if (candidate != null) {
+                downstream = candidate;
+                connectedOutputs++;
             }
         }
-        
-        // Remove from system array
+        if (connectedOutputs > 1) {
+            return false;
+        }
+
+        for (int i = 0; i < elementCount; i++) {
+            if (elements[i] != target) {
+                elements[i].replaceOutput(target, downstream);
+            }
+        }
+
         int targetIndex = -1;
         for (int i = 0; i < elementCount; i++) {
             if (elements[i] == target) {
@@ -112,18 +98,14 @@ public class HSystem {
             }
         }
         
-        if (targetIndex != -1) {
-            for (int i = targetIndex; i < elementCount - 1; i++) {
-                elements[i] = elements[i+1];
-            }
-            elements[elementCount - 1] = null;
-            elementCount--;
+        for (int i = targetIndex; i < elementCount - 1; i++) {
+            elements[i] = elements[i + 1];
         }
+        elements[--elementCount] = null;
 
         return true;
     }
 
-    // Helper for R6
     private Element getElementByName(String name) {
         for (int i = 0; i < elementCount; i++) {
             if (elements[i].getName().equals(name)) {
@@ -132,27 +114,15 @@ public class HSystem {
         }
         return null;
     }
-    
-    // Helper for R6
-    private Element findUpstreamElement(Element target) {
-        for (int i = 0; i < elementCount; i++) {
-            Element[] outputs = elements[i].getOutputs();
-            for (Element output : outputs) {
-                if (output == target) {
-                    return elements[i];
-                }
-            }
-        }
-        return null;
-    }
 
-    // R7
     /**
      * Starts the simulation of the system; if {@code enableMaxFlowCheck} is {@code true},
      * checks also the elements maximum flows.
      */
     public void simulate(SimulationObserver observer, boolean enableMaxFlowCheck) {
-        // (R4) Find the source
+        if (observer == null) {
+            throw new IllegalArgumentException("observer cannot be null");
+        }
         Source source = null;
         for (int i = 0; i < elementCount; i++) {
             if (elements[i] instanceof Source) {
@@ -162,10 +132,7 @@ public class HSystem {
         }
         
         if (source != null) {
-            // Notify source
             observer.notifyFlow("Source", source.getName(), SimulationObserver.NO_FLOW, source.getFlow());
-            
-            // Start recursive simulation
             Element firstElement = source.getOutput();
             if (firstElement != null) {
                 firstElement.simulate(source.getFlow(), observer, enableMaxFlowCheck);
@@ -173,7 +140,6 @@ public class HSystem {
         }
     }
 
-    // R8
     /**
      * creates a new builder that can be used to create a 
      * hydraulic system through a fluent API 
@@ -181,5 +147,47 @@ public class HSystem {
      */
     public static HBuilder build() {
         return new HBuilder();
+    }
+
+    @Override
+    public String toString() {
+        Source source = null;
+        for (int i = 0; i < elementCount; i++) {
+            if (elements[i] instanceof Source) {
+                source = (Source) elements[i];
+                break;
+            }
+        }
+        if (source != null) {
+            StringBuilder result = new StringBuilder();
+            appendLayout(source, result, "", new IdentityHashMap<>());
+            return result.toString();
+        }
+
+        StringJoiner names = new StringJoiner(", ", "[", "]");
+        for (int i = 0; i < elementCount; i++) {
+            names.add(elements[i].getName());
+        }
+        return names.toString();
+    }
+
+    private static void appendLayout(Element element, StringBuilder result, String indent,
+            Map<Element, Boolean> visited) {
+        result.append(indent).append('[').append(element.getName()).append(']');
+        if (visited.put(element, Boolean.TRUE) != null) {
+            result.append(" (cycle)");
+            return;
+        }
+
+        Element[] outputs = element.internalOutputs();
+        for (int i = 0; i < outputs.length; i++) {
+            result.append(System.lineSeparator()).append(indent).append("  +-> ");
+            if (outputs[i] == null) {
+                result.append('*');
+            } else {
+                appendLayout(outputs[i], result, indent + "      ", visited);
+            }
+        }
+        visited.remove(element);
     }
 }

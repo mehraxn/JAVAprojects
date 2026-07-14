@@ -11,12 +11,12 @@ package hydraulic;
  */
 public abstract class Element {
 	
-	private String name;
+	private final String name;
 	protected Element output;
-	protected double maxFlow = Double.POSITIVE_INFINITY; // R7: Default is unlimited
+	protected double maxFlow = Double.POSITIVE_INFINITY;
 	
 	public Element(String name) {
-		this.name = name;
+		this.name = ValidationUtils.requireNotBlank(name, "element name");
 	}
 
 	/**
@@ -45,11 +45,8 @@ public abstract class Element {
 	 * @param index the output index that will be used for the connection
 	 */
 	public void connect(Element elem, int index){
-		// By default, this method does nothing
-		// Only overridden by elements with multiple outputs
-		if (index == 0) {
-			this.connect(elem);
-		}
+		ValidationUtils.requireOutputIndex(index, 1);
+		this.connect(elem);
 	}
 	
 	/**
@@ -65,12 +62,22 @@ public abstract class Element {
 	 * * @return downstream element
 	 */
 	public Element[] getOutputs(){
-		// For simple elements, return an array containing the single output
 		if (this.output == null) {
-			return new Element[0]; // No outputs
+			return new Element[0];
 		}
-		Element[] outputs = { this.output };
-		return outputs;
+		return new Element[] { this.output };
+	}
+
+	Element[] internalOutputs() {
+		return getOutputs();
+	}
+
+	boolean replaceOutput(Element expected, Element replacement) {
+		if (output == expected) {
+			output = replacement;
+			return true;
+		}
+		return false;
 	}
 	
 	/**
@@ -78,7 +85,11 @@ public abstract class Element {
 	 * * @param maxFlow maximum allowed input flow
 	 */
 	public void setMaxFlow(double maxFlow) {
-		this.maxFlow = maxFlow;
+		this.maxFlow = ValidationUtils.requireNonNegative(maxFlow, "maximum flow");
+	}
+
+	public double getMaxFlow() {
+		return maxFlow;
 	}
 
 	// --- Simulation methods (to be called by HSystem) ---
@@ -113,7 +124,7 @@ public abstract class Element {
 	public String toString(){
 		String res = "[%s] ".formatted(getName());
 		Element[] out = getOutputs();
-		if( out != null && out.length > 0){
+		if(out.length > 0){
 			StringBuilder buffer = new StringBuilder();
 			for(int i=0; i<out.length; ++i) {
 				if(i>0) buffer.append("\n");

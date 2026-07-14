@@ -1,5 +1,7 @@
 package hydraulic;
 
+import java.util.Arrays;
+
 /**
  * Represents a multisplit element, an extension of the Split that allows many outputs
  * * During the simulation each downstream element will
@@ -17,36 +19,31 @@ public class Multisplit extends Split {
 	 */
 	public Multisplit(String name, int numOutput) {
 		super(name);
-		// (R5) Constructor accepts... the number of outputs.
+		ValidationUtils.requirePositive(numOutput, "output count");
 		this.outputs = new Element[numOutput];
 		this.proportions = new double[numOutput];
 		
-		// Default to equal proportions if not set
-		if (numOutput > 0) {
-			double p = 1.0 / numOutput;
-			for (int i = 0; i < numOutput; i++) {
-				this.proportions[i] = p;
-			}
+		double p = 1.0 / numOutput;
+		for (int i = 0; i < numOutput; i++) {
+			this.proportions[i] = p;
 		}
 	}
 	
 	/**
-	 * (R5) Connects a specific output
+	 * Connects a specific output.
 	 */
 	@Override
 	public void connect(Element elem, int index) {
-		if (index >= 0 && index < outputs.length) {
-			this.outputs[index] = elem;
-		}
-		// Optional: else throw an exception
+		ValidationUtils.requireOutputIndex(index, outputs.length);
+		this.outputs[index] = elem;
 	}
 	
 	/**
-	 * (R5) returns an array of the connected elements
+	 * Returns an array of the connected elements.
 	 */
 	@Override
 	public Element[] getOutputs() {
-		return this.outputs;
+		return this.outputs.clone();
 	}
 	
 	/**
@@ -57,22 +54,19 @@ public class Multisplit extends Split {
 	 * * @param proportions the proportions of flow for each output
 	 */
 	public void setProportions(double... proportions) {
-		// (R5) Assume that the number of proportions... is equal to the number of outputs
-		this.proportions = proportions;
+		this.proportions = ValidationUtils.requireProportions(proportions, outputs.length);
 	}
 	
 	public double[] getProportions() {
-		return this.proportions;
+		return Arrays.copyOf(this.proportions, this.proportions.length);
 	}
 	
 	@Override
 	public void simulate(double inputFlow, SimulationObserver observer, boolean enableMaxFlowCheck) {
-		// (R7) Check max flow if enabled
 		if (enableMaxFlowCheck && inputFlow > maxFlow) {
 			observer.notifyFlowError("Multisplit", getName(), inputFlow, maxFlow);
 		}
 		
-		// (R5) ...divide the input flow among the outputs.
 		double[] outputFlows = new double[outputs.length];
 		for (int i = 0; i < outputs.length; i++) {
 			outputFlows[i] = inputFlow * proportions[i];

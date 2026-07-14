@@ -15,7 +15,7 @@ public class Sink extends Element {
 	}
 
 	/**
-	 * (R2) The invocation of method connect() on a Sink object has no effect.
+	 * The invocation of method connect() on a sink has no effect.
 	 */
 	@Override
 	public void connect(Element elem) {
@@ -23,7 +23,7 @@ public class Sink extends Element {
 	}
 
 	/**
-	 * (R2) For a Sink it returns null.
+	 * For a sink it returns null.
 	 */
 	@Override
 	public Element getOutput() {
@@ -31,16 +31,15 @@ public class Sink extends Element {
 	}
 
 	/**
-	 * (R2) For a Sink it returns null or empty.
+	 * For a sink it returns an empty array.
 	 */
 	@Override
 	public Element[] getOutputs() {
-		return new Element[0]; // Sink has no outputs
+		return new Element[0];
 	}
 	
 	@Override
 	public void simulate(double inputFlow, SimulationObserver observer, boolean enableMaxFlowCheck) {
-		// (R7) Check max flow if enabled
 		if (enableMaxFlowCheck && inputFlow > maxFlow) {
 			observer.notifyFlowError("Sink", getName(), inputFlow, maxFlow);
 		}

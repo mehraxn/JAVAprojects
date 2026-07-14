@@ -127,7 +127,7 @@ public class Order {
 				.append("):");
 
 		for (Map.Entry<String, Integer> entry : menuLines.entrySet()) {
-			result.append(System.lineSeparator())
+			result.append('\n')
 					.append('\t')
 					.append(entry.getKey())
 					.append("->")

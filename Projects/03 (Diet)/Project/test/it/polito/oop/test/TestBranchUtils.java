@@ -23,7 +23,7 @@ public class TestBranchUtils {
                     }else{ 
                         currentBranch = "main"; // in case of detached HEAD behave like main branch
                     }
-                } catch (IOException _) {
+                } catch (IOException ignored) {
                     // in case branch cannot be determined, assume `main`
                     currentBranch = "main";
                 }

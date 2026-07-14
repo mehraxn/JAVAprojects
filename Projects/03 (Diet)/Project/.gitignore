@@ -1,2 +1,10 @@
-target/*
-.idea
+target/
+bin/
+out/
+test-out/
+.vscode/
+.idea/
+*.class
+*.log
+*.tmp
+.DS_Store

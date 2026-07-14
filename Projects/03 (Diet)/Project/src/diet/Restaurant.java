@@ -125,7 +125,7 @@ public class Restaurant {
 						.thenComparing(order -> order.getCustomer().toString())
 						.thenComparing(Order::getDeliveryTime))
 				.map(Order::toString)
-				.reduce((left, right) -> left + System.lineSeparator() + right)
+				.reduce((left, right) -> left + "\n" + right)
 				.orElse("");
 	}
 

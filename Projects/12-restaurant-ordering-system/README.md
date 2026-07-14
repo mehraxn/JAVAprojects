@@ -1,8 +1,10 @@
 # Restaurant Ordering System
 
+## Overview
+
 An educational Java restaurant ordering system focused on object-oriented design and business logic, built entirely with the Java standard library. No framework, database, or external dependency — plain `javac`/`java` is enough to build, run, and test it.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - A `MenuItem` domain model and `OrderItem` composition (menu item + quantity)
 - `Restaurant` menu/order management with a clean service layer
@@ -55,7 +57,25 @@ CREATED ──▶ PREPARING ──▶ READY ──▶ SERVED
 - `SERVED` and `CANCELLED` are terminal; `READY` and `SERVED` cannot be cancelled.
 - Backwards and skipping transitions are rejected.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven, Gradle, or external dependencies.
+- `BigDecimal` for monetary calculations.
+- Dependency-free tests plus Bash and PowerShell validation scripts.
+
+## Project Structure
+
+```text
+.
+├── src/restaurantorderingsystem/     # Domain, service, money helper, CLI
+├── tests/restaurantorderingsystem/   # Custom tests and test runner
+├── scripts/                           # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 ```text
 javac -Xlint:all -Werror -d out src/restaurantorderingsystem/*.java
@@ -96,7 +116,7 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - Lifecycle/state-machine validation
 - Exit codes and testable CLI entry points
 
-## Limitations
+## Known Limitations
 
 - In-memory only — no database and no persistence
 - No HTTP API, login, or authentication
@@ -111,3 +131,7 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - Per-item notes and modifiers
 - Multiple discount rules and coupons
 - Persistence of menu and orders
+
+## Resume Value
+
+Built a dependency-free Java restaurant-ordering system with precise money calculations, line-item merging, discounts, validated order-state transitions, defensive snapshots, CLI demonstrations, and automated tests.

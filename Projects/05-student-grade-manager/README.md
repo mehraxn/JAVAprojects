@@ -1,5 +1,7 @@
 # Student Grade Manager
 
+## Overview
+
 Educational Java student grade manager focused on OOP, subject-based grades, statistics, reports, validation, and defensive snapshots.
 
 The project is dependency-free and runs with plain `javac`/`java`.
@@ -23,6 +25,14 @@ The project is dependency-free and runs with plain `javac`/`java`.
 - Command-based CLI demos
 - Dependency-free automated tests
 - Strict compilation with `javac -Xlint:all -Werror`
+
+## What This Project Demonstrates
+
+- Object-oriented domain modeling and encapsulation.
+- Collections for subject grades, searching, summaries, and ranking.
+- Validation at service and domain boundaries.
+- Immutable reports and defensive snapshots.
+- Dependency-free CLI and automated-test design.
 
 ## Main classes
 
@@ -51,7 +61,25 @@ The project is dependency-free and runs with plain `javac`/`java`.
 - Public GradeBook methods return snapshots, reports, or unmodifiable lists instead of internal `Student` objects.
 - Data is in memory only for the current program run.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven, Gradle, or external runtime dependencies.
+- Dependency-free custom test runner and assertion helpers.
+- Bash and PowerShell validation scripts.
+
+## Project Structure
+
+```text
+.
+├── src/studentgrademanager/     # Application and domain code
+├── tests/studentgrademanager/   # Dependency-free automated tests
+├── scripts/                     # Bash and PowerShell test scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 From this project folder:
 
@@ -85,7 +113,9 @@ Windows PowerShell:
 
 The scripts strictly compile the application, strictly compile the dependency-free tests, run the test runner, run each CLI demo, and remove generated build folders.
 
-## Limitations
+See [TESTING.md](TESTING.md) for the exact procedure and [TEST_RESULTS.md](TEST_RESULTS.md) for the latest recorded validation results.
+
+## Known Limitations
 
 - No database
 - No HTTP API
@@ -94,3 +124,7 @@ The scripts strictly compile the application, strictly compile the dependency-fr
 - No file import/export
 - No production school information system guarantees
 - Intended as a Java OOP/service-layer learning project
+
+## Resume Value
+
+Built a dependency-free Java grade-management system with student registration, subject grades, statistics, reports, ranking, defensive snapshots, CLI demonstrations, and automated tests.

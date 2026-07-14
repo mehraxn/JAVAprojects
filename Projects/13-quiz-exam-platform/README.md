@@ -1,8 +1,10 @@
 # Quiz / Exam Platform
 
+## Overview
+
 An educational Java quiz/exam platform focused on object-oriented design and business logic, built entirely with the Java standard library. No framework, database, or external dependency — plain `javac`/`java` is enough to build, run, and test it.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - A `Question` domain model and a `Quiz` question bank with validation
 - Attempt lifecycle management: record answers, replace before finishing, lock after finishing
@@ -33,7 +35,24 @@ An educational Java quiz/exam platform focused on object-oriented design and bus
 - `ScoreBoard` — ranks results, keeping the best score per participant.
 - `Main` — CLI commands (`help`, `demo`, `attempt-demo`, `validation-demo`, `scoreboard-demo`).
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven, Gradle, or external dependencies.
+- Dependency-free tests plus Bash and PowerShell validation scripts.
+
+## Project Structure
+
+```text
+.
+├── src/quizexamplatform/     # Questions, quiz, attempts, results, scoreboard, CLI
+├── tests/quizexamplatform/   # Custom tests and test runner
+├── scripts/                  # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 ```text
 javac -Xlint:all -Werror -d out src/quizexamplatform/*.java
@@ -76,7 +95,7 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - Sorting with `Comparator` and tie-breaking
 - Exit codes and testable CLI entry points
 
-## Limitations
+## Known Limitations
 
 - In-memory only — no database and no persistent question bank
 - No HTTP API, login, or authentication
@@ -91,3 +110,7 @@ Or run everything with one script: `./scripts/test.sh` (Linux/macOS/Git Bash) or
 - Randomized question and option order
 - Weighted questions and partial credit
 - Multiple attempts history per participant
+
+## Resume Value
+
+Built a dependency-free Java quiz platform with validated questions, snapshot-based attempts, lifecycle locking, configurable grading, answer feedback, deterministic ranking, CLI demonstrations, and automated tests.

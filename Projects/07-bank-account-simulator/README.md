@@ -1,12 +1,14 @@
 # Bank Account Simulator
 
+## Overview
+
 An educational, dependency-free Java project that simulates a bank. It focuses on
 clean object-oriented design, a service layer with real business rules,
 `BigDecimal` money handling, all-or-nothing transfers, deterministic transaction
 IDs and timestamps, transaction history, and defensive data exposure — not on a
 database, web API, or real banking integration.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - **Account** domain model (number, owner, balance, transaction history)
 - **Transaction** domain model (ID, type, amount, timestamp, description, balanceAfter)
@@ -61,7 +63,25 @@ database, web API, or real banking integration.
   `Account` objects are never leaked, so external code cannot deposit/withdraw by
   bypassing the bank.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven, Gradle, or external dependencies.
+- `BigDecimal` for money and `java.time.Clock` for deterministic time.
+- Dependency-free tests plus Bash and PowerShell validation scripts.
+
+## Project Structure
+
+```text
+.
+├── src/bankaccountsimulator/     # Accounts, transactions, service, snapshots, CLI
+├── tests/bankaccountsimulator/   # Custom automated test suite
+├── scripts/                       # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 Compile:
 
@@ -99,7 +119,7 @@ Windows PowerShell:
 See [TESTING.md](TESTING.md) for exact commands and [TEST_RESULTS.md](TEST_RESULTS.md)
 for the latest recorded run.
 
-## Limitations
+## Known Limitations
 
 This is a learning project. It intentionally has:
 
@@ -111,3 +131,7 @@ This is a learning project. It intentionally has:
 - no concurrency/thread-safety guarantee
 - no production financial guarantees
 - no production deployment
+
+## Resume Value
+
+Built a dependency-free Java banking simulator with precise money handling, atomic transfers, deterministic transaction records, account reporting, defensive snapshots, and automated tests.

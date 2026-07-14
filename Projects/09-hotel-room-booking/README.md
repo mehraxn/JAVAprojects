@@ -1,43 +1,77 @@
 # Hotel Room Booking System
 
-An educational, in-memory Java hotel room booking system focused on OOP, date ranges, availability, and service-layer business rules.
+## Overview
 
-## What it demonstrates
-
-- Immutable Room and Guest domain models, plus Booking records with status
-- Hotel service-layer room, reservation, cancellation, and occupancy workflows
-- Positive room capacities and guest-count validation
-- Date-range validation and overlap prevention
-- Availability searches and adjacent bookings
-- `BigDecimal` money calculations to avoid floating-point pricing errors
-- Immutable room and booking snapshots
-- Dependency-free automated tests and strict compilation
-
-## Date-range and cancellation rules
-
-Check-in is inclusive and check-out is exclusive. A room becomes available on its check-out date, so Aug 10 to Aug 13 and Aug 13 to Aug 15 may coexist. Overlapping stays are rejected without changing booking state.
-
-Cancelled bookings remain in history with `CANCELLED` status. They no longer block availability and do not count toward occupancy.
+This educational, in-memory Java application manages hotel rooms, guests, bookings, availability, cancellation, and occupancy. It focuses on date-range correctness, precise pricing, and service-layer state consistency.
 
 ## Features
 
-Add uniquely numbered rooms, create capacity-aware bookings with generated IDs, calculate exact totals, search available rooms, cancel bookings, retain booking history, and calculate occupancy percentages. Public queries and booking results are snapshots, protecting internal hotel state.
+- Register uniquely numbered rooms with capacity and nightly rate.
+- Create bookings with generated identifiers and guest-capacity checks.
+- Find rooms available for an inclusive check-in and exclusive check-out range.
+- Prevent overlapping active bookings while allowing adjacent stays.
+- Calculate nights and total price with `BigDecimal`.
+- Cancel bookings without losing booking history.
+- Report occupancy and expose immutable room/booking snapshots.
+- CLI demonstrations for availability, overlap, cancellation, occupancy, and validation.
 
-## Quick start
+## What This Project Demonstrates
+
+- OOP domain models for rooms, guests, and bookings.
+- Service-layer validation and state transitions.
+- `LocalDate` range logic and overlap detection.
+- `BigDecimal` money calculations.
+- Defensive snapshots and deterministic automated tests.
+
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven or external dependencies.
+- Dependency-free custom tests.
+- Bash and PowerShell validation scripts.
+
+## Project Structure
 
 ```text
-javac -Xlint:all -Werror -d out src/hotelroombookingsystem/*.java
-java -cp out hotelroombookingsystem.Main help
-java -cp out hotelroombookingsystem.Main demo
-java -cp out hotelroombookingsystem.Main availability-demo
-java -cp out hotelroombookingsystem.Main overlap-demo
-java -cp out hotelroombookingsystem.Main cancellation-demo
-java -cp out hotelroombookingsystem.Main occupancy-demo
-java -cp out hotelroombookingsystem.Main validation-demo
+.
+├── src/hotelroombookingsystem/     # Domain, hotel service, snapshots, CLI
+├── tests/hotelroombookingsystem/   # Dependency-free tests and runner
+├── scripts/                         # test.sh and test.ps1
+├── TESTING.md
+└── TEST_RESULTS.md
 ```
 
-See [TESTING.md](TESTING.md) for commands and [TEST_RESULTS.md](TEST_RESULTS.md) for recorded validation.
+## How to Run
 
-## Limitations
+```bash
+javac -Xlint:all -Werror -d out src/hotelroombookingsystem/*.java
+java -cp out hotelroombookingsystem.Main demo
+```
 
-No database, HTTP API, login/authentication, payment provider, external hotel/channel-manager integration, housekeeping workflow, deployment, or production booking guarantees are included.
+Other commands include `help`, `availability-demo`, `overlap-demo`, `cancellation-demo`, `occupancy-demo`, and `validation-demo`.
+
+## Testing
+
+Run the cross-platform test script from this folder:
+
+```bash
+bash scripts/test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\test.ps1
+```
+
+See [TESTING.md](TESTING.md) for exact commands and [TEST_RESULTS.md](TEST_RESULTS.md) for the latest recorded validation results.
+
+## Known Limitations
+
+- In-memory educational model with no database or file persistence.
+- No HTTP API, authentication, payment provider, frontend, housekeeping workflow, or channel-manager integration.
+- Not intended as a production booking platform.
+
+## Resume Value
+
+Built a Java hotel-booking system with date-overlap protection, capacity-aware reservations, exact price calculation, cancellation history, occupancy reporting, defensive snapshots, and automated tests.

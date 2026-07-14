@@ -1,12 +1,14 @@
 # Movie Ticket Booking System
 
+## Overview
+
 An educational, dependency-free Java project that models a movie ticket booking
 system. It focuses on clean object-oriented design, a service layer with real
 business rules, seat maps, all-or-nothing multi-seat booking, cancellation,
 `BigDecimal` ticket pricing, defensive data exposure, and dependency-free
 automated tests — not on a database, web API, or payment integration.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - **Movie** domain model (ID, title, genre, duration)
 - **Showtime** domain model (movie, start time, ticket price, seat map)
@@ -70,7 +72,25 @@ automated tests — not on a database, web API, or payment integration.
   `Seat` / `Showtime` / `Booking` objects are never leaked, so external code
   cannot reserve seats or corrupt bookings without going through `BookingSystem`.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven, Gradle, or external dependencies.
+- `BigDecimal` for ticket pricing and injectable `Clock` for deterministic booking time.
+- Dependency-free tests plus Bash and PowerShell validation scripts.
+
+## Project Structure
+
+```text
+.
+├── src/movieticketbookingsystem/     # Movies, showtimes, seats, bookings, CLI
+├── tests/movieticketbookingsystem/   # Custom automated test suite
+├── scripts/                           # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 Compile:
 
@@ -108,7 +128,7 @@ Windows PowerShell:
 See [TESTING.md](TESTING.md) for exact commands and [TEST_RESULTS.md](TEST_RESULTS.md)
 for the latest recorded run.
 
-## Limitations
+## Known Limitations
 
 This is a learning project. It intentionally has:
 
@@ -121,3 +141,7 @@ This is a learning project. It intentionally has:
 - no seat-map UI
 - no production booking guarantees
 - no production deployment
+
+## Resume Value
+
+Built a dependency-free Java movie-booking system with atomic multi-seat reservation, cancellation and seat release, exact pricing, deterministic timestamps, defensive snapshots, CLI demonstrations, and automated tests.

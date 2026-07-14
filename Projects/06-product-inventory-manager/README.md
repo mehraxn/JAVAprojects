@@ -1,12 +1,14 @@
 # Product Inventory Manager
 
+## Overview
+
 An educational, dependency-free Java project that models a product inventory
 manager. It focuses on clean object-oriented design, a service layer with real
 business rules, `BigDecimal` money handling, defensive data exposure, and
 dependency-free automated tests — not on a database, web API, or barcode/warehouse
 integration.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - **Product** domain model (SKU, name, category, price, quantity, reorder threshold)
 - **Inventory** service layer that owns all state changes
@@ -63,7 +65,25 @@ integration.
 - **Public methods return `ProductSnapshot` copies in unmodifiable lists.** Live
   `Product` objects are never leaked, so callers cannot mutate inventory state.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven, Gradle, or external dependencies.
+- `BigDecimal` for monetary values.
+- Dependency-free tests plus Bash and PowerShell validation scripts.
+
+## Project Structure
+
+```text
+.
+├── src/productinventorymanager/     # Product, inventory service, snapshots, CLI
+├── tests/productinventorymanager/   # Custom test suite and runner
+├── scripts/                          # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 Compile:
 
@@ -89,7 +109,7 @@ The project ships with a dependency-free test suite (custom assertion helper and
 runner — no JUnit, Maven, or Gradle). See [TESTING.md](TESTING.md) for exact
 commands and [TEST_RESULTS.md](TEST_RESULTS.md) for the latest recorded run.
 
-## Limitations
+## Known Limitations
 
 This is a learning project. It intentionally has:
 
@@ -101,3 +121,7 @@ This is a learning project. It intentionally has:
 - no warehouse / location tracking
 - no production inventory guarantees
 - no production deployment
+
+## Resume Value
+
+Built a dependency-free Java inventory service with validated stock operations, `BigDecimal` valuation, searching, sorting, reporting, defensive snapshots, CLI demonstrations, and automated tests.

@@ -1,12 +1,14 @@
 # Library Management System
 
+## Overview
+
 An educational, dependency-free Java project that models a lending library. It
 focuses on clean object-oriented design, a service layer with real business
 rules, borrowing/return workflows, borrowing limits, due-date tracking and
 overdue detection, loan history, and defensive data exposure — not on a database,
 web API, or barcode/real-library integration.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - **Book** domain model (ISBN, title, author, category, publication year, availability)
 - **Member** domain model (ID, name, optional email, borrowed-ISBN set)
@@ -68,7 +70,25 @@ web API, or barcode/real-library integration.
   `Book`/`Member`/`LoanRecord` objects are never leaked, so external code cannot
   borrow or return by bypassing the library.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven, Gradle, or external dependencies.
+- `java.time` and injectable `Clock` for loan dates and repeatable scenarios.
+- Dependency-free tests plus Bash and PowerShell validation scripts.
+
+## Project Structure
+
+```text
+.
+├── src/librarymanagementsystem/     # Catalogue, members, loans, service, CLI
+├── tests/librarymanagementsystem/   # Custom automated test suite
+├── scripts/                          # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 Compile:
 
@@ -107,7 +127,7 @@ Windows PowerShell:
 See [TESTING.md](TESTING.md) for exact commands and [TEST_RESULTS.md](TEST_RESULTS.md)
 for the latest recorded run.
 
-## Limitations
+## Known Limitations
 
 This is a learning project. It intentionally has:
 
@@ -119,3 +139,7 @@ This is a learning project. It intentionally has:
 - no real library integration
 - no production library guarantees
 - no production deployment
+
+## Resume Value
+
+Built a dependency-free Java library system with borrowing and return lifecycles, due dates, overdue detection, limits, search, history, defensive snapshots, and automated tests.

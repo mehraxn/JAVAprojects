@@ -1,40 +1,74 @@
 # Event Registration System
 
-An educational, in-memory Java event registration system focused on OOP, immutable data views, and service-layer business rules.
+## Overview
 
-## What it demonstrates
-
-- Attendee, Event, and Registration domain models
-- An EventRegistrationSystem service layer
-- Input validation, capacity enforcement, and duplicate-registration prevention
-- Cancellation by attendee or registration ID with capacity restoration
-- Case-insensitive event searches by name/category and exact-date filtering
-- Search results sorted by date, then name
-- Deterministic registration timestamps through an injected `Clock`
-- Safe, immutable event and registration snapshots
-- Dependency-free automated tests and strict compilation
+This educational, in-memory Java application manages events, attendees, registrations, cancellation, capacity, and search. A service layer coordinates the domain models and returns immutable views instead of exposing mutable state.
 
 ## Features
 
-Events have generated registration IDs, positive capacities, and unique IDs/definitions. The same attendee may join different events but cannot register twice for one event. Failed registrations leave state unchanged. Public service queries return snapshots/copies so callers cannot mutate internal state.
+- Create events with positive capacities and unique identifiers.
+- Register attendees and prevent duplicate registration for the same event.
+- Generate registration identifiers and deterministic timestamps.
+- Cancel by attendee or registration ID and restore capacity.
+- Search events by name, category, or exact date.
+- Sort search results by date and then name.
+- Return safe event and registration snapshots.
+- CLI demonstrations for registration, capacity, cancellation, search, and validation.
 
-Email checks are deliberately simple and educational, not production-grade: exactly one `@`, nonblank local/domain parts, and an internally placed dot in the domain.
+## What This Project Demonstrates
 
-## Quick start
+- OOP modeling of attendees, events, and registrations.
+- Service-layer orchestration and business-rule validation.
+- Capacity-limited relationships and cancellation workflows.
+- Case-insensitive search, deterministic sorting, and injectable `Clock` usage.
+- Defensive copies and dependency-free automated testing.
+
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven or external dependencies.
+- Dependency-free custom tests.
+- Bash and PowerShell validation scripts.
+
+## Project Structure
 
 ```text
-javac -Xlint:all -Werror -d out src/eventregistrationsystem/*.java
-java -cp out eventregistrationsystem.Main help
-java -cp out eventregistrationsystem.Main demo
-java -cp out eventregistrationsystem.Main registration-demo
-java -cp out eventregistrationsystem.Main capacity-demo
-java -cp out eventregistrationsystem.Main cancellation-demo
-java -cp out eventregistrationsystem.Main search-demo
-java -cp out eventregistrationsystem.Main validation-demo
+.
+├── src/eventregistrationsystem/     # Models, service, snapshots, CLI
+├── tests/eventregistrationsystem/   # Dependency-free tests and runner
+├── scripts/                          # test.sh and test.ps1
+├── TESTING.md
+└── TEST_RESULTS.md
 ```
 
-See [TESTING.md](TESTING.md) for exact validation commands and [TEST_RESULTS.md](TEST_RESULTS.md) for recorded local results.
+## How to Run
 
-## Limitations
+```bash
+javac -Xlint:all -Werror -d out src/eventregistrationsystem/*.java
+java -cp out eventregistrationsystem.Main demo
+```
 
-This learning project has no database, HTTP API, login/authentication, payment or ticketing integration, email notifications, calendar integration, waitlist, or production deployment.
+Other commands include `help`, `registration-demo`, `capacity-demo`, `cancellation-demo`, `search-demo`, and `validation-demo`.
+
+## Testing
+
+```bash
+bash scripts/test.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\test.ps1
+```
+
+See [TESTING.md](TESTING.md) for the procedure and [TEST_RESULTS.md](TEST_RESULTS.md) for the latest recorded results.
+
+## Known Limitations
+
+- In-memory educational model with deliberately simple email validation.
+- No database, HTTP API, authentication, payment/ticketing integration, email delivery, calendar integration, waitlist, or deployment layer.
+
+## Resume Value
+
+Built a Java event-registration service with capacity enforcement, duplicate prevention, cancellation, deterministic identifiers and timestamps, searchable event data, defensive snapshots, and automated tests.

@@ -1,5 +1,7 @@
 # Parking Garage System
 
+## Overview
+
 An educational, dependency-free Java project that models a parking garage. It
 focuses on clean object-oriented design, a service layer with real business
 rules, compatible spot assignment, vehicle entry/exit workflows, started-hour
@@ -7,7 +9,7 @@ rules, compatible spot assignment, vehicle entry/exit workflows, started-hour
 and dependency-free automated tests — not on a database, web API, or camera/gate
 integration.
 
-## What it demonstrates
+## What This Project Demonstrates
 
 - **Vehicle** domain model (normalized license plate, vehicle type)
 - **VehicleType** enum (`MOTORCYCLE`, `CAR`, `TRUCK`)
@@ -70,7 +72,25 @@ integration.
   external code cannot release spots or corrupt state without going through
   `Garage`.
 
-## Quick start
+## Tech Stack
+
+- Java 21 standard library.
+- Plain `javac`/`java`; no Maven, Gradle, or external dependencies.
+- `BigDecimal` for fee and revenue calculations.
+- Dependency-free tests plus Bash and PowerShell validation scripts.
+
+## Project Structure
+
+```text
+.
+├── src/parkinggaragesystem/     # Domain, garage service, snapshots, CLI
+├── tests/parkinggaragesystem/   # Custom automated test suite
+├── scripts/                     # Cross-platform validation scripts
+├── TESTING.md
+└── TEST_RESULTS.md
+```
+
+## How to Run
 
 Compile:
 
@@ -109,7 +129,7 @@ Windows PowerShell:
 See [TESTING.md](TESTING.md) for exact commands and [TEST_RESULTS.md](TEST_RESULTS.md)
 for the latest recorded run.
 
-## Limitations
+## Known Limitations
 
 This is a learning project. It intentionally has:
 
@@ -121,3 +141,7 @@ This is a learning project. It intentionally has:
 - no real parking barrier/gate integration
 - no production parking guarantees
 - no production deployment
+
+## Resume Value
+
+Built a dependency-free Java parking-garage system with compatible spot assignment, exact entry/exit tracking, started-hour fee calculation, occupancy and revenue reports, defensive snapshots, and automated tests.

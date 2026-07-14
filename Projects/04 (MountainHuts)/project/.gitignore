@@ -1,2 +1,24 @@
+# Build output
 /target/
 /bin/
+/out/
+/test-out/
+
+# Temp data
+data/*.tmp
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Logs / temp
+*.log
+*.tmp
+
+# Compiled class files
+*.class
+
+# OS junk
+.DS_Store
+Thumbs.db

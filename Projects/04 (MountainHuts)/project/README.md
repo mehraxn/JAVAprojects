@@ -1,4 +1,91 @@
-# OOP Lab 4 - Mountain huts
+# Mountain Huts
+
+A Maven-based Java project for managing mountain-hut data for a region. It models regions,
+municipalities, mountain huts, and altitude ranges; imports data from CSV; classifies huts by
+altitude range; and answers report queries built with the **Java Stream API**.
+
+> Educational/portfolio project — file/CSV based, no database, REST API, or UI
+> (see [Known Limitations](#known-limitations)).
+
+## Features
+
+- Domain model: `Region` (aggregate), `Municipality`, `MountainHut`, `AltitudeRange`
+- Robust **CSV import** (UTF-8, validated, row-numbered errors)
+- Altitude-range classification (left-open/right-closed: `min < altitude ≤ max`)
+- **Stream API** report queries (counts, totals, maxima, groupings)
+- Defensive validation and immutable domain objects
+- Deterministic, unmodifiable outputs
+- Automated JUnit tests with ~95% line coverage
+
+## Tech Stack
+
+Java 21 · Maven (wrapper) · Java Stream API · JUnit 5 · JaCoCo · GitHub Actions. No external
+runtime dependencies.
+
+## Requirements
+
+- **Java 21** (`maven.compiler.release = 21`).
+- **Maven 3.9+**, or use the bundled wrapper (`mvnw` / `mvnw.cmd`).
+
+## Build and Test
+
+```bash
+./mvnw clean test          # Linux/macOS/Git Bash  (or: mvn clean test)
+bash scripts/test.sh
+```
+
+```powershell
+.\mvnw.cmd clean test      # Windows PowerShell    (or: mvn clean test)
+.\scripts\test.ps1
+```
+
+Coverage: `./mvnw clean test jacoco:report` → `target/site/jacoco/index.html` (not committed).
+
+## Project Structure
+
+```
+project/
+├── pom.xml, mvnw, mvnw.cmd, .mvn/        # build + Maven wrapper
+├── .github/workflows/java-ci.yml         # CI
+├── scripts/                              # test.sh / test.ps1
+├── docs/                                 # architecture, testing, decisions, final review
+├── data/mountain_huts.csv                # dataset (94 municipalities, 167 huts)
+├── src/mountainhuts/                     # Region, Municipality, MountainHut, AltitudeRange
+└── test/                                 # example/, it/polito/po/test/ (professor), custom/
+```
+
+## CSV Data Format
+
+Semicolon-separated with a header row:
+
+```
+Province;Municipality;MunicipalityAltitude;Name;Altitude;Category;BedsNumber
+```
+
+The hut `Altitude` field may be empty (the classifier then uses the municipality altitude). The
+importer targets this project format (simple `;`-separated fields), not full RFC-4180 CSV.
+
+## Query / Report Examples
+
+`countMunicipalitiesPerProvince`, `countMountainHutsPerMunicipalityPerProvince`,
+`countMountainHutsPerAltitudeRange`, `totalBedsNumberPerProvince`,
+`maximumBedsNumberPerAltitudeRange`, `municipalityNamesPerCountOfMountainHuts` — all return
+deterministic, key-ordered maps. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## Known Limitations
+
+- Educational/local project — **not production-ready**.
+- File/CSV based; no database, no REST API, no UI.
+- Format-specific CSV importer (no quoted fields); single Piemonte dataset.
+
+## Resume Value
+
+Demonstrates OOP domain modelling, robust CSV parsing/validation, Java Stream API grouping/report
+queries, defensive programming, and a tested, CI-ready Maven project.
+
+---
+
+## Requirements specification (lab)
 
 Develop an application for managing the information about mountain huts in a given region.
 

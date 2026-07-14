@@ -173,7 +173,7 @@ public class HSystem {
 
     private static void appendLayout(Element element, StringBuilder result, String indent,
             Map<Element, Boolean> visited) {
-        result.append(indent).append('[').append(element.getName()).append(']');
+        result.append('[').append(element.getName()).append(']');
         if (visited.put(element, Boolean.TRUE) != null) {
             result.append(" (cycle)");
             return;
@@ -181,11 +181,11 @@ public class HSystem {
 
         Element[] outputs = element.internalOutputs();
         for (int i = 0; i < outputs.length; i++) {
-            result.append(System.lineSeparator()).append(indent).append("  +-> ");
+            result.append(System.lineSeparator()).append(indent).append("+-> ");
             if (outputs[i] == null) {
                 result.append('*');
             } else {
-                appendLayout(outputs[i], result, indent + "      ", visited);
+                appendLayout(outputs[i], result, indent + "    ", visited);
             }
         }
         visited.remove(element);

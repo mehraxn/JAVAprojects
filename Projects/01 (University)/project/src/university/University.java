@@ -1,4 +1,7 @@
 package university;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -8,24 +11,28 @@ import java.util.logging.Logger;
  *
  */
 public class University {
-    
-    private String name;
+
+    private static final int FIRST_STUDENT_ID = 10000;
+    private static final int FIRST_COURSE_CODE = 10;
+    private static final int MAX_STUDENTS = 1000;
+    private static final int MAX_COURSES = 50;
+    private static final int MAX_COURSES_PER_STUDENT = 25;
+    private static final int MAX_STUDENTS_PER_COURSE = 100;
+
+    private final String name;
     private String rectorFirst;
     private String rectorLast;
-    private Student[] students = new Student[1000];
-    private Course[] courses = new Course[50];
+    private final Student[] students = new Student[MAX_STUDENTS];
+    private final Course[] courses = new Course[MAX_COURSES];
     private int studentCount = 0;
     private int courseCount = 0;
 
-// R1
 	/**
 	 * Constructor
 	 * @param name name of the university
 	 */
 	public University(String name){
-		this.name = name;
-		// Example of logging
-		// logger.info("Creating extended university object");
+		this.name = requireNotBlank(name, "university name");
 	}
 	
 	/**
@@ -44,8 +51,8 @@ public class University {
 	 * @param last	last name of the rector
 	 */
 	public void setRector(String first, String last){
-		this.rectorFirst = first;
-		this.rectorLast = last;
+		this.rectorFirst = requireNotBlank(first, "rector first name");
+		this.rectorLast = requireNotBlank(last, "rector last name");
 	}
 	
 	/**
@@ -57,7 +64,6 @@ public class University {
 		return rectorFirst + " " + rectorLast;
 	}
 	
-// R2
 	/**
 	 * Enrol a student in the university
 	 * The university assigns ID numbers 
@@ -69,10 +75,15 @@ public class University {
 	 * @return unique ID of the newly enrolled student
 	 */
 	public int enroll(String first, String last){
-		int id = 10000 + studentCount;
-		students[studentCount] = new Student(id, first, last);
+		if (studentCount == students.length) {
+			throw new IllegalStateException("maximum student capacity reached");
+		}
+		String validFirst = requireNotBlank(first, "student first name");
+		String validLast = requireNotBlank(last, "student last name");
+		int id = FIRST_STUDENT_ID + studentCount;
+		students[studentCount] = new Student(id, validFirst, validLast);
 		studentCount++;
-		logger.info("New student enrolled: " + id + ", " + first + " " + last);
+		logger.info("New student enrolled: " + id + ", " + validFirst + " " + validLast);
 		return id;
 	}
 	
@@ -85,15 +96,10 @@ public class University {
 	 * @return information about the student
 	 */
 	public String student(int id){
-		for (int i = 0; i < studentCount; i++) {
-			if (students[i].id == id) {
-				return students[i].id + " " + students[i].firstName + " " + students[i].lastName;
-			}
-		}
-		return null;
+		Student student = findStudent(id);
+		return student == null ? null : student.description();
 	}
 	
-// R3
 	/**
 	 * Activates a new course with the given teacher
 	 * Course codes are assigned progressively starting from 10.
@@ -104,10 +110,15 @@ public class University {
 	 * @return the unique code assigned to the course
 	 */
 	public int activate(String title, String teacher){
-		int code = 10 + courseCount;
-		courses[courseCount] = new Course(code, title, teacher);
+		if (courseCount == courses.length) {
+			throw new IllegalStateException("maximum course capacity reached");
+		}
+		String validTitle = requireNotBlank(title, "course title");
+		String validTeacher = requireNotBlank(teacher, "course teacher");
+		int code = FIRST_COURSE_CODE + courseCount;
+		courses[courseCount] = new Course(code, validTitle, validTeacher);
 		courseCount++;
-		logger.info("New course activated: " + code + ", " + title + " " + teacher);
+		logger.info("New course activated: " + code + ", " + validTitle + " " + validTeacher);
 		return code;
 	}
 	
@@ -123,43 +134,31 @@ public class University {
 	 * @return information about the course
 	 */
 	public String course(int code){
-		for (int i = 0; i < courseCount; i++) {
-			if (courses[i].code == code) {
-				return courses[i].code + "," + courses[i].title + "," + courses[i].teacher;
-			}
-		}
-		return null;
+		Course course = findCourse(code);
+		return course == null ? null : course.description();
 	}
 	
-// R4
 	/**
 	 * Register a student to attend a course
 	 * @param studentID id of the student
 	 * @param courseCode id of the course
 	 */
 	public void register(int studentID, int courseCode){
-		Student s = null;
-		Course c = null;
-		
-		for (int i = 0; i < studentCount; i++) {
-			if (students[i].id == studentID) {
-				s = students[i];
-				break;
-			}
+		Student student = findStudentOrThrow(studentID);
+		Course course = findCourseOrThrow(courseCode);
+		if (student.isRegisteredFor(courseCode)) {
+			return;
 		}
-		
-		for (int i = 0; i < courseCount; i++) {
-			if (courses[i].code == courseCode) {
-				c = courses[i];
-				break;
-			}
+		if (student.courseCount == student.courses.length) {
+			throw new IllegalStateException("student course capacity reached");
 		}
-		
-		if (s != null && c != null) {
-			s.courses[s.courseCount++] = courseCode;
-			c.students[c.studentCount++] = studentID;
-			logger.info("Student " + studentID + " signed up for course " + courseCode);
+		if (course.studentCount == course.students.length) {
+			throw new IllegalStateException("course attendee capacity reached");
 		}
+
+		student.courses[student.courseCount++] = courseCode;
+		course.students[course.studentCount++] = studentID;
+		logger.info("Student " + studentID + " signed up for course " + courseCode);
 	}
 	
 	/**
@@ -172,22 +171,15 @@ public class University {
 	 * @return list of attendees separated by "\n"
 	 */
 	public String listAttendees(int courseCode){
-		Course c = null;
-		for (int i = 0; i < courseCount; i++) {
-			if (courses[i].code == courseCode) {
-				c = courses[i];
-				break;
-			}
+		Course course = findCourse(courseCode);
+		if (course == null) return "";
+
+		StringBuilder result = new StringBuilder();
+		for (int i = 0; i < course.studentCount; i++) {
+			if (i > 0) result.append('\n');
+			result.append(student(course.students[i]));
 		}
-		
-		if (c == null) return "";
-		
-		String result = "";
-		for (int i = 0; i < c.studentCount; i++) {
-			if (i > 0) result += "\n";
-			result += student(c.students[i]);
-		}
-		return result;
+		return result.toString();
 	}
 
 	/**
@@ -202,25 +194,17 @@ public class University {
 	 * @return the list of courses the student is registered for
 	 */
 	public String studyPlan(int studentID){
-		Student s = null;
-		for (int i = 0; i < studentCount; i++) {
-			if (students[i].id == studentID) {
-				s = students[i];
-				break;
-			}
+		Student student = findStudent(studentID);
+		if (student == null) return "";
+
+		StringBuilder result = new StringBuilder();
+		for (int i = 0; i < student.courseCount; i++) {
+			if (i > 0) result.append('\n');
+			result.append(course(student.courses[i]));
 		}
-		
-		if (s == null) return "";
-		
-		String result = "";
-		for (int i = 0; i < s.courseCount; i++) {
-			if (i > 0) result += "\n";
-			result += course(s.courses[i]);
-		}
-		return result;
+		return result.toString();
 	}
 
-// R5
 	/**
 	 * records the grade (integer 0-30) for an exam can 
 	 * 
@@ -229,30 +213,17 @@ public class University {
 	 * @param grade		grade ( 0-30)
 	 */
 	public void exam(int studentId, int courseID, int grade) {
-		Student s = null;
-		Course c = null;
-		
-		for (int i = 0; i < studentCount; i++) {
-			if (students[i].id == studentId) {
-				s = students[i];
-				break;
-			}
+		validateGrade(grade);
+		Student student = findStudentOrThrow(studentId);
+		Course course = findCourseOrThrow(courseID);
+		if (!student.isRegisteredFor(courseID)) {
+			throw new IllegalStateException(
+					"student " + studentId + " is not registered for course " + courseID);
 		}
-		
-		for (int i = 0; i < courseCount; i++) {
-			if (courses[i].code == courseID) {
-				c = courses[i];
-				break;
-			}
-		}
-		
-		if (s != null && c != null) {
-			s.examCourses[s.examCount] = courseID;
-			s.examGrades[s.examCount] = grade;
-			s.examCount++;
-			c.grades[c.gradeCount++] = grade;
-			logger.info("Student " + studentId + " took an exam in course " + courseID + " with grade " + grade);
-		}
+
+		student.recordGrade(courseID, grade);
+		course.recordGrade(studentId, grade);
+		logger.info("Student " + studentId + " took an exam in course " + courseID + " with grade " + grade);
 	}
 
 	/**
@@ -268,23 +239,11 @@ public class University {
 	 * @return the average grade formatted as a string.
 	 */
 	public String studentAvg(int studentId) {
-		Student s = null;
-		for (int i = 0; i < studentCount; i++) {
-			if (students[i].id == studentId) {
-				s = students[i];
-				break;
-			}
-		}
-		
-		if (s == null || s.examCount == 0) 
+		Student student = findStudent(studentId);
+		if (student == null || student.examCount == 0)
 			return "Student " + studentId + " hasn't taken any exams";
-		
-		double sum = 0;
-		for (int i = 0; i < s.examCount; i++) {
-			sum += s.examGrades[i];
-		}
-		double avg = sum / s.examCount;
-		return "Student " + studentId + " : " + avg;
+
+		return "Student " + studentId + " : " + student.averageGrade();
 	}
 	
 	/**
@@ -299,28 +258,15 @@ public class University {
 	 * @return the course average formatted as a string
 	 */
 	public String courseAvg(int courseId) {
-		Course c = null;
-		for (int i = 0; i < courseCount; i++) {
-			if (courses[i].code == courseId) {
-				c = courses[i];
-				break;
-			}
-		}
-		
-		if (c == null) return null;
-		if (c.gradeCount == 0) 
-			return "No student has taken the exam in " + c.title;
-		
-		double sum = 0;
-		for (int i = 0; i < c.gradeCount; i++) {
-			sum += c.grades[i];
-		}
-		double avg = sum / c.gradeCount;
-		return "The average for the course " + c.title + " is: " + avg;
+		Course course = findCourse(courseId);
+		if (course == null) return null;
+		if (course.gradeCount == 0)
+			return "No student has taken the exam in " + course.title;
+
+		return "The average for the course " + course.title + " is: " + course.averageGrade();
 	}
 	
 
-// R6
 	/**
 	 * Retrieve information for the best students to award a price.
 	 * 
@@ -337,60 +283,84 @@ public class University {
 	 * @return info on the best three students.
 	 */
 	public String topThreeStudents() {
-		double[] scores = new double[studentCount];
-		int validCount = 0;
-		
+		List<Student> ranked = new ArrayList<>();
 		for (int i = 0; i < studentCount; i++) {
 			if (students[i].examCount > 0) {
-				double sum = 0;
-				for (int j = 0; j < students[i].examCount; j++) {
-					sum += students[i].examGrades[j];
-				}
-				double avg = sum / students[i].examCount;
-				double bonus = ((double) students[i].examCount / students[i].courseCount) * 10;
-				scores[i] = avg + bonus;
-				validCount++;
-			} else {
-				scores[i] = -1;
+				ranked.add(students[i]);
 			}
 		}
-		
-		String result = "";
-		int count = 0;
-		for (int k = 0; k < 3 && count < validCount; k++) {
-			int maxIdx = -1;
-			double maxScore = -1;
-			for (int i = 0; i < studentCount; i++) {
-				if (scores[i] > maxScore) {
-					maxScore = scores[i];
-					maxIdx = i;
-				}
-			}
-			if (maxIdx != -1) {
-				if (count > 0) result += "\n";
-				result += students[maxIdx].firstName + " " + students[maxIdx].lastName + " : " + scores[maxIdx];
-				scores[maxIdx] = -1;
-				count++;
-			}
+		ranked.sort(Comparator.comparingDouble(Student::score).reversed()
+				.thenComparing(student -> student.lastName)
+				.thenComparing(student -> student.firstName)
+				.thenComparingInt(student -> student.id));
+
+		StringBuilder result = new StringBuilder();
+		for (int i = 0; i < Math.min(3, ranked.size()); i++) {
+			Student student = ranked.get(i);
+			if (i > 0) result.append('\n');
+			result.append(student.firstName).append(' ').append(student.lastName)
+					.append(" : ").append(student.score());
 		}
-		return result;
+		return result.toString();
 	}
 
-// R7
+	private static String requireNotBlank(String value, String fieldName) {
+		if (value == null || value.isBlank()) {
+			throw new IllegalArgumentException(fieldName + " cannot be null or blank");
+		}
+		return value.trim();
+	}
+
+	private Student findStudent(int id) {
+		for (int i = 0; i < studentCount; i++) {
+			if (students[i].id == id) return students[i];
+		}
+		return null;
+	}
+
+	private Student findStudentOrThrow(int id) {
+		Student student = findStudent(id);
+		if (student == null) {
+			throw new IllegalArgumentException("unknown student ID: " + id);
+		}
+		return student;
+	}
+
+	private Course findCourse(int code) {
+		for (int i = 0; i < courseCount; i++) {
+			if (courses[i].code == code) return courses[i];
+		}
+		return null;
+	}
+
+	private Course findCourseOrThrow(int code) {
+		Course course = findCourse(code);
+		if (course == null) {
+			throw new IllegalArgumentException("unknown course code: " + code);
+		}
+		return course;
+	}
+
+	private static void validateGrade(int grade) {
+		if (grade < 0 || grade > 30) {
+			throw new IllegalArgumentException("grade must be between 0 and 30");
+		}
+	}
+
     /**
      * This field points to the logger for the class that can be used
      * throughout the methods to log the activities.
      */
     public static final Logger logger = Logger.getLogger("University");
 
-    private class Student {
-        int id;
-        String firstName;
-        String lastName;
-        int[] courses = new int[25];
+    private static final class Student {
+        final int id;
+        final String firstName;
+        final String lastName;
+        final int[] courses = new int[MAX_COURSES_PER_STUDENT];
         int courseCount = 0;
-        int[] examCourses = new int[25];
-        int[] examGrades = new int[25];
+        final int[] examCourses = new int[MAX_COURSES_PER_STUDENT];
+        final int[] examGrades = new int[MAX_COURSES_PER_STUDENT];
         int examCount = 0;
         
         Student(int id, String firstName, String lastName) {
@@ -398,15 +368,52 @@ public class University {
             this.firstName = firstName;
             this.lastName = lastName;
         }
+
+		String description() {
+			return id + " " + firstName + " " + lastName;
+		}
+
+		boolean isRegisteredFor(int courseCode) {
+			for (int i = 0; i < courseCount; i++) {
+				if (courses[i] == courseCode) return true;
+			}
+			return false;
+		}
+
+		void recordGrade(int courseCode, int grade) {
+			for (int i = 0; i < examCount; i++) {
+				if (examCourses[i] == courseCode) {
+					examGrades[i] = grade;
+					return;
+				}
+			}
+			if (examCount == examCourses.length) {
+				throw new IllegalStateException("student exam capacity reached");
+			}
+			examCourses[examCount] = courseCode;
+			examGrades[examCount] = grade;
+			examCount++;
+		}
+
+		double averageGrade() {
+			double sum = 0.0;
+			for (int i = 0; i < examCount; i++) sum += examGrades[i];
+			return sum / examCount;
+		}
+
+		double score() {
+			return averageGrade() + ((double) examCount / courseCount) * 10.0;
+		}
     }
     
-    private class Course {
-        int code;
-        String title;
-        String teacher;
-        int[] students = new int[100];
+    private static final class Course {
+        final int code;
+        final String title;
+        final String teacher;
+        final int[] students = new int[MAX_STUDENTS_PER_COURSE];
         int studentCount = 0;
-        int[] grades = new int[100];
+        final int[] examStudents = new int[MAX_STUDENTS_PER_COURSE];
+        final int[] grades = new int[MAX_STUDENTS_PER_COURSE];
         int gradeCount = 0;
         
         Course(int code, String title, String teacher) {
@@ -414,5 +421,30 @@ public class University {
             this.title = title;
             this.teacher = teacher;
         }
+
+		String description() {
+			return code + "," + title + "," + teacher;
+		}
+
+		void recordGrade(int studentId, int grade) {
+			for (int i = 0; i < gradeCount; i++) {
+				if (examStudents[i] == studentId) {
+					grades[i] = grade;
+					return;
+				}
+			}
+			if (gradeCount == grades.length) {
+				throw new IllegalStateException("course exam capacity reached");
+			}
+			examStudents[gradeCount] = studentId;
+			grades[gradeCount] = grade;
+			gradeCount++;
+		}
+
+		double averageGrade() {
+			double sum = 0.0;
+			for (int i = 0; i < gradeCount; i++) sum += grades[i];
+			return sum / gradeCount;
+		}
     }
 }

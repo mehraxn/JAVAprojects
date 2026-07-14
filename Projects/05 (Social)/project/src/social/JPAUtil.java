@@ -1,6 +1,5 @@
 package social;
 
-import java.sql.SQLException;
 import java.util.function.Function;
 
 import jakarta.persistence.EntityManager;
@@ -36,14 +35,14 @@ public class JPAUtil {
   }
 
   /**
-   * Enable test mode: the db is deleted on close.
+   * Enable test mode: switches to the in-memory test persistence unit
+   * (created fresh, dropped on close). Any previously opened factory is closed so
+   * the switch takes effect. Does not start the H2 web console.
    */
   public static void setTestMode() {
-    try {
-      org.h2.tools.Server.createWebServer("-web","-webDaemon");
-      IO.println("H2 console monitor available at http://localhost:8082");
-    } catch (SQLException e) {
-        IO.println("Could not start H2 monitor: " + e.getMessage());
+    if (emf != null && emf.isOpen()) {
+      emf.close();
+      emf = null;
     }
     currentPUName = JPAUtil.TEST_PU_NAME;
   }
@@ -57,7 +56,6 @@ public class JPAUtil {
   public static EntityManager getEntityManager() {
     EntityManager currentEm = currentManager.get();
     if(currentEm == null || !currentEm.isOpen()){
-      IO.println("*** new EntityManager");
       currentEm = getCurrentFactory().createEntityManager();
       currentManager.set(currentEm);
     }
@@ -227,5 +225,6 @@ public class JPAUtil {
     if (emf!=null && emf.isOpen()) {
       emf.close();
     }
+    emf = null;
   }
 }

@@ -1,6 +1,25 @@
+# Build output
 /target/
 /bin/
+
+# Local H2 database files
 /data/*
 !/data/.gitkeep
+*.mv.db
+*.trace.db
+
+# IDE
 /.vscode/
-/.idea
+/.idea/
+*.iml
+
+# Logs / temp
+*.log
+*.tmp
+
+# Compiled class files
+*.class
+
+# OS junk
+.DS_Store
+Thumbs.db

@@ -1,4 +1,91 @@
-# OOP Lab 6 - Social Network
+# Social Network Backend
+
+A Maven-based Java backend for a small social network, built on **JPA/Hibernate** over an **H2**
+database with a **facade API** and the **repository pattern**. It manages people, bidirectional
+friendships, groups and memberships, and posts with **JPQL-paginated** feeds.
+
+> Educational/portfolio project — it runs entirely locally on H2 and has no REST API, UI, or
+> authentication (see [Known Limitations](#known-limitations)).
+
+## Features
+
+- People (accounts) with unique codes and duplicate detection
+- **Bidirectional friendships** (symmetric, idempotent, self-friendship rejected)
+- **Groups** and memberships, with safe rename and deletion that keeps the join table consistent
+- **Posts** with author/timestamp and **JPQL pagination** (user feed and friends feed)
+- Simple statistics (most friends / largest group / most groups) with deterministic tie-breaking
+- Consistent input validation and a small custom exception hierarchy
+
+## Tech Stack
+
+Java 21 · Maven (wrapper) · Jakarta Persistence · Hibernate ORM 6 · H2 · JUnit 5 · JaCoCo · GitHub Actions.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    A[Social facade] --> B[Repositories]
+    B --> C[JPAUtil - EntityManager]
+    C --> D[Hibernate ORM]
+    D --> E[H2 Database]
+```
+
+Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
+[`docs/DESIGN_DECISIONS.md`](docs/DESIGN_DECISIONS.md), [`docs/TESTING.md`](docs/TESTING.md).
+
+## Requirements
+
+- **Java 21** (`maven.compiler.release = 21`).
+- **Maven 3.9+**, or use the bundled wrapper (`mvnw` / `mvnw.cmd`).
+
+## Build and Test
+
+```bash
+./mvnw clean test          # Linux/macOS/Git Bash  (or: mvn clean test)
+bash scripts/test.sh
+```
+
+```powershell
+.\mvnw.cmd clean test      # Windows PowerShell    (or: mvn clean test)
+.\scripts\test.ps1
+```
+
+Coverage: `./mvnw clean test jacoco:report` → `target/site/jacoco/index.html` (not committed).
+
+## Project Structure
+
+```
+project/
+├── pom.xml, mvnw, mvnw.cmd, .mvn/         # build + Maven wrapper
+├── .github/workflows/java-ci.yml          # CI
+├── scripts/                               # test.sh / test.ps1
+├── docs/                                  # architecture, testing, decisions, final review
+├── resources/META-INF/persistence.xml     # JPA persistence units (socialPU, socialPUTest)
+├── src/social/                            # Social (facade), Person, Group, Post,
+│                                          # GenericRepository + Person/Group/PostRepository,
+│                                          # JPAUtil, ValidationUtils, exceptions
+└── test/                                  # example/ (professor test) + custom/ (added tests)
+```
+
+## Persistence Notes
+
+- H2 is used both locally (`socialPU`, file-based) and for tests (`socialPUTest`, in-memory,
+  `create-drop`). `JPAUtil.setTestMode()` selects the test unit; tests reset the schema between runs.
+
+## Known Limitations
+
+- Educational/local project — **not production-ready**; H2 only, no external datastore/deployment.
+- No REST API, no UI, no authentication, no external services.
+
+## Resume Value
+
+Demonstrates a layered JPA/Hibernate backend: facade + repository patterns, entity relationships
+(self-referential friendships, many-to-many memberships, one-to-many posts), JPQL pagination,
+validation, and an automated JUnit test suite with CI and coverage.
+
+---
+
+## Requirements specification (lab)
 
 (the Italian version is available in file [`README_it.md`](README_it.md)).
 

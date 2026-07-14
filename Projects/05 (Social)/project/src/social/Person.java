@@ -3,29 +3,52 @@ package social;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.persistence.Entity; // ADDED FOR R2
-import jakarta.persistence.Id; // ADDED FOR R5
-import jakarta.persistence.ManyToMany; // ADDED FOR R2
-import jakarta.persistence.OneToMany; // ADDED FOR R2
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 
+/**
+ * A person (account) in the social network, identified by a unique {@code code}.
+ * <p>
+ * Friendships are modelled as a self-referential many-to-many relationship
+ * (kept symmetric by the facade). Group membership is a many-to-many relationship
+ * owned by {@code Person}. Authored posts are the inverse side of {@link Post}.
+ */
 @Entity
-class Person {
+public class Person {
+
   @Id
   private String code;
+
+  @Column(nullable = false)
   private String name;
+
+  @Column(nullable = false)
   private String surname;
 
-  @ManyToMany // ADDED FOR R2
-  private Set<Person> friends = new HashSet<>(); // ADDED FOR R2
+  @ManyToMany
+  @JoinTable(
+      name = "PERSON_FRIENDS",
+      joinColumns = @JoinColumn(name = "person_code"),
+      inverseJoinColumns = @JoinColumn(name = "friend_code"))
+  private Set<Person> friends = new HashSet<>();
 
-  @ManyToMany // ADDED FOR R3
-  private Set<Group> groups = new HashSet<>(); // ADDED FOR R3
+  @ManyToMany
+  @JoinTable(
+      name = "PERSON_GROUPS",
+      joinColumns = @JoinColumn(name = "person_code"),
+      inverseJoinColumns = @JoinColumn(name = "group_name"))
+  private Set<Group> groups = new HashSet<>();
 
-  @OneToMany(mappedBy = "author") // ADDED FOR R5
-  private Set<Post> posts = new HashSet<>(); // ADDED FOR R5
+  @OneToMany(mappedBy = "author")
+  private Set<Post> posts = new HashSet<>();
 
   Person() {
-    // default constructor is needed by JPA
+    // default constructor required by JPA
   }
 
   Person(String code, String name, String surname) {
@@ -46,25 +69,23 @@ class Person {
     return surname;
   }
 
-  //....
+  public Set<Person> getFriends() {
+    return friends;
+  }
 
-  public Set<Person> getFriends() { // ADDED FOR R2
-    return friends; // ADDED FOR R2
-  } // ADDED FOR R2
+  public void addFriend(Person p) {
+    this.friends.add(p);
+  }
 
-  public void addFriend(Person p) { // ADDED FOR R2
-    this.friends.add(p); // ADDED FOR R2
-  } // ADDED FOR R2
+  public Set<Group> getGroups() {
+    return groups;
+  }
 
-  public Set<Group> getGroups() { // ADDED FOR R3
-    return groups; // ADDED FOR R3
-  } // ADDED FOR R3
+  public void addGroup(Group g) {
+    this.groups.add(g);
+  }
 
-  public void addGroup(Group g) { // ADDED FOR R3
-    this.groups.add(g); // ADDED FOR R3
-  } // ADDED FOR R3
-
-  public Set<Post> getPosts() { // ADDED FOR R5
-    return posts; // ADDED FOR R5
-  } // ADDED FOR R5
+  public Set<Post> getPosts() {
+    return posts;
+  }
 }
